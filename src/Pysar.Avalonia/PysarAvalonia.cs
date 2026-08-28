@@ -5,14 +5,14 @@ namespace Pysar.Avalonia;
 
 /// <summary>
 ///     Public access to the shared renderer and export service registered by
-///     <see cref="AppBuilderExtensions.UseQReport"/>.
+///     <see cref="AppBuilderExtensions.UsePysar"/>.
 /// </summary>
-public static class QReportAvalonia
+public static class PysarAvalonia
 {
     private static IReportExportService? _exportService;
 
     /// <summary>
-    ///     The <see cref="SkiaReportRenderer"/> installed by <c>UseQReport</c>, shared with
+    ///     The <see cref="SkiaReportRenderer"/> installed by <c>UsePysar</c>, shared with
     ///     <see cref="ReportView"/>.
     /// </summary>
     public static SkiaReportRenderer Renderer => ReportViewRenderer.Instance;

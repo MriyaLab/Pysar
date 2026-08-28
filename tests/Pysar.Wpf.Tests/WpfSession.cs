@@ -9,7 +9,7 @@ namespace Pysar.Wpf.Tests;
 ///     runs on that thread through <see cref="Run(Action)"/>.
 /// </summary>
 /// <remarks>
-///     <c>UseQReport</c> is part of the setup rather than a test of its own on purpose - it is what a
+///     <c>UsePysar</c> is part of the setup rather than a test of its own on purpose - it is what a
 ///     host application does once at startup, and everything below (asset resolution, the font the
 ///     reports use, the renderer the report view measures with) only exists because of it. The
 ///     assembly name is passed explicitly: the default reads the entry assembly, which under a test
@@ -29,8 +29,8 @@ public sealed class WpfSession : IDisposable
             // while later tests still need it.
             var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
 
-            application.UseQReport(
-                qreport => qreport.AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu"),
+            application.UsePysar(
+                pysar => pysar.AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu"),
                 AssetAssemblyName);
 
             ready.SetResult(Dispatcher.CurrentDispatcher);

@@ -23,7 +23,7 @@
         <IsPackable>true</IsPackable>
         <PackageId>Pysar.Maui</PackageId>
         <Description>.NET MAUI integration for Pysar: application-package asset access, font registration, PDF export and sharing.</Description>
-        <PackageTags>maui;report;pdf;skiasharp;qreport</PackageTags>
+        <PackageTags>maui;report;pdf;skiasharp;pysar</PackageTags>
     </PropertyGroup>
 
     <!--

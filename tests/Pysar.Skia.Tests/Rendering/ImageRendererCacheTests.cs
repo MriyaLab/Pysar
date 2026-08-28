@@ -17,7 +17,7 @@ public class ImageRendererCacheTests
     {
         ImageRenderer.ResetDecodeCountForTests();
 
-        var path = Path.Combine(Path.GetTempPath(), $"qreport-img-{Guid.NewGuid():N}.png");
+        var path = Path.Combine(Path.GetTempPath(), $"pysar-img-{Guid.NewGuid():N}.png");
         try
         {
             using (var bmp = new SKBitmap(8, 8))

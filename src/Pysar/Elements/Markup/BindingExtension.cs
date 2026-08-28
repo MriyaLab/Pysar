@@ -1,7 +1,7 @@
 namespace Pysar.Elements;
 
 /// <summary>
-/// Describes QReport binding syntax to CLR-based XAML language services.
+/// Describes Pysar binding syntax to CLR-based XAML language services.
 /// Runtime XAML loading continues to use the shared semantic parser.
 /// </summary>
 public sealed class BindingExtension : System.Windows.Markup.MarkupExtension

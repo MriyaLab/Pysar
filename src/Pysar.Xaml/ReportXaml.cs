@@ -36,7 +36,7 @@ public static class ReportXaml
 
     // Binary-compatibility overloads. These four widened from Report to ReportObject when component
     // roots were introduced. That is source-compatible but NOT binary-compatible, and PreviewHost is
-    // bundled inside the IDE plugins and run against whatever QReport version the user's project was
+    // bundled inside the IDE plugins and run against whatever Pysar version the user's project was
     // built with — so a plugin compiled before the widening would fail at run time with
     // "Method not found: … LoadFileInto(Report, String)". Keeping the original Report-typed entry
     // points preserves that contract; the compiler binds Report arguments here, and everything else

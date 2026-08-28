@@ -197,7 +197,7 @@ public class ResourceValueTests
 
     private static string CreateTempDirectory()
     {
-        var directory = Path.Combine(Path.GetTempPath(), "palmy-qreport-" + Guid.NewGuid().ToString("N"));
+        var directory = Path.Combine(Path.GetTempPath(), "palmy-pysar-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         return directory;
     }

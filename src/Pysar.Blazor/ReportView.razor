@@ -11,16 +11,16 @@
    is then re-fitted a frame later - which is the whole document stepping smaller in front of the
    reader. Where scrollbars overlay (macOS by default) this changes nothing, there being no width
    to lose. *@
-<div @ref="_scroller" class="qreport-scroller"
+<div @ref="_scroller" class="pysar-scroller"
      style="overflow:auto;width:100%;height:100%;position:relative;min-width:0;
             contain:inline-size;scrollbar-gutter:stable">
-    <div class="qreport-document"
+    <div class="pysar-document"
          style="position:relative;width:@Px(_extentWidth);height:@Px(_extentHeight)">
 
         @foreach (var (index, bounds) in _pages)
         {
             <div @key="@("page-" + index)"
-                 class="qreport-page"
+                 class="pysar-page"
                  style="position:absolute;left:@Px(bounds.X);top:@Px(bounds.Y);
                         width:@Px(bounds.Width);height:@Px(bounds.Height);
                         border:@Px(PageBorderThickness) solid @PageBorderColor;

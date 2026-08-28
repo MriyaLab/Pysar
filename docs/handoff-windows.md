@@ -23,7 +23,7 @@ so far.
 >
 > **One test was failing on Windows and is now fixed:**
 > `GeneratorParityTests.RuntimeFallback_EmitsSourceBaseDirectory` hard-coded the POSIX path
-> `/tmp/qreport`, which `Path.GetFullPath` re-roots onto the current drive on Windows, so the
+> `/tmp/pysar`, which `Path.GetFullPath` re-roots onto the current drive on Windows, so the
 > directory the generator emitted never matched. The generator is correct — a real build always
 > hands it an absolute path. The test now builds its path from `Path.GetTempPath()` and compares
 > against the escaped form the generated C# literal actually carries.
@@ -42,8 +42,8 @@ conditional TFM did not take and the real sources are still not being compiled.
 
 | Commit | File | Change |
 |---|---|---|
-| `b0453e8` | `ReportViewRenderer.cs` | `Instance` became nullable-backed and now throws when `UseQReport` was never called |
-| `b0453e8` | `QReportWpf.cs` | dropped a `?? throw` that had become unreachable |
+| `b0453e8` | `ReportViewRenderer.cs` | `Instance` became nullable-backed and now throws when `UsePysar` was never called |
+| `b0453e8` | `PysarWpf.cs` | dropped a `?? throw` that had become unreachable |
 | `b0453e8` | `WpfReportPrinter.cs` | `using Pysar.Export;` added (`IReportPrinter` moved namespace) |
 | `b0453e8` | `samples/.../ReportViewerViewModel.cs` | same `using` |
 | `1168d90` | `ReportView.cs` | `Unloaded += (_, _) => _reportSession.DisposeWhenStillDetached(() => IsLoaded);` in the constructor |
@@ -170,13 +170,13 @@ Whatever CI packs releases must run that step on Windows. Worth confirming with 
 `System.Windows.StaticResourceExtension`, and five `System.Windows.Markup.*` attributes. This is
 **deliberate and confirmed**: the IDE XAML editors recognise them by full name, and moving them would
 silently lose XAML IntelliSense. It is now documented in `<remarks>` on each of those files, along
-with the fact that QReport's own loader and source generator read the *other* set (the equivalents in
+with the fact that Pysar's own loader and source generator read the *other* set (the equivalents in
 `Pysar.Elements`), which is why every affected type carries both attributes.
 
 **The unresolved cost:** `Core` is packable, so an application referencing it with `UseWPF` set gets
 CS0433 in its own code the moment it names one of those types unqualified under `using System.Windows;`.
 Nothing in this repository does, which is the only reason it has never surfaced. A consumer cannot
-work around it without QReport making a breaking change to `Core`.
+work around it without Pysar making a breaking change to `Core`.
 
 **Worth trying on Windows**, where a WPF project can actually be compiled against it:
 

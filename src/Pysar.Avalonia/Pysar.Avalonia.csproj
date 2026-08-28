@@ -14,7 +14,7 @@
         <IsPackable>true</IsPackable>
         <PackageId>Pysar.Avalonia</PackageId>
         <Description>Avalonia integration for Pysar: application asset access, font registration and a scrollable, zoomable report view.</Description>
-        <PackageTags>avalonia;report;pdf;skiasharp;qreport</PackageTags>
+        <PackageTags>avalonia;report;pdf;skiasharp;pysar</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

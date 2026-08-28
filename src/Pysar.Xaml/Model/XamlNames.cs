@@ -7,7 +7,7 @@ internal static class XamlNamespaces
 
     /// <summary>The 2009 XAML language namespace, accepted for compatibility with XAML
     /// authored for MAUI/modern tooling. Note ReSharper only recognises directives like
-    /// <c>x:DataType</c> for its built-in dialects, so QReport's primary data-type hint is the
+    /// <c>x:DataType</c> for its built-in dialects, so Pysar's primary data-type hint is the
     /// designer idiom <c>d:DataContext="{d:DesignInstance Type=…}"</c> (see
     /// <c>Tooling.DataTypeHint</c>); <c>x:DataType</c> is an interop fallback.</summary>
     public const string Xaml2009 = "http://schemas.microsoft.com/winfx/2009/xaml";

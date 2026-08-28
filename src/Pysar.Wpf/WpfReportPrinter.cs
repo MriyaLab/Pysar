@@ -23,7 +23,7 @@ public sealed class WpfReportPrinter : IReportPrinter
         var pdfBytes = await _renderer.RenderToPdfBytesAsync(report, cancellationToken)
             .ConfigureAwait(false);
 
-        var path = Path.Combine(Path.GetTempPath(), $"qreport-print-{Guid.NewGuid():N}.pdf");
+        var path = Path.Combine(Path.GetTempPath(), $"pysar-print-{Guid.NewGuid():N}.pdf");
         await File.WriteAllBytesAsync(path, pdfBytes, cancellationToken).ConfigureAwait(false);
 
         Process.Start(new ProcessStartInfo(path)

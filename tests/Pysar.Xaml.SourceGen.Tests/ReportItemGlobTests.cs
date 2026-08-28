@@ -12,7 +12,7 @@ namespace Pysar.Xaml.SourceGen.Tests;
 /// </summary>
 public sealed class ReportItemGlobTests : IDisposable
 {
-    private readonly string _dir = Directory.CreateTempSubdirectory("qreport-props-").FullName;
+    private readonly string _dir = Directory.CreateTempSubdirectory("pysar-props-").FullName;
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
@@ -25,7 +25,7 @@ public sealed class ReportItemGlobTests : IDisposable
         Directory.CreateDirectory(Path.Combine(_dir, "Styles"));
         File.WriteAllText(Path.Combine(_dir, "Styles", "Colors.rxaml"), "<ResourceDictionary/>");
 
-        var items = Identities("QReport");
+        var items = Identities("Pysar");
 
         Assert.Contains("Invoice.rxaml", items);
         Assert.Contains("Styles/Colors.rxaml", items);
@@ -36,7 +36,7 @@ public sealed class ReportItemGlobTests : IDisposable
     [Fact]
     public void TheGlob_IsProjectedIntoAdditionalFiles()
     {
-        // A generator sees nothing that is not an AdditionalFile; QReport alone would be inert.
+        // A generator sees nothing that is not an AdditionalFile; Pysar alone would be inert.
         WriteProbeProject();
         File.WriteAllText(Path.Combine(_dir, "Invoice.rxaml"), "<Report/>");
 
@@ -66,7 +66,7 @@ public sealed class ReportItemGlobTests : IDisposable
         WriteProbeProject();
         File.WriteAllText(Path.Combine(_dir, "Invoice.rxaml"), "<Report/>");
 
-        Assert.Empty(Identities("QReport", "-p:EnableDefaultReportItems=false"));
+        Assert.Empty(Identities("Pysar", "-p:EnableDefaultReportItems=false"));
     }
 
     private void WriteProbeProject() => File.WriteAllText(

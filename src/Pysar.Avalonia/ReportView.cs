@@ -440,7 +440,7 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
         _pinchCommitWanted = null;
         _pinchCommitFirstLogged = false;
         _pinchCommitFullLogged = false;
-        Debug.WriteLine("[QReport.Perf] t_commit");
+        Debug.WriteLine("[Pysar.Perf] t_commit");
 #endif
     }
 
@@ -456,7 +456,7 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
 
         if (_pinchCommitWanted.Length == 0)
         {
-            Debug.WriteLine("[QReport.Perf] t_viewport_full 0 ms (empty plan)");
+            Debug.WriteLine("[Pysar.Perf] t_viewport_full 0 ms (empty plan)");
             _pinchCommitFullLogged = true;
             _pinchCommitPerf = null;
         }
@@ -478,7 +478,7 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
         {
             _pinchCommitFirstLogged = true;
             Debug.WriteLine(
-                $"[QReport.Perf] t_first_centre_tile {_pinchCommitPerf.ElapsedMilliseconds} ms");
+                $"[Pysar.Perf] t_first_centre_tile {_pinchCommitPerf.ElapsedMilliseconds} ms");
         }
 
         var full = true;
@@ -496,7 +496,7 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
 
         _pinchCommitFullLogged = true;
         Debug.WriteLine(
-            $"[QReport.Perf] t_viewport_full {_pinchCommitPerf.ElapsedMilliseconds} ms (n={_pinchCommitWanted.Length})");
+            $"[Pysar.Perf] t_viewport_full {_pinchCommitPerf.ElapsedMilliseconds} ms (n={_pinchCommitWanted.Length})");
         _pinchCommitPerf = null;
 #endif
     }
@@ -703,21 +703,21 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
 
 /// <summary>
 ///     The renderer the control measures reports with. A single instance carries the drawers the
-///     application registered through <c>UseQReport</c>.
+///     application registered through <c>UsePysar</c>.
 /// </summary>
 internal static class ReportViewRenderer
 {
     private static SkiaReportRenderer? _instance;
 
     /// <summary>
-    ///     The renderer installed by <c>UseQReport</c>. Throws rather than falling back to an
-    ///     unconfigured renderer: without the fonts and asset access <c>UseQReport</c> installs, a
+    ///     The renderer installed by <c>UsePysar</c>. Throws rather than falling back to an
+    ///     unconfigured renderer: without the fonts and asset access <c>UsePysar</c> installs, a
     ///     report renders with substitute fonts and blank images instead of reporting the mistake.
     /// </summary>
     public static SkiaReportRenderer Instance
     {
         get => _instance ?? throw new InvalidOperationException(
-            "Call UseQReport during application startup before using a report view or the renderer.");
+            "Call UsePysar during application startup before using a report view or the renderer.");
         set => _instance = value;
     }
 }

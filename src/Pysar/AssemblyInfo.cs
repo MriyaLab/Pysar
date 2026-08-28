@@ -7,7 +7,7 @@ using Pysar.Elements;
 [assembly: XmlnsDefinition("https://mriyalab.com/pysar", "Pysar.Core.Structs")]
 
 // Duplicated deliberately: VS and Rider only recognise Microsoft's attribute, by full name.
-// Delete these and XAML IntelliSense silently stops offering QReport elements.
+// Delete these and XAML IntelliSense silently stops offering Pysar elements.
 // See docs/handoff-windows.md.
 [assembly: System.Windows.Markup.XmlnsDefinition(
     "https://mriyalab.com/pysar",

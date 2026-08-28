@@ -62,14 +62,14 @@ public sealed class XamlTypeResolver
     private static List<(Assembly, string)> ScopesFromXmlnsDefinitions(string uri)
     {
         var list = new List<(Assembly, string)>();
-        var qreportAsm = typeof(Text).Assembly;
-        foreach (var def in qreportAsm.GetCustomAttributes<XmlnsDefinitionAttribute>())
+        var pysarAsm = typeof(Text).Assembly;
+        foreach (var def in pysarAsm.GetCustomAttributes<XmlnsDefinitionAttribute>())
             if (def.XmlNamespace == uri)
-                list.Add((qreportAsm, def.ClrNamespace));
+                list.Add((pysarAsm, def.ClrNamespace));
 
         if (list.Count == 0)
             throw new XamlException(
-                $"No XmlnsDefinition on '{qreportAsm.GetName().Name}' maps the namespace '{uri}'.");
+                $"No XmlnsDefinition on '{pysarAsm.GetName().Name}' maps the namespace '{uri}'.");
         return list;
     }
 

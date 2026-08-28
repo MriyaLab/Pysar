@@ -53,7 +53,7 @@ public sealed class AvaloniaReportPrinter : IReportPrinter
             return;
         }
 
-        var path = Path.Combine(Path.GetTempPath(), $"qreport-print-{Guid.NewGuid():N}.pdf");
+        var path = Path.Combine(Path.GetTempPath(), $"pysar-print-{Guid.NewGuid():N}.pdf");
         await File.WriteAllBytesAsync(path, pdfBytes, cancellationToken).ConfigureAwait(false);
         OpenPrintUi(path);
     }

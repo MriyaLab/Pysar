@@ -21,8 +21,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="palmy.qreport" Version="0.0.19" />
-      <PackageReference Include="palmy.qreport.xaml" Version="0.0.19" />
+      <PackageReference Include="palmy.pysar" Version="0.0.19" />
+      <PackageReference Include="palmy.pysar.xaml" Version="0.0.19" />
     </ItemGroup>
 
 </Project>

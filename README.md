@@ -5,7 +5,7 @@ or with a fluent C# builder — hand it your data, and get back a vector PDF, a 
 a scrollable, zoomable view inside your application.
 
 It exists because the usual options for this in .NET are either tied to Windows, tied to a designer,
-or priced per developer. QReport is none of those. The layout, pagination and rendering engine is
+or priced per developer. Pysar is none of those. The layout, pagination and rendering engine is
 plain .NET on top of SkiaSharp, so the same report produces the same document on Windows, macOS,
 Linux, Android, iOS and in the browser. The host application only supplies the two things that are
 genuinely platform-specific: where files come from, and which fonts are available.
@@ -13,7 +13,7 @@ genuinely platform-specific: where files come from, and which fonts are availabl
 ```csharp
 var report = ReportBuilder.Create("Hello report")
     .WithPageFormat(new PageFormat { Margin = new Thickness(30) })
-    .WithDetail(detail => detail.AddElement(new Text { Content = "Hello from QReport" }))
+    .WithDetail(detail => detail.AddElement(new Text { Content = "Hello from Pysar" }))
     .Build();
 
 await new SkiaReportRenderer().SavePdfAsync(report, "hello.pdf");
@@ -78,7 +78,7 @@ were merged away. Replace all of them with `Pysar`, and `Pysar.Xaml` if you writ
 `.rxaml` reports — the source generator now ships inside that package.
 
 Namespaces did not change, so no `using` directive needs editing. The one thing that can break is a
-`clr-namespace` mapping in `.rxaml` that names a QReport **assembly**, because five assemblies became
+`clr-namespace` mapping in `.rxaml` that names a Pysar **assembly**, because five assemblies became
 one:
 
 ```xml
@@ -88,7 +88,7 @@ xmlns:e="clr-namespace:Pysar.Elements;assembly=Pysar.Elements"
 xmlns:e="clr-namespace:Pysar.Elements;assembly=Pysar"
 ```
 
-Most reports never hit this — QReport elements are reached through the default
+Most reports never hit this — Pysar elements are reached through the default
 `https://mriyalab.com/pysar` namespace, which needs no assembly qualifier.
 
 ## Reports in XAML
@@ -154,7 +154,7 @@ nothing is extracted to disk:
 ```csharp
 builder
     .UseMauiApp<App>()
-    .UseQReport(qreport => qreport
+    .UsePysar(pysar => pysar
         .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
         .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 ```
@@ -165,7 +165,7 @@ injectable: the export service writes a report to a stream or a byte array in a 
 platform print dialog.
 
 ```xml
-<qreport:ReportView Report="{Binding Report}"
+<pysar:ReportView Report="{Binding Report}"
                     ZoomMode="FitWidth"
                     Zoom="{Binding Zoom}"
                     EffectiveZoom="{Binding EffectiveZoom}"
@@ -187,7 +187,7 @@ same `Pysar.Viewer` core. Assets are `AvaloniaResource` items read through `avar
 ```csharp
 AppBuilder.Configure<App>()
     .UsePlatformDetect()
-    .UseQReport(qreport => qreport
+    .UsePysar(pysar => pysar
         .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
         .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 ```
@@ -206,20 +206,20 @@ boundary ends the process rather than raising: **verify any change to it by hand
 ### WPF
 
 `Pysar.Wpf` is **Windows only**, with assets resolved from pack URIs and assembly manifest
-resources. Call `UseQReport` from `Application.OnStartup`:
+resources. Call `UsePysar` from `Application.OnStartup`:
 
 ```csharp
 protected override void OnStartup(StartupEventArgs e)
 {
     base.OnStartup(e);
-    this.UseQReport(qreport => qreport
+    this.UsePysar(pysar => pysar
         .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
         .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 }
 ```
 
 ```xml
-<qreport:ReportView Report="{Binding Report}"
+<pysar:ReportView Report="{Binding Report}"
                     ZoomMode="FitWidth"
                     Zoom="{Binding Zoom}"
                     EffectiveZoom="{Binding EffectiveZoom, Mode=OneWayToSource}"
@@ -237,7 +237,7 @@ Registration is a service-collection call, and the same renderer serves both the
 exporters — so a custom drawer registered here reaches the screen as well as the PDF:
 
 ```csharp
-builder.Services.AddQReport(renderer => renderer.WithDrawer<QRCode>(new QRCodeDrawer()));
+builder.Services.AddPysar(renderer => renderer.WithDrawer<QRCode>(new QRCodeDrawer()));
 ```
 
 The browser has no file system, so assets are fetched up front and held in memory. This is not a
@@ -279,7 +279,7 @@ instead, so it is verified on every push rather than by hand:
 | `Pysar.Skia.Tests` | measurement, layout, pagination, drawing, PDF export |
 | `Pysar.Xaml*.Tests` | the XAML model, runtime loader, source generator and code-behind |
 | `Pysar.Viewer.Tests` | page geometry, zoom, gestures, tile planning — framework-neutral |
-| `Pysar.Avalonia.Tests` | a real Avalonia app on the headless platform: `UseQReport`, `avares://` assets, a report shown in a window and zoomed with injected input |
+| `Pysar.Avalonia.Tests` | a real Avalonia app on the headless platform: `UsePysar`, `avares://` assets, a report shown in a window and zoomed with injected input |
 | `Pysar.Wpf.Tests` | the same, on a WPF STA session — Windows only, exactly like the package itself |
 | `Pysar.Blazor.Tests` | service registration, the preloaded file system, printing through a fake JS runtime |
 | `Pysar.Maui.Tests` | package asset access and the platform handler over it |

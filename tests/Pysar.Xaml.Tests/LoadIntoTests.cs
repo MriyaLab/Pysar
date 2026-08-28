@@ -30,7 +30,7 @@ public class LoadIntoTests
 
     /// <summary>
     /// The Report-typed overloads are kept deliberately alongside the ReportObject ones: PreviewHost is
-    /// bundled inside the IDE plugins and runs against the QReport build of the user's project, so
+    /// bundled inside the IDE plugins and runs against the Pysar build of the user's project, so
     /// dropping them is a binary-breaking change that surfaces as "Method not found" at preview time.
     /// Do not "de-duplicate" them away.
     /// </summary>

@@ -5,14 +5,14 @@ namespace Pysar.Wpf;
 
 /// <summary>
 ///     Public access to the shared renderer and export service registered by
-///     <see cref="ApplicationExtensions.UseQReport"/>.
+///     <see cref="ApplicationExtensions.UsePysar"/>.
 /// </summary>
-public static class QReportWpf
+public static class PysarWpf
 {
     private static IReportExportService? _exportService;
 
     /// <summary>
-    ///     The <see cref="SkiaReportRenderer"/> installed by <c>UseQReport</c>, shared with
+    ///     The <see cref="SkiaReportRenderer"/> installed by <c>UsePysar</c>, shared with
     ///     the report view control.
     /// </summary>
     public static SkiaReportRenderer Renderer => ReportViewRenderer.Instance;

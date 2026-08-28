@@ -21,7 +21,7 @@ written in `.rxaml` markup, and one platform package for the target UI framework
 separate analyzer reference is needed.
 
 Every `.rxaml` file in the project is picked up automatically. To exclude one, use
-`<QReport Remove="Draft.rxaml" />`; to turn the automatic pickup off entirely, set
+`<Pysar Remove="Draft.rxaml" />`; to turn the automatic pickup off entirely, set
 `<EnableDefaultReportItems>false</EnableDefaultReportItems>` and list the files yourself.
 
 ## 2. Configure the host platform
@@ -158,9 +158,9 @@ Inject or construct `IReportPrinter` from the host package and call:
 await printer.PrintAsync(builtReport);
 ```
 
-- MAUI: registered by `UseQReport` as `IReportPrinter` (`MauiReportPrinter`)
-- Avalonia: `new AvaloniaReportPrinter(renderer)` after `UseQReport` (or `QReportAvalonia.Renderer`)
-- WPF (Windows only): `new WpfReportPrinter(renderer)` after `UseQReport` (or `QReportWpf.Renderer`)
+- MAUI: registered by `UsePysar` as `IReportPrinter` (`MauiReportPrinter`)
+- Avalonia: `new AvaloniaReportPrinter(renderer)` after `UsePysar` (or `PysarAvalonia.Renderer`)
+- WPF (Windows only): `new WpfReportPrinter(renderer)` after `UsePysar` (or `PysarWpf.Renderer`)
 - Blazor: `BlazorReportPrinter` + `reportPrint.js` (browser print dialog)
 - Console sample: `--print` opens OS print/preview for generated PDFs
 
@@ -264,7 +264,7 @@ Do not call `Build()` twice on the same `Report`. Do not build one report instan
 
 Both IDE plugins render `.rxaml` reports with the same `SkiaReportRenderer` pipeline that produces
 the PDF: Rider shows them in a split editor when the Pysar Designer plugin is installed,
-and VS Code in a panel opened with **QReport: Open Preview** when the Pysar Designer
+and VS Code in a panel opened with **Pysar: Open Preview** when the Pysar Designer
 extension is installed (also an icon in the editor title bar). Both drive the same renderer, so the contract
 below is shared — set it up once and the report previews in either editor.
 
@@ -332,6 +332,6 @@ code-behind and one `IReportBootstrap`, referenced by each host application — 
 
 ## IDE completion
 
-The generated QReport XSD provides element, attribute, and enum completion in XML-aware editors.
+The generated Pysar XSD provides element, attribute, and enum completion in XML-aware editors.
 Rider and VS Code installation instructions, along with the Visual Studio roadmap, are available in
 the `Pysar.Plugins` repository (sibling project, not part of this repo).

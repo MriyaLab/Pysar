@@ -12,7 +12,7 @@ namespace Pysar.Blazor.Tests;
 ///     The registration a Blazor host performs once at startup, which the browser samples used to be
 ///     the only proof of.
 /// </summary>
-public class AddQReportTests
+public class AddPysarTests
 {
     [Fact]
     public void TheViewerAndTheExportersShareOneRenderer()
@@ -54,8 +54,8 @@ public class AddQReportTests
     }
 
     [Fact]
-    public void AddQReport_RejectsAMissingServiceCollection()
-        => Assert.Throws<ArgumentNullException>(() => ServiceCollectionExtensions.AddQReport(null!));
+    public void AddPysar_RejectsAMissingServiceCollection()
+        => Assert.Throws<ArgumentNullException>(() => ServiceCollectionExtensions.AddPysar(null!));
 
     [Fact]
     public void TheWasmHandler_BecomesTheOneAssetsResolveThrough()
@@ -81,7 +81,7 @@ public class AddQReportTests
         var services = new ServiceCollection();
 
         services.AddSingleton<IJSRuntime>(new FakeJsRuntime());
-        services.AddQReport(configure);
+        services.AddPysar(configure);
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }

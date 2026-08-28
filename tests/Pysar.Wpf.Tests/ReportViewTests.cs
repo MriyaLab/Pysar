@@ -79,13 +79,13 @@ public class ReportViewTests(WpfSession session)
         });
 
     [Fact]
-    public void TheRendererAndExportServiceInstalledByUseQReportAreReachable()
+    public void TheRendererAndExportServiceInstalledByUsePysarAreReachable()
         => session.Run(() =>
         {
-            // UseQReport ran once, in the session fixture - this is what a host reaches afterwards.
-            Assert.NotNull(QReportWpf.Renderer);
-            Assert.NotNull(QReportWpf.ExportService);
-            Assert.Same(QReportWpf.ExportService, QReportWpf.ExportService);
+            // UsePysar ran once, in the session fixture - this is what a host reaches afterwards.
+            Assert.NotNull(PysarWpf.Renderer);
+            Assert.NotNull(PysarWpf.ExportService);
+            Assert.Same(PysarWpf.ExportService, PysarWpf.ExportService);
         });
 
     private static Report BuildReport()

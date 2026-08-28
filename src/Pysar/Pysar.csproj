@@ -8,7 +8,7 @@
         <IsPackable>true</IsPackable>
         <PackageId>Pysar</PackageId>
         <Description>Pysar: the report element tree, data binding, and the SkiaSharp layout, rendering and PDF export engine. Add Pysar.Xaml for declarative report markup and Pysar.&lt;Platform&gt; for a UI viewer.</Description>
-        <PackageTags>report;qreport;pdf;skiasharp;rendering;databinding</PackageTags>
+        <PackageTags>report;pysar;pdf;skiasharp;rendering;databinding</PackageTags>
     </PropertyGroup>
 
     <!--

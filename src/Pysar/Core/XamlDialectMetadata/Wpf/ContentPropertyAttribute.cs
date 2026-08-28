@@ -1,13 +1,13 @@
 namespace System.Windows.Markup;
 
 /// <summary>
-/// Exposes QReport content-property metadata to XAML language services that recognize
+/// Exposes Pysar content-property metadata to XAML language services that recognize
 /// the standard WPF attribute name.
 /// </summary>
 /// <remarks>
 ///     <b>The namespace is the point, and it is deliberate.</b> Visual Studio, Rider and the VSCode
 ///     extension recognise this type by its full WPF name; declaring it anywhere else would silently
-///     lose XAML IntelliSense. QReport's own loader and source generator do <i>not</i> read it - they
+///     lose XAML IntelliSense. Pysar's own loader and source generator do <i>not</i> read it - they
 ///     read the equivalent in <c>Pysar.Elements</c> - so the two are annotated side by side
 ///     on every type that needs them, and removing either one breaks something that the other does
 ///     not cover.

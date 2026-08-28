@@ -36,7 +36,7 @@ internal static class BindingValidator
         "PQX010",
         "XAML binding",
         "Binding path '{0}' does not resolve against DataType: member '{1}' was not found",
-        "PalmyQReportXaml",
+        "PysarXaml",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -44,7 +44,7 @@ internal static class BindingValidator
         "PQX011",
         "XAML binding",
         "DataType type '{0}' could not be resolved; bindings in this scope are not validated",
-        "PalmyQReportXaml",
+        "PysarXaml",
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 

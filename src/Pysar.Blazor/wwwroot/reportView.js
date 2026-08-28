@@ -196,7 +196,7 @@ function spread(touches) {
 }
 
 function documentNode(scroller) {
-    return scroller.querySelector('.qreport-document');
+    return scroller.querySelector('.pysar-document');
 }
 
 export function scrollTo(scroller, x, y) {

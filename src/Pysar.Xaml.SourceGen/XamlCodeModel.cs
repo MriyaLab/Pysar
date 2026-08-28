@@ -345,7 +345,7 @@ internal sealed class XamlCodeModel
                     id,
                     "XAML code-behind",
                     message,
-                    "PalmyQReportXaml",
+                    "PysarXaml",
                     severity,
                     isEnabledByDefault: true),
                 Location.None));

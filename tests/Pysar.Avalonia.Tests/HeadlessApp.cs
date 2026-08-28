@@ -11,7 +11,7 @@ namespace Pysar.Avalonia.Tests;
 ///     input pipeline, driven by the headless platform so nothing needs a window server.
 /// </summary>
 /// <remarks>
-///     <c>UseQReport</c> is part of the setup rather than a test of its own on purpose - it is what a
+///     <c>UsePysar</c> is part of the setup rather than a test of its own on purpose - it is what a
 ///     host application does once at startup, and everything below (asset resolution, the font the
 ///     reports use, the renderer <see cref="ReportView"/> measures with) only exists because of it.
 ///     The assembly name is passed explicitly: the default reads the entry assembly, which under a
@@ -28,8 +28,8 @@ public sealed class HeadlessApp : Application
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<HeadlessApp>()
             .UseSkia()
-            .UseQReport(
-                qreport => qreport.AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu"),
+            .UsePysar(
+                pysar => pysar.AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu"),
                 AssetAssemblyName)
             // Real drawing rather than the headless stub: the report view puts its tiles on screen
             // through WriteableBitmap, which the stub backend has no implementation for.

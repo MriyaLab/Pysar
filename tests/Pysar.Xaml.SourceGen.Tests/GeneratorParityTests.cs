@@ -42,10 +42,10 @@ public class GeneratorParityTests
     [Fact]
     public void RuntimeFallback_EmitsSourceBaseDirectory()
     {
-        // Built from a rooted path rather than written out as "/tmp/qreport": the generator emits the
+        // Built from a rooted path rather than written out as "/tmp/pysar": the generator emits the
         // directory of Path.GetFullPath, which on Windows re-roots a POSIX-looking path onto whatever
         // drive the tests happen to run from.
-        var directory = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "qreport"));
+        var directory = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "pysar"));
 
         var source = GeneratorTestHarness.Run(
                    "namespace MyApp { public partial class R {} }",

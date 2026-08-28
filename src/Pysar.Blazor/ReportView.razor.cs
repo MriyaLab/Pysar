@@ -485,7 +485,7 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
 
     /// <summary>
     ///     The renderer the view draws through: the one the host registered with
-    ///     <c>AddQReport</c>, so that custom drawers registered there apply on screen as well as in
+    ///     <c>AddPysar</c>, so that custom drawers registered there apply on screen as well as in
     ///     an export. A host that registered none gets a private renderer with the built-in drawers,
     ///     which is all a report of stock elements needs.
     /// </summary>
@@ -601,7 +601,7 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
         _perfCommitTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
         _perfFirstCentreLogged = _perfUsableLogged = _perfFullLogged = false;
         _perfTargetScale = _presenter.ViewportRenderScaleForPerf();
-        Console.WriteLine("[QReport.Perf] t_commit=0");
+        Console.WriteLine("[Pysar.Perf] t_commit=0");
     }
 
     private void LogZoomPerfIfNeeded()
@@ -654,19 +654,19 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
                 Math.Abs(p.Key.Scale - target) <= tol && Contains(p.Value.Bounds, cx, cy)))
         {
             _perfFirstCentreLogged = true;
-            Console.WriteLine($"[QReport.Perf] t_first_centre={Ms(_perfCommitTimestamp):F1}ms");
+            Console.WriteLine($"[Pysar.Perf] t_first_centre={Ms(_perfCommitTimestamp):F1}ms");
         }
 
         if (!_perfUsableLogged && SampleCovered(_ => true))
         {
             _perfUsableLogged = true;
-            Console.WriteLine($"[QReport.Perf] t_viewport_usable={Ms(_perfCommitTimestamp):F1}ms");
+            Console.WriteLine($"[Pysar.Perf] t_viewport_usable={Ms(_perfCommitTimestamp):F1}ms");
         }
 
         if (!_perfFullLogged && SampleCovered(k => Math.Abs(k.Scale - target) <= tol))
         {
             _perfFullLogged = true;
-            Console.WriteLine($"[QReport.Perf] t_viewport_full_dpi={Ms(_perfCommitTimestamp):F1}ms");
+            Console.WriteLine($"[Pysar.Perf] t_viewport_full_dpi={Ms(_perfCommitTimestamp):F1}ms");
         }
     }
 #endif

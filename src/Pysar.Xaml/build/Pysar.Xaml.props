@@ -1,6 +1,6 @@
 <Project>
   <!--
-    Reports reach the generator through a QReport-owned item type. AdditionalFiles is not an
+    Reports reach the generator through a Pysar-owned item type. AdditionalFiles is not an
     alternative to it but a required bridge: Roslyn exposes files to a generator only through
     AdditionalTextsProvider, which reads the compiler's /additionalfile: switches, and MSBuild
     fills those from the AdditionalFiles item type alone.
@@ -10,12 +10,12 @@
     net10.0-ios; filtering it without metadata sweeps in every None item the host SDK declares.
   -->
   <ItemGroup Condition="'$(EnableDefaultReportItems)' != 'false'">
-    <QReport Include="**/*.rxaml"
+    <Pysar Include="**/*.rxaml"
              Exclude="$(BaseOutputPath)**;$(BaseIntermediateOutputPath)**" />
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="@(QReport)" />
+    <AdditionalFiles Include="@(Pysar)" />
     <!--
       Nesting for Foo.xaml.cs comes free from the file-nesting rules every IDE ships. Foo.rxaml.cs
       is a suffix none of them knows, so the pairing is declared here instead, where VS, Rider and

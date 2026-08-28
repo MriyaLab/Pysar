@@ -51,6 +51,6 @@ public class FontCacheTests
     {
         var cache = new FontCache(new Fonts());
 
-        Assert.NotNull(cache.GetTypeface(new Font("NoSuchFamily-QReportTest", 12)));
+        Assert.NotNull(cache.GetTypeface(new Font("NoSuchFamily-PysarTest", 12)));
     }
 }

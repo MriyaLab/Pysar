@@ -7,17 +7,17 @@ namespace Pysar.Blazor;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    ///     Registers QReport with the application: <see cref="SkiaReportRenderer"/>,
+    ///     Registers Pysar with the application: <see cref="SkiaReportRenderer"/>,
     ///     <see cref="IReportExportService"/>, and <see cref="IReportPrinter"/> become injectable,
     ///     and <see cref="ReportView"/> draws through the same renderer - so a custom drawer added
     ///     in <paramref name="configure"/> reaches the viewer, not only exports.
     /// </summary>
     /// <example>
     ///     <code>
-    ///     builder.Services.AddQReport(renderer => renderer.WithDrawer&lt;QRCode&gt;(new QRCodeDrawer()));
+    ///     builder.Services.AddPysar(renderer => renderer.WithDrawer&lt;QRCode&gt;(new QRCodeDrawer()));
     ///     </code>
     /// </example>
-    public static IServiceCollection AddQReport(
+    public static IServiceCollection AddPysar(
         this IServiceCollection services, Action<SkiaReportRenderer>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);

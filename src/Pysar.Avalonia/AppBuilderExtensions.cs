@@ -6,7 +6,7 @@ using Pysar.Skia;
 namespace Pysar.Avalonia;
 
 /// <summary>
-///     Registers QReport with the application: reports resolve their assets from the application's
+///     Registers Pysar with the application: reports resolve their assets from the application's
 ///     Avalonia resources, and <see cref="ReportView"/> renders through a shared
 ///     <see cref="SkiaReportRenderer"/>.
 /// </summary>
@@ -14,7 +14,7 @@ namespace Pysar.Avalonia;
 ///     <code>
 ///     AppBuilder.Configure&lt;App&gt;()
 ///         .UsePlatformDetect()
-///         .UseQReport(qreport => qreport
+///         .UsePysar(pysar => pysar
 ///             .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
 ///             .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 ///     </code>
@@ -22,7 +22,7 @@ namespace Pysar.Avalonia;
 public static class AppBuilderExtensions
 {
     /// <summary>
-    ///     Registers QReport with the application.
+    ///     Registers Pysar with the application.
     /// </summary>
     /// <param name="assemblyName">
     ///     The assembly report assets are packaged under, used to resolve <c>avares://</c> URIs.
@@ -30,8 +30,8 @@ public static class AppBuilderExtensions
     ///     application project holding its own assets; pass an explicit name when assets live in a
     ///     different assembly (a shared resources project, for instance).
     /// </param>
-    public static AppBuilder UseQReport(
-        this AppBuilder builder, Action<QReportBuilder>? configure = null, string? assemblyName = null)
+    public static AppBuilder UsePysar(
+        this AppBuilder builder, Action<PysarBuilder>? configure = null, string? assemblyName = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -57,7 +57,7 @@ public static class AppBuilderExtensions
         // service (and the rest of the platform) is actually in the locator; calling configure
         // synchronously here throws "Unable to locate 'Avalonia.Platform.IAssetLoader'" instead.
         builder.AfterPlatformServicesSetup(
-            _ => configure?.Invoke(new QReportBuilder(renderer, platformHandler.FontCollection)));
+            _ => configure?.Invoke(new PysarBuilder(renderer, platformHandler.FontCollection)));
 
         // Avalonia's AppBuilder has no service collection to register the handler and renderer into,
         // unlike MAUI's. An application that needs them beyond what ReportView already wires up -

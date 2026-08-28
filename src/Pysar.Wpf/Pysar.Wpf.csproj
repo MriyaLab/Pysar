@@ -7,7 +7,7 @@
     <IsPackable>true</IsPackable>
     <PackageId>Pysar.Wpf</PackageId>
     <Description>WPF integration for Pysar: application asset access, font registration, scrollable zoomable report view, and printing.</Description>
-    <PackageTags>wpf;report;pdf;skiasharp;qreport</PackageTags>
+    <PackageTags>wpf;report;pdf;skiasharp;pysar</PackageTags>
   </PropertyGroup>
 
   <!-- Real host: Windows only -->

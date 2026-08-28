@@ -21,7 +21,7 @@ public sealed class ReportComponentGenerator : IIncrementalGenerator
             if (text is null) return;
             var model = XamlCodeModel.Parse(text, compilation, file.Path, spc);
             if (model is null) return;
-            spc.AddSource($"{model.ClassName}.QReport.g.cs", model.Emit());
+            spc.AddSource($"{model.ClassName}.Pysar.g.cs", model.Emit());
         });
     }
 }

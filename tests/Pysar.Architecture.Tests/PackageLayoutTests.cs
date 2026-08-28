@@ -9,7 +9,7 @@ public sealed class PackageLayoutTests : IClassFixture<PackFixture>
     public PackageLayoutTests(PackFixture pack) => _pack = pack;
 
     [Fact]
-    public void QReport_ShipsOneMergedAssembly()
+    public void Pysar_ShipsOneMergedAssembly()
     {
         var entries = _pack.EntriesOf("Pysar");
 
@@ -45,7 +45,7 @@ public sealed class PackageLayoutTests : IClassFixture<PackFixture>
     }
 
     [Fact]
-    public void Xaml_DependsOnQReportAlone()
+    public void Xaml_DependsOnPysarAlone()
     {
         var nuspec = _pack.NuspecOf("Pysar.Xaml");
 

@@ -9,7 +9,7 @@
         <IsPackable>true</IsPackable>
         <PackageId>Pysar.Viewer</PackageId>
         <Description>Framework-neutral logic for a paginated report viewer: page geometry, zoom, tile planning and the tile cache.</Description>
-        <PackageTags>report;viewer;qreport;skiasharp</PackageTags>
+        <PackageTags>report;viewer;pysar;skiasharp</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

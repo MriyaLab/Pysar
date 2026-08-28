@@ -6,7 +6,7 @@ using Pysar.Skia;
 namespace Pysar.Wpf;
 
 /// <summary>
-///     Registers QReport with the application: reports resolve their assets from the application's
+///     Registers Pysar with the application: reports resolve their assets from the application's
 ///     resources, and the report view renders through a shared <see cref="SkiaReportRenderer"/>.
 /// </summary>
 /// <example>
@@ -16,7 +16,7 @@ namespace Pysar.Wpf;
 ///         protected override void OnStartup(StartupEventArgs e)
 ///         {
 ///             base.OnStartup(e);
-///             this.UseQReport(qreport => qreport
+///             this.UsePysar(pysar => pysar
 ///                 .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
 ///                 .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 ///         }
@@ -26,7 +26,7 @@ namespace Pysar.Wpf;
 public static class ApplicationExtensions
 {
     /// <summary>
-    ///     Registers QReport with the application.
+    ///     Registers Pysar with the application.
     /// </summary>
     /// <param name="assemblyName">
     ///     The assembly report assets are packaged under, used to resolve pack URIs and manifest
@@ -34,9 +34,9 @@ public static class ApplicationExtensions
     ///     a single application project holding its own assets; pass an explicit name when assets
     ///     live in a different assembly (a shared resources project, for instance).
     /// </param>
-    public static Application UseQReport(
+    public static Application UsePysar(
         this Application application,
-        Action<QReportBuilder>? configure = null,
+        Action<PysarBuilder>? configure = null,
         string? assemblyName = null)
     {
         ArgumentNullException.ThrowIfNull(application);
@@ -58,7 +58,7 @@ public static class ApplicationExtensions
 
         // Pack/manifest asset access does not need a deferred platform-service hook; configure runs
         // synchronously so fonts are registered before the first report is built.
-        configure?.Invoke(new QReportBuilder(renderer, platformHandler.FontCollection));
+        configure?.Invoke(new PysarBuilder(renderer, platformHandler.FontCollection));
 
         return application;
     }

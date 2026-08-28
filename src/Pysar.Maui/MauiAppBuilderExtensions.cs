@@ -9,7 +9,7 @@ namespace Pysar.Maui;
 public static class MauiAppBuilderExtensions
 {
     /// <summary>
-    ///     Registers QReport with the application: reports resolve their assets from the application
+    ///     Registers Pysar with the application: reports resolve their assets from the application
     ///     package, and <see cref="SkiaReportRenderer"/>, <see cref="IReportExportService"/>,
     ///     <see cref="IReportSharer"/>, and <see cref="IReportPrinter"/> become injectable.
     /// </summary>
@@ -17,12 +17,12 @@ public static class MauiAppBuilderExtensions
     ///     <code>
     ///     builder
     ///         .UseMauiApp&lt;App&gt;()
-    ///         .UseQReport(qreport => qreport
+    ///         .UsePysar(pysar => pysar
     ///             .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
     ///             .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
     ///     </code>
     /// </example>
-    public static MauiAppBuilder UseQReport(this MauiAppBuilder builder, Action<QReportBuilder>? configure = null)
+    public static MauiAppBuilder UsePysar(this MauiAppBuilder builder, Action<PysarBuilder>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -33,7 +33,7 @@ public static class MauiAppBuilderExtensions
         ReportPlatformHandler.Create(platformHandler);
 
         var renderer = new SkiaReportRenderer();
-        configure?.Invoke(new QReportBuilder(renderer, platformHandler.FontCollection));
+        configure?.Invoke(new PysarBuilder(renderer, platformHandler.FontCollection));
 
         // The control measures reports with the same renderer, so custom drawers reach the viewer.
         ReportViewRenderer.Instance = renderer;

@@ -10,7 +10,7 @@ namespace Pysar.Architecture.Tests;
 public sealed class PackFixture : IDisposable
 {
     private readonly string _outputDir =
-        Path.Combine(Path.GetTempPath(), "qreport-pack-" + Guid.NewGuid().ToString("N"));
+        Path.Combine(Path.GetTempPath(), "pysar-pack-" + Guid.NewGuid().ToString("N"));
 
     public PackFixture()
     {
