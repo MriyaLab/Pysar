@@ -1,0 +1,36 @@
+<ResourceDictionary xmlns="https://mriyalab.com/pysar" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Colors.rxaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <Style TargetType="Text">
+        <Setter Member="FontFamily" Value="Ubuntu" />
+        <Setter Member="FontSize" Value="14" />
+        <Setter Member="FontColor" Value="{StaticResource DarkGray}" />
+    </Style>
+
+    <Style TargetType="Text">
+        <Setter Member="FontFamily" Value="Ubuntu" />
+        <Setter Member="FontSize" Value="14" />
+        <Setter Member="FontColor" Value="{StaticResource DarkGray}" />
+    </Style>
+
+    <Style x:Key="H1" TargetType="Text">
+        <Setter Member="HorizontalAlignment" Value="Start" />
+        <Setter Member="VerticalAlignment" Value="Center" />
+        <Setter Member="FontSize" Value="38" />
+        <Setter Member="FontStyle" Value="Bold" />
+        <Setter Member="FontColor" Value="{StaticResource LightGray}" />
+    </Style>
+
+    <Style x:Key="H2" TargetType="Text">
+        <Setter Member="FontSize" Value="24" />
+        <Setter Member="FontStyle" Value="Bold" />
+    </Style>
+
+    <Style x:Key="H3" TargetType="Text">
+        <Setter Member="FontSize" Value="18" />
+        <Setter Member="FontStyle" Value="Bold" />
+    </Style>
+</ResourceDictionary>

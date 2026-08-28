@@ -1,0 +1,35 @@
+<Project>
+
+  <!--
+    Imported after every csproj, so IsPackable is already known here.
+    Putting these in Directory.Build.props would evaluate the condition before
+    the project sets IsPackable, and it would silently never match.
+  -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Undocumented public members are not a release blocker for a pre-1.0 API. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    A ProjectReference with OutputItemType="Analyzer" gets the generator but not the build/*.props a
+    PackageReference would have applied. Without this import the samples and tests would take a
+    different path from every real consumer, and the props file would ship untested - which is
+    exactly how three defects in it reached a user.
+
+    Imported unconditionally, deliberately. Restricting it to projects that actually reference the
+    generator would need a Condition over @(ProjectReference), and MSBuild rejects an item list in a
+    Condition (MSB4099) - the same restriction that caused two of those three defects. The cost of
+    importing everywhere is a glob that matches nothing in projects that have no reports, and it
+    avoids the footgun where a new project adds the analyzer and silently misses the props.
+
+    Safe only because no project sits at the repository root: the glob is relative to each project
+    directory, so no project can reach another's reports.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)src/Pysar.Xaml/build/Pysar.Xaml.props" />
+
+</Project>

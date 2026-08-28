@@ -1,0 +1,112 @@
+name: Publish to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  MSBUILDDISABLENODEREUSE: 1
+  NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION="${{ github.ref }}"
+          VERSION="${VERSION#refs/tags/v}"
+          # Guards the 0.0.x pre-1.0 series: a stray tag (e.g. v1.0.0) would otherwise publish
+          # a version nuget.org can never take back, silently outside the intended range.
+          if [[ ! "$VERSION" =~ ^0\.0\. ]]; then
+            echo "::error::Tag v$VERSION is outside the 0.0.x series. Update this guard once a 1.0 release is intended." >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+  pack:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore Pysar.CI.slnf
+      - run: dotnet build Pysar.CI.slnf -c Release --no-restore
+      - run: dotnet pack Pysar.CI.slnf -c Release -o artifacts --no-build -p:PackageVersion=${{ needs.version.outputs.version }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+
+  pack-maui:
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      # Android build needs JDK 21; the runner's preinstalled JDK is not guaranteed to match.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'microsoft'
+          java-version: '21'
+      # android/ios/maccatalyst are the only unconditional TargetFrameworks (see the csproj
+      # comment); the windows one only activates when building on a Windows host, so it is not
+      # produced here - this job only covers what macos-latest can actually build.
+      - run: dotnet workload install maui
+      - run: dotnet pack src/Pysar.Maui/Pysar.Maui.csproj -c Release -o artifacts -p:PackageVersion=${{ needs.version.outputs.version }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: nupkg-maui
+          path: artifacts/*.nupkg
+
+  pack-wpf:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      # Wpf.csproj only takes the net10.0-windows/UseWPF branch on a Windows host (see the
+      # csproj comment); on any other OS it packs a non-packable placeholder instead.
+      - run: dotnet pack src/Pysar.Wpf/Pysar.Wpf.csproj -c Release -o artifacts -p:PackageVersion=${{ needs.version.outputs.version }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: nupkg-wpf
+          path: artifacts/*.nupkg
+
+  publish:
+    name: Publish to nuget.org
+    needs: [pack, pack-maui, pack-wpf]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: nupkg
+          path: artifacts
+      - uses: actions/download-artifact@v7
+        with:
+          name: nupkg-maui
+          path: artifacts
+      - uses: actions/download-artifact@v7
+        with:
+          name: nupkg-wpf
+          path: artifacts
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Push to nuget.org
+        run: dotnet nuget push "artifacts/*.nupkg" -k ${{ secrets.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }} --skip-duplicate

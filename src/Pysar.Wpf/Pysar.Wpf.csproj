@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pysar.Wpf</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>Pysar.Wpf</PackageId>
+    <Description>WPF integration for Pysar: application asset access, font registration, scrollable zoomable report view, and printing.</Description>
+    <PackageTags>wpf;report;pdf;skiasharp;qreport</PackageTags>
+  </PropertyGroup>
+
+  <!-- Real host: Windows only -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <!-- Placeholder so solution restore/build stays green on macOS/Linux -->
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <Compile Include="NonWindowsStub.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <Compile Remove="NonWindowsStub.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pysar.Viewer\Pysar.Viewer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>Pysar.Xaml</PackageId>
+    <Description>Runtime XAML loader for Pysar: parses and constructs report objects from declarative markup.</Description>
+    <PackageTags>report;qreport;xaml;markup</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pysar.Xaml.Tests" />
+    <InternalsVisibleTo Include="Pysar.Xaml.Model.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Pysar\Pysar.csproj" />
+  </ItemGroup>
+
+  <!--
+    The generator ships inside this package instead of its own. It must be referenced as an
+    Analyzer (not a normal assembly reference): it targets netstandard2.0 and exists only to run
+    inside the compiler.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pysar.Xaml.SourceGen\Pysar.Xaml.SourceGen.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\Pysar.Xaml.props" Pack="true" PackagePath="build/" />
+  </ItemGroup>
+
+  <!--
+    An analyzer ProjectReference contributes to the compilation but not to the package, so the
+    generator's output is added by hand. Wrong PackagePath here fails silently: the package still
+    builds and installs, and the consumer simply gets no generated code-behind. PackageLayoutTests
+    is what makes that failure loud.
+
+    ResolveProjectReferences routes an OutputItemType="Analyzer" reference into @(Analyzer), not
+    into @(_ResolvedProjectReferencePaths) - ReferenceOutputAssembly="false" is precisely what keeps
+    it out of the latter. @(Analyzer) also carries the analyzers the SDK injects, hence the filter
+    on Filename.
+  -->
+  <Target Name="PackSourceGen" BeforeTargets="_GetPackageFiles"
+          DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <None Include="@(Analyzer)"
+            Condition="'%(Filename)' == 'Pysar.Xaml.SourceGen'"
+            Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+  </Target>
+</Project>

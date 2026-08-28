@@ -1,0 +1,28 @@
+{
+  "solution": {
+    "path": "Pysar.sln",
+    "projects": [
+      "src\\Pysar\\Pysar.csproj",
+      "src\\Pysar.Avalonia\\Pysar.Avalonia.csproj",
+      "src\\Pysar.Blazor\\Pysar.Blazor.csproj",
+      "src\\Pysar.Viewer\\Pysar.Viewer.csproj",
+      "src\\Pysar.Wpf\\Pysar.Wpf.csproj",
+      "src\\Pysar.Xaml\\Pysar.Xaml.csproj",
+      "src\\Pysar.Xaml.SourceGen\\Pysar.Xaml.SourceGen.csproj",
+      "tests\\Pysar.Architecture.Tests\\Pysar.Architecture.Tests.csproj",
+      "tests\\Pysar.Avalonia.Tests\\Pysar.Avalonia.Tests.csproj",
+      "tests\\Pysar.Binding.Tests\\Pysar.Binding.Tests.csproj",
+      "tests\\Pysar.Blazor.Tests\\Pysar.Blazor.Tests.csproj",
+      "tests\\Pysar.Elements.Tests\\Pysar.Elements.Tests.csproj",
+      "tests\\Pysar.Export.Tests\\Pysar.Export.Tests.csproj",
+      "tests\\Pysar.Maui.Tests\\Pysar.Maui.Tests.csproj",
+      "tests\\Pysar.Skia.Tests\\Pysar.Skia.Tests.csproj",
+      "tests\\Pysar.Viewer.Tests\\Pysar.Viewer.Tests.csproj",
+      "tests\\Pysar.Wpf.Tests\\Pysar.Wpf.Tests.csproj",
+      "tests\\Pysar.Xaml.CodeBehind.Tests\\Pysar.Xaml.CodeBehind.Tests.csproj",
+      "tests\\Pysar.Xaml.Model.Tests\\Pysar.Xaml.Model.Tests.csproj",
+      "tests\\Pysar.Xaml.SourceGen.Tests\\Pysar.Xaml.SourceGen.Tests.csproj",
+      "tests\\Pysar.Xaml.Tests\\Pysar.Xaml.Tests.csproj"
+    ]
+  }
+}

@@ -1,0 +1,99 @@
+name: pack
+
+on:
+  push:
+    branches: [main]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # pack.yml started a new run_number series. Last ci.yml package was 0.0.21.
+  PACKAGE_NUMBER_OFFSET: 21
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        run: echo "version=0.0.$((GITHUB_RUN_NUMBER + PACKAGE_NUMBER_OFFSET))" >> "$GITHUB_OUTPUT"
+
+  pack:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet pack Pysar.CI.slnf -c Release -o artifacts -p:PackageVersion=${{ needs.version.outputs.version }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+
+  pack-maui:
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      # Android build needs JDK 21; the runner's preinstalled JDK is not guaranteed to match.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'microsoft'
+          java-version: '21'
+      # android/ios/maccatalyst are the only unconditional TargetFrameworks (see the csproj
+      # comment); the windows one only activates when building on a Windows host, so it is not
+      # produced here - this job only covers what macos-latest can actually build.
+      - run: dotnet workload install maui
+      - run: dotnet pack src/Pysar.Maui/Pysar.Maui.csproj -c Release -o artifacts -p:PackageVersion=${{ needs.version.outputs.version }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: nupkg-maui
+          path: artifacts/*.nupkg
+
+  pack-wpf:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      # Wpf.csproj only takes the net10.0-windows/UseWPF branch on a Windows host (see the
+      # csproj comment); on any other OS it packs a non-packable placeholder instead.
+      - run: dotnet pack src/Pysar.Wpf/Pysar.Wpf.csproj -c Release -o artifacts -p:PackageVersion=${{ needs.version.outputs.version }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: nupkg-wpf
+          path: artifacts/*.nupkg
+
+  publish:
+    needs: [pack, pack-maui, pack-wpf]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: nupkg
+          path: artifacts
+      - uses: actions/download-artifact@v7
+        with:
+          name: nupkg-maui
+          path: artifacts
+      - uses: actions/download-artifact@v7
+        with:
+          name: nupkg-wpf
+          path: artifacts
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet nuget push "artifacts/*.nupkg" --source https://nuget.pkg.github.com/kolodiichyk/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate

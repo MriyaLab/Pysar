@@ -1,0 +1,10 @@
+<Report x:Class="Pysar.Xaml.CodeBehind.Tests.ThemedReport"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Report.Resources>
+    <Style TargetType="Text"><Setter Member="FontSize" Value="13"/></Style>
+  </Report.Resources>
+  <DetailBand>
+    <Text x:Name="Label" Content="hello"/>
+  </DetailBand>
+</Report>

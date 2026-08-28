@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pysar.Wpf.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    Real tests: Windows only, for the same reason src/Pysar.Wpf itself is - WPF exists
+    nowhere else. The CI matrix runs them on its windows-latest leg.
+  -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Placeholder so solution restore/build/test stays green on macOS/Linux -->
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <Compile Include="NonWindowsStub.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <Compile Remove="NonWindowsStub.cs" />
+
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+  <!--
+    The report assets the tests resolve through WpfAssetFileSystem, packaged the two ways that class
+    supports: a plain embedded resource whose LogicalName is the path a report asks for, and a WPF
+    Resource reached over a pack URI. Both link the shared font under tests/Assets.
+  -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <EmbeddedResource Include="..\Assets\Fonts\Ubuntu-Regular.ttf" LogicalName="Fonts/Ubuntu-Regular.ttf" />
+    <Resource Include="..\Assets\Fonts\Ubuntu-Regular.ttf" Link="Fonts\Packed-Ubuntu.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pysar.Wpf\Pysar.Wpf.csproj" />
+    <ProjectReference Include="..\..\src\Pysar\Pysar.csproj" />
+  </ItemGroup>
+
+</Project>

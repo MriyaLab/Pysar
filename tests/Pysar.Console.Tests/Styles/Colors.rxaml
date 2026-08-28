@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="https://mriyalab.com/pysar" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="Accent">#C0392B</Color>
+
+    <Color x:Key="DarkGray">#3E4351</Color>
+    <Color x:Key="Muted">#A9AEBA</Color>
+    <Color x:Key="LightGray">#F0F1F5</Color>
+
+    <Color x:Key="Positive">#1d6b14</Color>
+    <Color x:Key="Negative">#C0392B</Color>
+
+    <Color x:Key="LightGreen">#abfca2</Color>
+</ResourceDictionary>

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+  </ItemGroup>
+
+  <!--
+    The report assets the tests resolve through AvaloniaAssetFileSystem, packaged the two ways that
+    class supports: an AvaloniaResource reached over avares://, and a plain embedded resource whose
+    LogicalName is the path a report asks for. Both link the shared font under tests/Assets rather
+    than duplicating it.
+  -->
+  <ItemGroup>
+    <AvaloniaResource Include="..\Assets\Fonts\Ubuntu-Regular.ttf" Link="Fonts\Ubuntu-Regular.ttf" />
+    <EmbeddedResource Include="..\Assets\Fonts\Ubuntu-Regular.ttf" LogicalName="Fonts/Embedded-Ubuntu.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pysar.Avalonia\Pysar.Avalonia.csproj" />
+    <ProjectReference Include="..\..\src\Pysar\Pysar.csproj" />
+  </ItemGroup>
+</Project>

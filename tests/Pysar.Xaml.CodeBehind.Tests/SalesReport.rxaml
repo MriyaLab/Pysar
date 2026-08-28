@@ -1,0 +1,9 @@
+<Report x:Class="Pysar.Xaml.CodeBehind.Tests.SalesReport"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <PageFormat Size="A4" Margin="30"/>
+  <PageHeaderBand x:Name="Header" BackgroundColor="#ECECEC"/>
+  <DetailBand DataSource="{Binding Rows}">
+    <Text x:Name="Cell" Content="{Binding Value}"/>
+  </DetailBand>
+</Report>

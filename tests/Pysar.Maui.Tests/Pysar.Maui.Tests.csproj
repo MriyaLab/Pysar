@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Pysar.Maui.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+  </ItemGroup>
+
+  <!--
+    Pysar.Maui itself cannot be referenced from a runnable test project: every one of its
+    target frameworks is a platform one (android/ios/maccatalyst/windows), which needs the maui
+    workload to build and a device or emulator to run - neither of which the ubuntu/windows test
+    matrix has. What is testable is the part of it that is not MAUI at all: the package file system
+    and the platform handler built on it, both of which compile against nothing but the core
+    library. They are linked in here and completed with the package implementation below, which is
+    the seam the real Android/Apple/Windows partials fill on a device.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\src\Pysar.Maui\AppPackageFileSystem.cs"
+             Link="Linked\AppPackageFileSystem.cs" />
+    <Compile Include="..\..\src\Pysar.Maui\MauiReportPlatformHandler.cs"
+             Link="Linked\MauiReportPlatformHandler.cs" />
+  </ItemGroup>
+
+  <!-- The package content the linked file system reads, laid out the way a report asks for it. -->
+  <ItemGroup>
+    <Content Include="..\Assets\Fonts\Ubuntu-Regular.ttf"
+             Link="Fonts\Ubuntu-Regular.ttf"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pysar\Pysar.csproj" />
+  </ItemGroup>
+</Project>

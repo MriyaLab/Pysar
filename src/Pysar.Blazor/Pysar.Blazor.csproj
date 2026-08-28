@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>true</IsPackable>
+        <PackageId>Pysar.Blazor</PackageId>
+        <Description>A Blazor WebAssembly report viewer for Pysar.</Description>
+        <PackageTags>report;blazor;webassembly;viewer;skiasharp</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <SupportedPlatform Include="browser" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Pysar.Viewer\Pysar.Viewer.csproj" />
+    </ItemGroup>
+
+</Project>

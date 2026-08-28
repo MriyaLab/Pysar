@@ -1,0 +1,29 @@
+<Project>
+  <!--
+    Reports reach the generator through a QReport-owned item type. AdditionalFiles is not an
+    alternative to it but a required bridge: Roslyn exposes files to a generator only through
+    AdditionalTextsProvider, which reads the compiler's /additionalfile: switches, and MSBuild
+    fills those from the AdditionalFiles item type alone.
+
+    Globbing .rxaml directly is what keeps this file simple. Filtering @(None) by extension needs
+    item metadata in a Condition, which MSBuild forbids on cross-platform targets such as
+    net10.0-ios; filtering it without metadata sweeps in every None item the host SDK declares.
+  -->
+  <ItemGroup Condition="'$(EnableDefaultReportItems)' != 'false'">
+    <QReport Include="**/*.rxaml"
+             Exclude="$(BaseOutputPath)**;$(BaseIntermediateOutputPath)**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="@(QReport)" />
+    <!--
+      Nesting for Foo.xaml.cs comes free from the file-nesting rules every IDE ships. Foo.rxaml.cs
+      is a suffix none of them knows, so the pairing is declared here instead, where VS, Rider and
+      VS Code all honour it. %(Filename) of Foo.rxaml.cs is Foo.rxaml - exactly the parent.
+
+      Deliberately NOT gated by EnableDefaultReportItems: the opt-out means "I will declare which
+      files are reports myself", not "stop nesting my code-behind in the IDE".
+    -->
+    <Compile Update="**/*.rxaml.cs" DependentUpon="%(Filename)" />
+  </ItemGroup>
+</Project>

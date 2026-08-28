@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Diagnostic descriptors are defined inline; release-tracking files are unnecessary here. -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+    <!-- IsPackable is false (Directory.Build.props): this generator ships inside the
+         Pysar.Xaml package, not its own. IncludeSymbols is still forced off because the
+         Directory.Build.props-wide symbol package would have no .pdb to package - NU5017 on an
+         empty snupkg, which NoWarn cannot suppress since it's an error, not a warning. -->
+    <IncludeSymbols>false</IncludeSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Must match Roslyn shipped with the .NET SDK; newer packages fail CS9057. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+  </ItemGroup>
+  <!--
+    Roslyn loads analyzer assemblies in an isolated context and does not automatically
+    probe project-reference dependencies. Compile the shared model sources into the
+    generator so the analyzer remains self-contained. Pysar.Xaml compiles the
+    same sources, so the two stay in lockstep by construction.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Pysar.Xaml\Model\**\*.cs" LinkBase="Model" />
+  </ItemGroup>
+</Project>

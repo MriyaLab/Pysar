@@ -1,0 +1,39 @@
+<Project>
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <!-- Opt in per project. Tests, samples, tools and IDE plugins stay unpacked. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    Shared NuGet metadata. Each packable project adds only PackageId, Description
+    and PackageTags; everything identical across packages lives here.
+  -->
+  <PropertyGroup>
+    <Authors>Andrii Kolodiichyk</Authors>
+    <Product>Pysar</Product>
+    <Copyright>Copyright (c) 2026 Andrii Kolodiichyk</Copyright>
+    <!-- Pre-1.0 per README; bump here, never per project. -->
+    <VersionPrefix>0.0.1</VersionPrefix>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/kolodiichyk/Pysar</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kolodiichyk/Pysar</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <!-- Source Link: debuggable packages, sources embedded for untracked files. -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+</Project>

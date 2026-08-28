@@ -1,0 +1,6 @@
+<ReportView x:Class="Pysar.Xaml.CodeBehind.Tests.HeaderView"
+            x:Name="Root"
+            xmlns="https://mriyalab.com/pysar"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Text x:Name="Caption" Content="{Binding Title, Source={x:Reference Root}}"/>
+</ReportView>
