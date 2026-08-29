@@ -6,10 +6,8 @@ internal static class XamlNamespaces
     public const string Xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
 
     /// <summary>The 2009 XAML language namespace, accepted for compatibility with XAML
-    /// authored for MAUI/modern tooling. Note ReSharper only recognises directives like
-    /// <c>x:DataType</c> for its built-in dialects, so Pysar's primary data-type hint is the
-    /// designer idiom <c>d:DataContext="{d:DesignInstance Type=…}"</c> (see
-    /// <c>Tooling.DataTypeHint</c>); <c>x:DataType</c> is an interop fallback.</summary>
+    /// authored for MAUI/modern tooling. Directives such as <c>x:DataType</c> — the canonical
+    /// data-type hint, see <c>Tooling.DataTypeHint</c> — are honoured from either namespace.</summary>
     public const string Xaml2009 = "http://schemas.microsoft.com/winfx/2009/xaml";
 
     /// <summary>True for either XAML language namespace (2006 or 2009). Directives (<c>x:*</c>)

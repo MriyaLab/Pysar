@@ -70,9 +70,9 @@ public class BindingValidationTests
     }
 
     [Fact]
-    public void XDataTypeDirective_Interop_StillValidated()
+    public void XDataTypeDirective_IsValidated()
     {
-        // MAUI-style x:DataType remains honoured as a fallback for d:DataContext.
+        // The MAUI-style x:DataType directive is the canonical data-type hint.
         var xaml = Report("x:DataType=\"vm:Invoice\"", "<Text Text=\"{Binding Nope}\" />");
 
         var result = GeneratorTestHarness.Run(Types, ("Report.rxaml", xaml));
@@ -225,6 +225,50 @@ public class BindingValidationTests
 
         Assert.True(HasDiagnostic(result, "PQX011"));
         Assert.False(HasBindingError(result)); // no PQX010 — bindings under it are not validated
+    }
+
+    [Fact]
+    public void UnresolvableDirective_SpansTheDirectiveNotTheDesignContext()
+    {
+        // The directive supplies the type, so the squiggle must land on it — not on the
+        // d:DataContext that is only a fallback.
+        var xaml = Report(
+            "d:DataContext=\"{d:DesignInstance Type=vm:Invoice}\" x:DataType=\"vm:DoesNotExist\"",
+            "<Text Text=\"{Binding Number}\" />");
+
+        var result = GeneratorTestHarness.Run(Types, ("Report.rxaml", xaml));
+
+        var diagnostic = System.Linq.Enumerable.Single(result.Diagnostics, d => d.Id == "PQX011");
+        var lineSpan = diagnostic.Location.GetLineSpan();
+        var line = xaml.Split('\n')[lineSpan.StartLinePosition.Line].TrimEnd('\r');
+        const string attribute = "x:DataType=\"vm:DoesNotExist\"";
+
+        Assert.Equal(line.IndexOf(attribute, StringComparison.Ordinal), lineSpan.StartLinePosition.Character);
+        Assert.Equal(
+            line.IndexOf(attribute, StringComparison.Ordinal) + attribute.Length,
+            lineSpan.EndLinePosition.Character);
+    }
+
+    [Fact]
+    public void NonLiteralDirective_SpansTheDesignContextThatSuppliedTheType()
+    {
+        // {x:Type …} is unsupported, so the designer idiom supplies the type — and must therefore
+        // carry the squiggle. Anchoring to the directive would point at text the message never names.
+        var xaml = Report(
+            "x:DataType=\"{x:Type vm:Invoice}\" d:DataContext=\"{d:DesignInstance Type=vm:DoesNotExist}\"",
+            "<Text Text=\"{Binding Number}\" />");
+
+        var result = GeneratorTestHarness.Run(Types, ("Report.rxaml", xaml));
+
+        var diagnostic = System.Linq.Enumerable.Single(result.Diagnostics, d => d.Id == "PQX011");
+        var lineSpan = diagnostic.Location.GetLineSpan();
+        var line = xaml.Split('\n')[lineSpan.StartLinePosition.Line].TrimEnd('\r');
+        const string attribute = "d:DataContext=\"{d:DesignInstance Type=vm:DoesNotExist}\"";
+
+        Assert.Equal(line.IndexOf(attribute, StringComparison.Ordinal), lineSpan.StartLinePosition.Character);
+        Assert.Equal(
+            line.IndexOf(attribute, StringComparison.Ordinal) + attribute.Length,
+            lineSpan.EndLinePosition.Character);
     }
 
     [Fact]

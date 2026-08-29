@@ -62,7 +62,7 @@ public class DataTypeHintTests
     }
 
     [Fact]
-    public void Read_FallsBackToXDataTypeDirective()
+    public void Read_ReturnsType_FromDirective()
     {
         var node = Parse(
             "<Report xmlns=\"https://mriyalab.com/pysar\" " +
@@ -73,7 +73,7 @@ public class DataTypeHintTests
     }
 
     [Fact]
-    public void Read_FallsBackToXDataTypeDirective_In2009Namespace()
+    public void Read_ReturnsType_FromDirective_In2009Namespace()
     {
         var node = Parse(
             "<Report xmlns=\"https://mriyalab.com/pysar\" " +
@@ -84,14 +84,49 @@ public class DataTypeHintTests
     }
 
     [Fact]
-    public void Read_DesignContextWins_OverDirective()
+    public void Read_DirectiveWins_OverDesignContext()
     {
         var node = Parse(
             "<Report xmlns=\"https://mriyalab.com/pysar\" " + DesignerNamespaces +
             "xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" " +
             "d:DataContext=\"{d:DesignInstance Type=vm:Design}\" x:DataType=\"vm:Directive\" />");
 
+        Assert.Equal("vm:Directive", DataTypeHint.Read(node));
+    }
+
+    [Fact]
+    public void Read_EmptyDirectiveClears_EvenWithDesignContext()
+    {
+        var node = Parse(
+            "<Report xmlns=\"https://mriyalab.com/pysar\" " + DesignerNamespaces +
+            "xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" " +
+            "d:DataContext=\"{d:DesignInstance Type=vm:Design}\" x:DataType=\"\" />");
+
+        Assert.Equal("", DataTypeHint.Read(node));
+    }
+
+    [Fact]
+    public void Read_FallsBackToDesignContext_WhenDirectiveIsNotLiteral()
+    {
+        // {x:Type …} is not a form this dialect supports, so the directive is treated as absent
+        // rather than as a clear — otherwise it would silently suppress validation of the subtree.
+        var node = Parse(
+            "<Report xmlns=\"https://mriyalab.com/pysar\" " + DesignerNamespaces +
+            "xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" " +
+            "d:DataContext=\"{d:DesignInstance Type=vm:Design}\" x:DataType=\"{x:Type vm:Directive}\" />");
+
         Assert.Equal("vm:Design", DataTypeHint.Read(node));
+    }
+
+    [Fact]
+    public void FindSource_ReturnsTheMemberReadTookTheValueFrom()
+    {
+        var node = Parse(
+            "<Report xmlns=\"https://mriyalab.com/pysar\" " + DesignerNamespaces +
+            "xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" " +
+            "d:DataContext=\"{d:DesignInstance Type=vm:Design}\" x:DataType=\"{x:Type vm:Directive}\" />");
+
+        Assert.Same(DataTypeHint.FindDesignDataContext(node), DataTypeHint.FindSource(node));
     }
 
     [Fact]

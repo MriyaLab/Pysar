@@ -301,9 +301,10 @@ internal static class BindingValidator
         return false;
     }
 
+    /// <summary>The span of the attribute that supplied the data type, so the squiggle lands on the
+    /// attribute actually in effect rather than on a hint that was passed over.</summary>
     private static XamlSourceSpan DataTypeSpan(XamlObjectNode node)
-        => (DataTypeHint.FindDesignDataContext(node) ?? DataTypeHint.FindDataTypeDirective(node))?.Span
-           ?? node.Span;
+        => DataTypeHint.FindSource(node)?.Span ?? node.Span;
 
     /// <summary>True for the member that replaces the node's own data context: a plain (unprefixed)
     /// <c>DataContext</c>. Its path is evaluated before the new context exists, so it resolves in the
