@@ -116,17 +116,19 @@ directive to provide generated `InitializeComponent()`, strongly typed `x:Name` 
 object construction for supported XAML. The legacy `Report.CodeBehind` attribute remains available
 for compatibility. Resources, styles, and triggers currently use the runtime-loader fallback.
 
-Any element accepts the standard designer hint `d:DataContext="{d:DesignInstance Type=local:Invoice}"`
-to declare the data-context type of a scope. The hint is design-time only — it is ignored when the
-report is loaded — and is inherited by child elements until another element declares its own.
+Any element accepts the MAUI-style directive `x:DataType="local:Invoice"` to declare the
+data-context type of a scope. The hint is design-time only — it is ignored when the report is
+loaded — and is inherited by child elements until another element declares its own;
+`x:DataType=""` clears it for that subtree.
 An element with a `DataSource` (or the legacy `DataSourcePath`) puts its content children in a
 per-item scope (the collection's element type), while its property elements
 (`DetailBand.DetailHeader` and the like) stay in the outer scope. The source generator validates
 `{Binding ...}` paths — and `DataTrigger.Binding` — against the hint at build time (`PQX010` error
 for an unknown member, `PQX011` warning for a type it cannot resolve), including for reports loaded
 at runtime. Where the scope cannot be known, nothing is reported rather than guessed: styles and
-resource dictionaries are reused across scopes, so their bindings are never validated. MAUI-style
-`x:DataType` is honoured as a fallback.
+resource dictionaries are reused across scopes, so their bindings are never validated. The XAML
+designer idiom `d:DataContext="{d:DesignInstance Type=local:Invoice}"` is an accepted alternative
+spelling of the same hint, used when no `x:DataType` is present on the element.
 
 ## Showing a report
 

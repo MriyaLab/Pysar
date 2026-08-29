@@ -2,11 +2,12 @@ using System;
 
 namespace Pysar.Xaml.Model.Tooling;
 
-/// <summary>Reads the design-time data-type hint off a XAML object node:
-/// <c>d:DataContext="{d:DesignInstance Type=reports:Invoice}"</c>. This is the standard XAML
-/// designer idiom, which IDE XAML language services resolve natively (binding-path typing,
-/// navigation and completion), so it doubles as the source of truth for build-time binding
-/// validation. MAUI's <c>x:DataType</c> directive is honoured as an interop fallback.</summary>
+/// <summary>Reads the data-type hint off a XAML object node. The canonical form is the MAUI-style
+/// directive <c>x:DataType="reports:Invoice"</c>; the XAML designer idiom
+/// <c>d:DataContext="{d:DesignInstance Type=reports:Invoice}"</c> remains supported as an
+/// alternative spelling for reports that already use it. Whichever form supplies the type is the
+/// source of truth for build-time binding validation, and the IDE plugins mirror this precedence
+/// when they type binding paths.</summary>
 internal static class DataTypeHint
 {
     private const string DataContextName = "DataContext";
@@ -17,15 +18,25 @@ internal static class DataTypeHint
     /// <summary>Returns the declared type name (e.g. <c>"reports:Invoice"</c>): null when absent,
     /// empty string when explicitly cleared, otherwise the declared type name.</summary>
     public static string? Read(XamlObjectNode node)
-    {
-        var designContext = FindDesignDataContext(node);
-        if (designContext is not null)
-            return ReadDesignInstanceType(designContext);
+        => FindSource(node) switch
+        {
+            null => null,
+            { Kind: XamlMemberKind.Directive, Value: XamlLiteralNode literal } => literal.Text,
+            var designContext => ReadDesignInstanceType(designContext),
+        };
 
-        return (FindDataTypeDirective(node)?.Value as XamlLiteralNode)?.Text;
-    }
+    /// <summary>The member that supplies the data type, so a caller reporting on the hint (a
+    /// diagnostic span, say) points at the same attribute <see cref="Read"/> took the value from.
+    /// The <c>x:DataType</c> directive wins, but only when it carries a literal type name: any other
+    /// value — <c>{x:Type …}</c>, which this dialect does not support — is treated as absent and
+    /// falls through to the designer idiom.</summary>
+    public static XamlMemberNode? FindSource(XamlObjectNode node)
+        => FindDataTypeDirective(node) is { Value: XamlLiteralNode } directive
+            ? directive
+            : FindDesignDataContext(node);
 
-    /// <summary>The <c>d:DataContext</c> member: an attribute in the designer namespace.</summary>
+    /// <summary>The <c>d:DataContext</c> member: an attribute in the designer namespace, used when
+    /// no <c>x:DataType</c> directive is present.</summary>
     public static XamlMemberNode? FindDesignDataContext(XamlObjectNode node)
     {
         foreach (var member in node.Members)
@@ -35,7 +46,8 @@ internal static class DataTypeHint
         return null;
     }
 
-    /// <summary>The MAUI <c>x:DataType</c> directive, kept as an interop fallback.</summary>
+    /// <summary>The MAUI-style <c>x:DataType</c> directive — the canonical data-type hint, accepted
+    /// from either XAML language namespace.</summary>
     public static XamlMemberNode? FindDataTypeDirective(XamlObjectNode node)
     {
         foreach (var member in node.Members)
