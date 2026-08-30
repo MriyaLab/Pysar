@@ -72,6 +72,8 @@ internal sealed class XamlCodeModel
         // Validate bindings for every report, including runtime-only reports without x:Class
         // (which return early below and never reach code generation). The generated class type, when
         // it is declared in this compilation, is the scope for Source={x:Reference} bindings.
+        AttributeValueValidator.Validate(document, compilation, path, xaml, context);
+
         BindingValidator.Validate(
             document, compilation, path, xaml, context,
             generatedClass is null ? null : compilation.GetTypeByMetadataName(generatedClass),
@@ -307,7 +309,10 @@ internal sealed class XamlCodeModel
         => ResolveTypeSymbol(compilation, xmlNamespace, localName)
             ?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-    private static INamedTypeSymbol? ResolveTypeSymbol(
+    /// <remarks>Internal rather than private so <see cref="AttributeValueValidator"/> resolves an
+    /// element's type the same way construction does, instead of keeping a second copy of the
+    /// xmlns-to-CLR rule.</remarks>
+    internal static INamedTypeSymbol? ResolveTypeSymbol(
         Compilation compilation,
         string xmlNamespace,
         string localName)
