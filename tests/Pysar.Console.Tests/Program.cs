@@ -1,6 +1,7 @@
 ﻿using Pysar.Console.Tests;
 using Pysar.Console.Tests.Reports;
 using Pysar.Console.Tests.Reports.Base;
+using Pysar.Console.Tests.Reports.CustomControls;
 using Pysar.Console.Tests.Reports.Data;
 using Pysar.Console.Tests.Reports.Styles;
 using Pysar.Console.Tests.Reports.Triggers;
@@ -27,6 +28,9 @@ var reports = new (string Title, string FileName, Func<Report> Build)[]
     ("Period Income with Triggers", "periodIncome.pdf", () => new PeriodIncomeReport().Build()),
     ("Period Income with Triggers (Fluent API)", "periodIncomeFluent.pdf", () => new PeriodIncomeReportFluentApi().Build()),
     ("Period Income with Triggers (XAML)", "periodIncomeXaml.pdf", () => new PeriodIncomeReportXaml().Build()),
+    ("QR Code (Custom Control)", "qrCode.pdf", () => new QRCodeReport().Build()),
+    ("QR Code (Custom Control, Fluent API)", "qrCodeFluent.pdf", () => new QRCodeReportFluentApi().Build()),
+    ("QR Code (Custom Control, XAML)", "qrCodeXaml.pdf", () => new QRCodeReportXaml().Build()),
 };
 
 while (true)
