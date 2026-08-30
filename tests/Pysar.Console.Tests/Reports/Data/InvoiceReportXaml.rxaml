@@ -5,7 +5,8 @@
         xmlns:reports="clr-namespace:Pysar.Console.Tests.Reports.Data;assembly=Pysar.Console.Tests"
         x:Name="Root"
         d:DataContext="{d:DesignInstance Type=reports:Invoice,
-                                         IsDesignTimeCreatable=True}">
+                                         IsDesignTimeCreatable=True}"
+        x:DataType="reports:Invoice">
 
     <PageFormat Orientation="Portrait" Size="A4" />
 
