@@ -1,0 +1,312 @@
+<Report x:Class="Pysar.Console.Sample.Reports.Data.InvoiceReportXaml"
+      xmlns="https://mriyalab.com/pysar"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:reports="clr-namespace:Pysar.Console.Sample.Reports.Data;assembly=Pysar.Console.Sample"
+      x:Name="Root"
+      d:DataContext="{d:DesignInstance Type=reports:Invoice,
+                                         IsDesignTimeCreatable=True}"
+      x:DataType="reports:Invoice">
+
+      <PageFormat Orientation="Portrait" Size="A4" />
+
+      <ReportHeaderBand Height="Auto" Margin="0,0,0,15">
+            <Grid RowDefinitions="Auto, Auto, Auto, Auto" RowSpacing="25">
+                  <Text Grid.Row="0"
+                        HorizontalAlignment="End"
+                        Content="Invoicing"
+                        FontFamily="Kanit"
+                        FontSize="18"
+                        FontStyle="Bold" />
+
+                  <StackPanel Grid.Row="1">
+                        <Text Margin="0,-5"
+                              HorizontalAlignment="Start"
+                              Content="replace with"
+                              FontFamily="Kanit"
+                              FontSize="18" />
+                        <Text HorizontalAlignment="Start"
+                              Content="LOGO"
+                              FontFamily="Kanit"
+                              FontSize="48"
+                              FontStyle="Bold" />
+                  </StackPanel>
+
+                  <Grid Grid.Row="2"
+                        ColumnDefinitions="*, *"
+                        DataContext="{Binding Company}"
+                        RowDefinitions="Auto, Auto"
+                        RowSpacing="10">
+
+                        <Grid Grid.Column="0"
+                              Width="Auto"
+                              MaxWidth="200"
+                              HorizontalAlignment="Start"
+                              RowDefinitions="Auto, Auto"
+                              RowSpacing="5">
+                              <Text Grid.Row="0"
+                                    Content="{Binding Name}"
+                                    FontFamily="Kanit"
+                                    FontSize="16"
+                                    FontStyle="Bold" />
+
+                              <Text Grid.Row="1"
+                                    Content="{Binding Address}"
+                                    FontFamily="Kanit"
+                                    FontSize="14" />
+                        </Grid>
+
+                        <Grid Grid.Column="1"
+                              Width="Auto"
+                              HorizontalAlignment="End"
+                              ColumnDefinitions="Auto, Auto"
+                              ColumnSpacing="10"
+                              RowDefinitions="Auto, Auto, Auto"
+                              RowSpacing="5">
+                              <Text Grid.Row="0"
+                                    Grid.Column="0"
+                                    Content="Phone:"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+                              <Text Grid.Row="0"
+                                    Grid.Column="1"
+                                    Content="{Binding Phone}"
+                                    FontFamily="Kanit"
+                                    FontSize="14" />
+
+                              <Text Grid.Row="1"
+                                    Grid.Column="0"
+                                    Content="Email:"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+                              <Text Grid.Row="1"
+                                    Grid.Column="1"
+                                    Content="{Binding Email}"
+                                    FontFamily="Kanit"
+                                    FontSize="14" />
+
+                              <Text Grid.Row="2"
+                                    Grid.Column="0"
+                                    Content="Web:"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+                              <Text Grid.Row="2"
+                                    Grid.Column="1"
+                                    Content="{Binding Website}"
+                                    FontFamily="Kanit"
+                                    FontSize="14" />
+                        </Grid>
+                  </Grid>
+
+                  <Grid Grid.Row="3"
+                        Padding="15"
+                        BackgroundColor="#EEEEEE"
+                        ColumnDefinitions="150, 150,*"
+                        ColumnSpacing="5"
+                        RowSpacing="0">
+
+                        <StackPanel Grid.Column="0">
+                              <Text Content="Bill to:"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+                              <Text Content="{Binding BillTo.Name}"
+                                    FontFamily="Kanit"
+                                    FontSize="14" />
+                              <Text Content="{Binding BillTo.Address}"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    TextTrimming="WordWrap" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+                              <Text Content="Ship to:"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+                              <Text Content="{Binding ShipTo.Name}"
+                                    FontFamily="Kanit"
+                                    FontSize="14" />
+                              <Text Content="{Binding ShipTo.Address}"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    TextTrimming="WordWrap" />
+                        </StackPanel>
+
+                        <Grid Grid.Column="2"
+                              Width="Auto"
+                              HorizontalAlignment="End"
+                              ColumnDefinitions="Auto,*"
+                              ColumnSpacing="5"
+                              RowDefinitions="Auto,Auto,Auto,Auto">
+                              <Text Grid.Row="0"
+                                    Grid.Column="0"
+                                    Content="Details:"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+
+                              <Text Grid.Row="1"
+                                    Grid.Column="0"
+                                    Content="Number"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+                              <Text Grid.Row="1"
+                                    Grid.Column="1"
+                                    Content="{Binding Number}"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    TextTrimming="WordWrap" />
+
+                              <Text Grid.Row="2"
+                                    Grid.Column="0"
+                                    Content="Date"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    FontStyle="Bold" />
+                              <Text Grid.Row="2"
+                                    Grid.Column="1"
+                                    Content="{Binding Date}"
+                                    FontFamily="Kanit"
+                                    FontSize="14"
+                                    TextTrimming="WordWrap" />
+                        </Grid>
+
+                  </Grid>
+            </Grid>
+      </ReportHeaderBand>
+
+      <DetailBand DataSource="{Binding Items}">
+            <DetailBand.DetailHeader>
+                  <Grid Height="40"
+                        Margin="0,0,0,5"
+                        BorderColor="#CCCCCC"
+                        BorderThickness="0,0,0,1"
+                        ColumnDefinitions="30, *, 80, 80, 80">
+                        <Text Grid.Column="0"
+                              VerticalAlignment="Center"
+                              Content="#"
+                              FontFamily="Kanit"
+                              FontSize="14"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="1"
+                              VerticalAlignment="Center"
+                              Content="Product"
+                              FontFamily="Kanit"
+                              FontSize="14"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="2"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Content="Quantity"
+                              FontFamily="Kanit"
+                              FontSize="14"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="3"
+                              HorizontalAlignment="End"
+                              VerticalAlignment="Center"
+                              Content="Unit Price"
+                              FontFamily="Kanit"
+                              FontSize="14"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="4"
+                              HorizontalAlignment="End"
+                              VerticalAlignment="Center"
+                              Content="Total"
+                              FontFamily="Kanit"
+                              FontSize="14"
+                              FontStyle="Bold" />
+                  </Grid>
+            </DetailBand.DetailHeader>
+
+            <Grid Height="Auto"
+                  MinHeight="30"
+                  BorderColor="#CCCCCC"
+                  BorderThickness="0,0,0,1"
+                  ColumnDefinitions="30, *, 80, 80, 80">
+                  <Text Grid.Column="0"
+                        Height="Auto"
+                        VerticalAlignment="Center"
+                        Content="{Binding Index}"
+                        FontFamily="Kanit"
+                        FontSize="14" />
+                  <Text Grid.Column="1"
+                        Width="Fill"
+                        VerticalAlignment="Center"
+                        Content="{Binding Product}"
+                        FontFamily="Kanit"
+                        FontSize="14"
+                        VerticalTextAlignment="Center" />
+                  <Text Grid.Column="2"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Content="{Binding Quantity}"
+                        FontFamily="Kanit"
+                        FontSize="14" />
+                  <Text Grid.Column="3"
+                        HorizontalAlignment="End"
+                        VerticalAlignment="Center"
+                        Content="{Binding UnitPrice}"
+                        FontFamily="Kanit"
+                        FontSize="14" />
+                  <Text Grid.Column="4"
+                        HorizontalAlignment="End"
+                        VerticalAlignment="Center"
+                        Content="{Binding Total}"
+                        FontFamily="Kanit"
+                        FontSize="14" />
+            </Grid>
+
+            <DetailBand.DetailFooter>
+                  <Grid Height="35"
+                        BackgroundColor="#EEEEEE"
+                        ColumnDefinitions="*, Auto"
+                        ColumnSpacing="10">
+                        <Text Grid.Column="0"
+                              HorizontalAlignment="End"
+                              VerticalAlignment="Center"
+                              Content="Total"
+                              FontFamily="Kanit"
+                              FontSize="14"
+                              FontStyle="Bold" />
+
+                        <Text Grid.Column="1"
+                              HorizontalAlignment="End"
+                              VerticalAlignment="Center"
+                              Content="{Binding Total}"
+                              FontFamily="Kanit"
+                              FontSize="14"
+                              FontStyle="Bold" />
+                  </Grid>
+            </DetailBand.DetailFooter>
+
+      </DetailBand>
+
+      <PageFooterBand Height="30"
+            Margin="-40,0,-40,-30"
+            Padding="25,0">
+            <StackPanel Width="Auto"
+                  Height="Auto"
+                  HorizontalAlignment="End"
+                  VerticalAlignment="Center"
+                  Orientation="Horizontal">
+                  <Text Content="Page "
+                        FontFamily="Kanit"
+                        FontSize="10" />
+                  <Text Content="{Binding PageNumber, Source={x:Reference Root}}"
+                        FontFamily="Kanit"
+                        FontSize="10" />
+                  <Text Padding="3,0"
+                        Content=" of "
+                        FontFamily="Kanit"
+                        FontSize="10" />
+                  <Text Content="{Binding PageCount, Source={x:Reference Root}}"
+                        FontFamily="Kanit"
+                        FontSize="10" />
+            </StackPanel>
+      </PageFooterBand>
+</Report>

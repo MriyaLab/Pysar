@@ -387,6 +387,28 @@ public class StackLayoutMeasurerTests
     }
 
     [Fact]
+    public async Task VerticalAutoStack_FillChildPastAvailableBottom_DoesNotSwallowContent()
+    {
+        // Regression: an Auto-height stack is a ribbon that may outgrow its available rect - the detail
+        // flow is sliced across pages only later. A Fill-height child placed past available.Bottom used to
+        // resolve Fill against the leftover - by then negative - height, so its box ended ABOVE its own
+        // top and pulled the stack's content extent backwards. The band then measured about one window
+        // tall and the paginator silently dropped every row below that point.
+        var stack = new StackPanel { Size = new Size(SizeLength.Fill, SizeLength.Auto) };
+        for (var i = 0; i < 3; i++)
+            stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
+        stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill) });
+
+        var node = await LayoutEngine.MeasureAsync(stack,
+            new MeasureConstraint(new Rect(0, 0, 200, 150)), Ctx, CancellationToken.None);
+
+        Assert.Equal(300, node.Children[^1].Bounds.Top);    // the Fill child follows the three rows
+        Assert.True(node.Children[^1].Bounds.Height >= 0,
+            $"Fill child must not measure negative, got {node.Children[^1].Bounds.Height}");
+        Assert.Equal(300, node.Bounds.Height);              // Auto height still covers all three rows
+    }
+
+    [Fact]
     public async Task Stack_MinWidth_FloorsOuterBox()
     {
         var stack = new StackPanel

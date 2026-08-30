@@ -1,0 +1,85 @@
+<Report x:Class="Pysar.Console.Sample.Reports.Base.BusinessReportXaml"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <PageFormat Margin="50,0" Size="A4" />
+
+    <PageHeaderBand IsClippedToBounds="False">
+        <Grid Width="Fill"
+              Height="Fill"
+              IsClippedToBounds="False"
+              RowDefinitions="250, 150, *">
+
+            <Image Grid.Row="0"
+                   Width="100"
+                   Height="100"
+                   HorizontalAlignment="Start"
+                   VerticalAlignment="Center">
+                <Image.Source>
+                    <FileImageSource FilePath="Images/world.svg" />
+                </Image.Source>
+            </Image>
+
+            <Frame Grid.Row="1"
+                   Width="Fill"
+                   Height="Fill"
+                   Margin="-50,0"
+                   BackgroundColor="Chocolate"
+                   IsClippedToBounds="False">
+                <Text Width="200"
+                      Height="Fill"
+                      Content="BUSINESS REPORT"
+                      FontColor="White"
+                      FontFamily="Kanit"
+                      FontSize="38"
+                      FontStyle="Bold"
+                      LineHeight="1"
+                      Position="50,-10" />
+            </Frame>
+
+            <StackPanel Grid.Row="2"
+                        Width="Fill"
+                        Height="Fill"
+                        Margin="0,50"
+                        Orientation="Vertical"
+                        Spacing="5">
+                <Text Margin="0,0,0,10"
+                      Content="YOUR COMPANY'S NAME"
+                      FontColor="Black"
+                      FontFamily="Kanit"
+                      FontSize="24"
+                      FontStyle="Bold" />
+                <Text Margin="0,20,0,10"
+                      Content="PREPARED FOR:"
+                      FontColor="Black"
+                      FontFamily="Kanit"
+                      FontSize="18"
+                      FontStyle="Bold" />
+                <Text Content="John Smith"
+                      FontColor="Black"
+                      FontFamily="Kanit"
+                      FontSize="14" />
+                <Text Content="Chief Executive Officer"
+                      FontColor="Black"
+                      FontFamily="Kanit"
+                      FontSize="14" />
+                <Text Margin="0,20,0,10"
+                      Content="PREPARED BY:"
+                      FontColor="Black"
+                      FontFamily="Kanit"
+                      FontSize="18"
+                      FontStyle="Bold" />
+                <Text Content="Adam Brown"
+                      FontColor="Black"
+                      FontFamily="Kanit"
+                      FontSize="14" />
+                <Text Content="Chief Information Officer"
+                      FontColor="Black"
+                      FontFamily="Kanit"
+                      FontSize="14" />
+            </StackPanel>
+
+        </Grid>
+    </PageHeaderBand>
+
+</Report>

@@ -1,0 +1,404 @@
+<Report x:Class="Pysar.Console.Sample.Reports.MasterDetails.MasterDetailReportXaml"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:reports="clr-namespace:Pysar.Console.Sample.Reports.MasterDetails;assembly=Pysar.Console.Sample"
+        x:Name="Root"
+        d:DataContext="{d:DesignInstance Type=reports:AnnualLedger,
+                                         IsDesignTimeCreatable=True}"
+        x:DataType="reports:AnnualLedger">
+
+    <Report.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../../Styles/Colors.rxaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Report.Resources>
+
+    <PageFormat Margin="50"
+                Orientation="Landscape"
+                Size="A4" />
+
+    <PageHeaderBand Height="30"
+                    Margin="-50,-50,-50,15"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <StackPanel Width="Auto"
+                    Height="Auto"
+                    HorizontalAlignment="Start"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+            <Text Content="{Binding Company, StringFormat='Annual Report - {0}'}"
+                  FontFamily="Kanit"
+                  FontSize="10" />
+        </StackPanel>
+    </PageHeaderBand>
+
+    <ReportHeaderBand Height="Auto" Margin="0,0,0,5">
+        <StackPanel Width="Fill" Height="Auto">
+
+            <Grid Width="Fill"
+                  Height="Auto"
+                  ColumnDefinitions="*, Auto"
+                  ColumnSpacing="10">
+                <StackPanel Grid.Column="0" Spacing="-5">
+                    <Text Content="Annual Report"
+                          FontColor="{StaticResource DarkGray}"
+                          FontFamily="Kanit"
+                          FontSize="22"
+                          FontStyle="Bold" />
+                    <Text Content="{Binding Company}"
+                          FontFamily="Kanit"
+                          FontSize="14" />
+                </StackPanel>
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding YearLabel}"
+                      FontFamily="Kanit"
+                      FontSize="14" />
+            </Grid>
+
+            <!--  Year at a glance: the totals aggregated from every month's entries.  -->
+            <Grid Width="Fill"
+                  Height="Auto"
+                  Padding="15"
+                  BackgroundColor="{StaticResource LightGray}"
+                  ColumnDefinitions="Auto, 110, Auto, 110, *, Auto, 110"
+                  ColumnSpacing="16"
+                  RowDefinitions="Auto, Auto, Auto"
+                  RowSpacing="6">
+                <Text Grid.Row="0"
+                      Grid.Column="0"
+                      Grid.ColumnSpan="7"
+                      Content="Year at a glance"
+                      FontColor="{StaticResource DarkGray}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+
+                <Text Grid.Row="1"
+                      Grid.Column="0"
+                      Content="Total income:"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="1"
+                      Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding Income, StringFormat='${0:N2}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Row="1"
+                      Grid.Column="2"
+                      Content="Total expenses:"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="1"
+                      Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="{Binding Expense, StringFormat='${0:N2}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Row="1"
+                      Grid.Column="5"
+                      Content="Net result:"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="1"
+                      Grid.Column="6"
+                      HorizontalAlignment="End"
+                      Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                      FontFamily="Kanit"
+                      FontSize="10"
+                      FontStyle="Bold">
+                    <Text.Triggers>
+                        <DataTrigger Binding="{Binding Net}"
+                                     CompareType="LessThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource Negative}" />
+                        </DataTrigger>
+                    </Text.Triggers>
+                </Text>
+
+                <Text Grid.Row="2"
+                      Grid.Column="0"
+                      Content="Best month:"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="2"
+                      Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding BestMonth}"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="2"
+                      Grid.Column="2"
+                      Content="Weakest month:"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="2"
+                      Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="{Binding WorstMonth}"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="2"
+                      Grid.Column="5"
+                      Content="Margin:"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+                <Text Grid.Row="2"
+                      Grid.Column="6"
+                      HorizontalAlignment="End"
+                      Content="{Binding MarginLabel}"
+                      FontFamily="Kanit"
+                      FontSize="9" />
+            </Grid>
+        </StackPanel>
+    </ReportHeaderBand>
+
+    <!--  Outer level: one block per month.  -->
+    <DetailBand DataSource="{Binding Months}" RepeatDetailHeaderOnEveryPage="True">
+        <DetailBand.DetailHeader>
+            <Grid Width="Fill"
+                  Height="22"
+                  BackgroundColor="{StaticResource Accent}"
+                  ColumnDefinitions="*"
+                  RowDefinitions="22">
+                <Text Padding="6,0"
+                      VerticalAlignment="Center"
+                      Content="Monthly breakdown"
+                      FontColor="White"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+            </Grid>
+        </DetailBand.DetailHeader>
+
+        <StackPanel Width="Fill"
+                    Height="Auto"
+                    Margin="0,10,0,0">
+            <Grid Width="Fill"
+                  Height="24"
+                  Padding="6,0"
+                  BackgroundColor="{StaticResource LightGray}"
+                  ColumnDefinitions="*, 110, 110, 110"
+                  ColumnSpacing="16"
+                  RowDefinitions="24">
+                <Text Grid.Column="0"
+                      VerticalAlignment="Center"
+                      Content="{Binding Name}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="{Binding Income, StringFormat='${0:N2}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Column="2"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="{Binding Expense, StringFormat='${0:N2}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Column="3"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold">
+                    <Text.Triggers>
+                        <DataTrigger Binding="{Binding Net}"
+                                     CompareType="LessThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource Negative}" />
+                        </DataTrigger>
+                    </Text.Triggers>
+                </Text>
+            </Grid>
+
+            <!--
+                Inner level: the month's own bookings. The repeater resolves Entries against the month
+                record the outer band is currently on, so its children bind against a LedgerEntry.
+            -->
+            <Repeater DataSource="{Binding Entries}">
+                <Repeater.Header>
+                    <Grid Width="Fill"
+                          Height="16"
+                          Padding="6,0"
+                          BorderColor="{StaticResource Muted}"
+                          BorderThickness="0,0,0,0.5"
+                          ColumnDefinitions="120, *, 110, 110, 110"
+                          ColumnSpacing="16"
+                          RowDefinitions="14">
+                        <Text Grid.Column="0"
+                              VerticalAlignment="Center"
+                              Content="Category"
+                              FontColor="{StaticResource Muted}"
+                              FontFamily="Kanit"
+                              FontSize="8"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="1"
+                              VerticalAlignment="Center"
+                              Content="Description"
+                              FontColor="{StaticResource Muted}"
+                              FontFamily="Kanit"
+                              FontSize="8"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="2"
+                              HorizontalAlignment="End"
+                              VerticalAlignment="Center"
+                              Content="Income"
+                              FontColor="{StaticResource Muted}"
+                              FontFamily="Kanit"
+                              FontSize="8"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="3"
+                              HorizontalAlignment="End"
+                              VerticalAlignment="Center"
+                              Content="Expense"
+                              FontColor="{StaticResource Muted}"
+                              FontFamily="Kanit"
+                              FontSize="8"
+                              FontStyle="Bold" />
+                        <Text Grid.Column="4"
+                              HorizontalAlignment="End"
+                              VerticalAlignment="Center"
+                              Content="Net"
+                              FontColor="{StaticResource Muted}"
+                              FontFamily="Kanit"
+                              FontSize="8"
+                              FontStyle="Bold" />
+                    </Grid>
+                </Repeater.Header>
+
+                <Grid Width="Fill"
+                      Height="18"
+                      Padding="6,0"
+                      BorderColor="{StaticResource LightGray}"
+                      BorderThickness="0,0,0,0.5"
+                      ColumnDefinitions="120, *, 110, 110, 110"
+                      ColumnSpacing="16"
+                      RowDefinitions="18">
+                    <Text Grid.Column="0"
+                          VerticalAlignment="Center"
+                          Content="{Binding Category}"
+                          FontFamily="Kanit"
+                          FontSize="9" />
+                    <Text Grid.Column="1"
+                          VerticalAlignment="Center"
+                          Content="{Binding Description}"
+                          FontFamily="Kanit"
+                          FontSize="9" />
+                    <Text Grid.Column="2"
+                          HorizontalAlignment="End"
+                          VerticalAlignment="Center"
+                          Content="{Binding Income, StringFormat='${0:N2}'}"
+                          FontFamily="Kanit"
+                          FontSize="9" />
+                    <Text Grid.Column="3"
+                          HorizontalAlignment="End"
+                          VerticalAlignment="Center"
+                          Content="{Binding Expense, StringFormat='${0:N2}'}"
+                          FontFamily="Kanit"
+                          FontSize="9" />
+                    <Text Grid.Column="4"
+                          HorizontalAlignment="End"
+                          VerticalAlignment="Center"
+                          Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                          FontFamily="Kanit"
+                          FontSize="9">
+                        <Text.Triggers>
+                            <DataTrigger Binding="{Binding Net}"
+                                         CompareType="LessThan"
+                                         Value="0">
+                                <Setter Member="FontColor" Value="{StaticResource Negative}" />
+                            </DataTrigger>
+                        </Text.Triggers>
+                    </Text>
+                </Grid>
+            </Repeater>
+        </StackPanel>
+
+        <DetailBand.DetailFooter>
+            <Grid Width="Fill"
+                  Height="Auto"
+                  Margin="0,16,0,0"
+                  Padding="6,10,6,0"
+                  BorderColor="{StaticResource DarkGray}"
+                  BorderThickness="0,2,0,0"
+                  ColumnDefinitions="*, 110, 110, 110"
+                  ColumnSpacing="16"
+                  RowDefinitions="Auto">
+                <Text Grid.Column="0"
+                      VerticalAlignment="Center"
+                      Content="Year total"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="{Binding Income, StringFormat='${0:N2}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Column="2"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="{Binding Expense, StringFormat='${0:N2}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Column="3"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                      FontFamily="Kanit"
+                      FontSize="9"
+                      FontStyle="Bold">
+                    <Text.Triggers>
+                        <DataTrigger Binding="{Binding Net}"
+                                     CompareType="LessThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource Negative}" />
+                        </DataTrigger>
+                    </Text.Triggers>
+                </Text>
+            </Grid>
+        </DetailBand.DetailFooter>
+    </DetailBand>
+
+    <PageFooterBand Height="30"
+                    Margin="-50,15,-50,-50"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <StackPanel Width="Auto"
+                    Height="Auto"
+                    HorizontalAlignment="End"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+            <Text Content="Page "
+                  FontFamily="Kanit"
+                  FontSize="10" />
+            <Text Content="{Binding PageNumber, Source={x:Reference Root}}"
+                  FontFamily="Kanit"
+                  FontSize="10" />
+            <Text Padding="3,0"
+                  Content=" of "
+                  FontFamily="Kanit"
+                  FontSize="10" />
+            <Text Content="{Binding PageCount, Source={x:Reference Root}}"
+                  FontFamily="Kanit"
+                  FontSize="10" />
+        </StackPanel>
+    </PageFooterBand>
+
+</Report>

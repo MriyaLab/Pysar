@@ -1,0 +1,64 @@
+<Report x:Class="Pysar.Console.Sample.Reports.CustomControls.QRCodeReportXaml"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:qrCode="clr-namespace:Pysar.Console.Sample.Reports.CustomControls;assembly=Pysar.Console.Sample"
+        x:Name="Root">
+
+    <PageFormat Orientation="Portrait" Size="A4" />
+
+    <ReportHeaderBand Height="Auto">
+        <Grid Width="Auto"
+              Height="Auto"
+              HorizontalAlignment="Center"
+              RowDefinitions="Auto, Auto, Auto, Auto"
+              RowSpacing="10">
+
+            <Text Grid.Row="0"
+                  HorizontalAlignment="Center"
+                  Content="Custom Control: QR Code"
+                  FontFamily="Kanit"
+                  FontSize="22"
+                  FontStyle="Bold" />
+
+            <Text Grid.Row="1"
+                  HorizontalAlignment="Center"
+                  Content="A custom element painted by a custom IElementDrawer."
+                  FontFamily="Kanit"
+                  FontSize="12" />
+
+            <qrCode:QRCode Grid.Row="2"
+                           Width="140"
+                           Height="140"
+                           Margin="25"
+                           HorizontalAlignment="Center"
+                           Content="https://mriyalab.com/pysar" />
+
+            <Text Grid.Row="3"
+                  HorizontalAlignment="Center"
+                  Content="Scan to open"
+                  FontFamily="Kanit"
+                  FontSize="12" />
+        </Grid>
+    </ReportHeaderBand>
+
+    <PageFooterBand Height="30"
+                    Margin="-40,0,-40,-30"
+                    Padding="25,0">
+        <StackPanel Width="Auto"
+                    Height="Auto"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+            <qrCode:QRCode Width="20"
+                           Height="20"
+                           VerticalAlignment="Center"
+                           Content="https://mriyalab.com/pysar" />
+
+            <Text Padding="3,0"
+                  VerticalAlignment="Center"
+                  Content="Pysar Report"
+                  FontFamily="Kanit"
+                  FontSize="10" />
+        </StackPanel>
+    </PageFooterBand>
+</Report>

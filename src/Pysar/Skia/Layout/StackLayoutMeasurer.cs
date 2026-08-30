@@ -1,3 +1,4 @@
+using Pysar.Core.Abstractions;
 using Pysar.Core.Enums;
 using Pysar.Core.Structs;
 using Pysar.Elements;
@@ -26,6 +27,7 @@ internal static class StackLayoutMeasurer
         var effectiveWidth = LayoutEngine.EffectiveWidth(panel, constraint);
         var effectiveHeight = LayoutEngine.EffectiveHeight(panel, constraint);
         var isAutoWidth = !effectiveWidth.IsFixed && !effectiveWidth.IsFill;
+        var isAutoHeight = !effectiveHeight.IsFixed && !effectiveHeight.IsFill;
 
         var insetLeft = panel.Padding.Left + panel.BorderThickness.Left;
         var insetTop = panel.Padding.Top + panel.BorderThickness.Top;
@@ -49,7 +51,8 @@ internal static class StackLayoutMeasurer
 
             // Leave Fill as Fill so child margins expand/inset against the content width.
             var childRect = new Rect(probeContentLeft, y, probeContentLeft + probeContentWidth, available.Bottom);
-            var node = await LayoutEngine.MeasureAsync(child, new MeasureConstraint(childRect), ctx, ct);
+            var node = await LayoutEngine.MeasureAsync(child,
+                new MeasureConstraint(childRect, HeightOverride: FillAsAuto(isAutoHeight, child)), ctx, ct);
             children.Add(node);
             y = node.Bounds.Bottom + child.Margin.Bottom;
             if (i < visible.Count - 1)
@@ -93,7 +96,8 @@ internal static class StackLayoutMeasurer
             var child = visible[i];
 
             var childRect = new Rect(contentLeft, y2, contentLeft + contentWidth, available.Bottom);
-            var node = await LayoutEngine.MeasureAsync(child, new MeasureConstraint(childRect), ctx, ct);
+            var node = await LayoutEngine.MeasureAsync(child,
+                new MeasureConstraint(childRect, HeightOverride: FillAsAuto(isAutoHeight, child)), ctx, ct);
             repositionedChildren.Add(node);
             y2 = node.Bounds.Bottom + child.Margin.Bottom;
             if (i < visible.Count - 1)
@@ -233,6 +237,17 @@ internal static class StackLayoutMeasurer
 
         return new LayoutNode(panel, new Rect(originLeft, originTop, originLeft + finalWidth, originTop + boxHeight), children, cutHints);
     }
+
+    /// <summary>
+    ///     An Auto-height stack has no leftover space to hand out along its own axis: it sizes to its
+    ///     content and, on the detail ribbon, may legitimately outgrow the available rect (the flow is
+    ///     sliced into pages only afterwards). A Fill-height child would otherwise resolve against what is
+    ///     left of that rect - negative once the stack has passed its bottom - and end up with a box above
+    ///     its own top, dragging the content extent backwards and dropping every row below it. Treat Fill
+    ///     as Auto instead, the same rule <see cref="LayoutEngine"/> applies inside an Auto container.
+    /// </summary>
+    private static SizeLength? FillAsAuto(bool isAutoHeightPanel, IReportElement child) =>
+        isAutoHeightPanel && child.Size.Height.IsFill ? SizeLength.Auto : null;
 
     private static Rect ApplyMargin(Rect available, Thickness margin) =>
         new(available.Left + margin.Left, available.Top + margin.Top,

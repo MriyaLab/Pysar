@@ -1,0 +1,238 @@
+<Report x:Class="Pysar.Console.Sample.Reports.Triggers.PeriodIncomeReportXaml"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:reports="clr-namespace:Pysar.Console.Sample.Reports.Triggers;assembly=Pysar.Console.Sample"
+        x:Name="Root"
+        d:DataContext="{d:DesignInstance Type=reports:PeriodIncome,
+                                         IsDesignTimeCreatable=True}">
+
+    <Report.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../../Styles/Colors.rxaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Report.Resources>
+
+    <PageFormat Orientation="Portrait" Size="A4" />
+
+    <ReportHeaderBand Height="Auto" Margin="0,0,0,15">
+        <Grid RowDefinitions="Auto, Auto" RowSpacing="8">
+            <Text Grid.Row="0"
+                  Content="Income by Company"
+                  FontFamily="Kanit"
+                  FontSize="22"
+                  FontStyle="Bold" />
+
+            <Grid Grid.Row="1"
+                  ColumnDefinitions="*, Auto"
+                  ColumnSpacing="10">
+                <Text Grid.Column="0"
+                      Content="{Binding Company}"
+                      FontFamily="Kanit"
+                      FontSize="14" />
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding Period}"
+                      FontFamily="Kanit"
+                      FontSize="14" />
+            </Grid>
+        </Grid>
+    </ReportHeaderBand>
+
+    <DetailBand DataSource="{Binding Items}">
+        <DetailBand.DetailHeader>
+            <Grid Height="40"
+                  Margin="0,0,0,5"
+                  BorderColor="#CCCCCC"
+                  BorderThickness="0,0,0,1"
+                  ColumnDefinitions="30, *, 90, 90, 90">
+                <Text Grid.Column="0"
+                      VerticalAlignment="Center"
+                      Content="#"
+                      FontFamily="Kanit"
+                      FontSize="14"
+                      FontStyle="Bold" />
+                <Text Grid.Column="1"
+                      VerticalAlignment="Center"
+                      Content="Company"
+                      FontFamily="Kanit"
+                      FontSize="14"
+                      FontStyle="Bold" />
+                <Text Grid.Column="2"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="Revenue"
+                      FontFamily="Kanit"
+                      FontSize="14"
+                      FontStyle="Bold" />
+                <Text Grid.Column="3"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="Expense"
+                      FontFamily="Kanit"
+                      FontSize="14"
+                      FontStyle="Bold" />
+                <Text Grid.Column="4"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="Balance"
+                      FontFamily="Kanit"
+                      FontSize="14"
+                      FontStyle="Bold" />
+            </Grid>
+        </DetailBand.DetailHeader>
+
+        <Grid Height="Auto"
+              MinHeight="30"
+              BorderColor="#CCCCCC"
+              BorderThickness="0,0,0,1"
+              ColumnDefinitions="30, *, 90, 90, 90">
+            <Grid.Triggers>
+                <DataTrigger Binding="{Binding IsOwnCompany}" Value="True">
+                    <Setter Member="BackgroundColor" Value="{StaticResource DarkGray}" />
+                </DataTrigger>
+            </Grid.Triggers>
+
+            <Text Grid.Column="0"
+                  VerticalAlignment="Center"
+                  Content="{Binding Index}"
+                  FontFamily="Kanit"
+                  FontSize="14">
+                <Text.Triggers>
+                    <DataTrigger Binding="{Binding IsOwnCompany}" Value="True">
+                        <Setter Member="FontStyle" Value="Bold" />
+                        <Setter Member="FontColor" Value="{StaticResource LightGray}" />
+                    </DataTrigger>
+                </Text.Triggers>
+            </Text>
+
+            <Text Grid.Column="1"
+                  Width="Fill"
+                  VerticalAlignment="Center"
+                  Content="{Binding Name}"
+                  FontFamily="Kanit"
+                  FontSize="14"
+                  VerticalTextAlignment="Center">
+                <Text.Triggers>
+                    <DataTrigger Binding="{Binding IsOwnCompany}" Value="True">
+                        <Setter Member="FontStyle" Value="Bold" />
+                        <Setter Member="FontColor" Value="{StaticResource LightGray}" />
+                    </DataTrigger>
+                </Text.Triggers>
+            </Text>
+
+            <Text Grid.Column="2"
+                  HorizontalAlignment="End"
+                  VerticalAlignment="Center"
+                  Content="{Binding Revenue}"
+                  FontFamily="Kanit"
+                  FontSize="14">
+                <Text.Triggers>
+                    <DataTrigger Binding="{Binding IsOwnCompany}" Value="True">
+                        <Setter Member="FontStyle" Value="Bold" />
+                        <Setter Member="FontColor" Value="{StaticResource LightGray}" />
+                    </DataTrigger>
+                </Text.Triggers>
+            </Text>
+
+            <Text Grid.Column="3"
+                  HorizontalAlignment="End"
+                  VerticalAlignment="Center"
+                  Content="{Binding Expense}"
+                  FontFamily="Kanit"
+                  FontSize="14">
+                <Text.Triggers>
+                    <DataTrigger Binding="{Binding IsOwnCompany}" Value="True">
+                        <Setter Member="FontStyle" Value="Bold" />
+                        <Setter Member="FontColor" Value="{StaticResource LightGray}" />
+                    </DataTrigger>
+                </Text.Triggers>
+            </Text>
+
+            <Text Grid.Column="4"
+                  HorizontalAlignment="End"
+                  VerticalAlignment="Center"
+                  Content="{Binding Balance}"
+                  FontFamily="Kanit"
+                  FontSize="14">
+                <Text.Triggers>
+                    <DataTrigger Binding="{Binding Balance}"
+                                 CompareType="GreaterThan"
+                                 Value="0">
+                        <Setter Member="FontColor" Value="{StaticResource Positive}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsOwnCompany}" Value="True">
+                        <Setter Member="FontStyle" Value="Bold" />
+                        <Setter Member="FontColor" Value="{StaticResource LightGreen}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Balance}"
+                                 CompareType="LessThan"
+                                 Value="0">
+                        <Setter Member="FontColor" Value="{StaticResource Negative}" />
+                    </DataTrigger>
+                </Text.Triggers>
+            </Text>
+        </Grid>
+
+        <DetailBand.DetailFooter>
+            <Grid Height="35"
+                  ColumnDefinitions="*, 90"
+                  ColumnSpacing="10">
+                <Text Grid.Column="0"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="Total"
+                      FontFamily="Kanit"
+                      FontSize="14"
+                      FontStyle="Bold" />
+
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      VerticalAlignment="Center"
+                      Content="{Binding Total}"
+                      FontFamily="Kanit"
+                      FontSize="14"
+                      FontStyle="Bold">
+                    <Text.Triggers>
+                        <DataTrigger Binding="{Binding Total}"
+                                     CompareType="GreaterThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource Positive}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Total}"
+                                     CompareType="LessThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource Negative}" />
+                        </DataTrigger>
+                    </Text.Triggers>
+                </Text>
+            </Grid>
+        </DetailBand.DetailFooter>
+    </DetailBand>
+
+    <PageFooterBand Height="30"
+                    Margin="-40,0,-40,-30"
+                    Padding="25,0">
+        <StackPanel Width="Auto"
+                    Height="Auto"
+                    HorizontalAlignment="End"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+            <Text Content="Page "
+                  FontFamily="Kanit"
+                  FontSize="10" />
+            <Text Content="{Binding PageNumber, Source={x:Reference Root}}"
+                  FontFamily="Kanit"
+                  FontSize="10" />
+            <Text Padding="3,0"
+                  Content=" of "
+                  FontFamily="Kanit"
+                  FontSize="10" />
+            <Text Content="{Binding PageCount, Source={x:Reference Root}}"
+                  FontFamily="Kanit"
+                  FontSize="10" />
+        </StackPanel>
+    </PageFooterBand>
+</Report>

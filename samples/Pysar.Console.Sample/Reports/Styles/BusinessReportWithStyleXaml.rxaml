@@ -1,0 +1,74 @@
+<Report x:Class="Pysar.Console.Sample.Reports.Styles.BusinessReportWithStyleXaml"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        BackgroundColor="{StaticResource LightGray}"
+        BorderColor="{StaticResource Accent}"
+        BorderLineStyle="Solid"
+        BorderThickness="10">
+
+    <Report.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../../Styles/Styles.rxaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Report.Resources>
+
+    <PageFormat Margin="50,0" Size="A4" />
+
+    <PageHeaderBand IsClippedToBounds="False">
+        <Grid Width="Fill"
+              Height="Fill"
+              IsClippedToBounds="False"
+              RowDefinitions="250, 150, *">
+
+            <Image Grid.Row="0"
+                   Width="150"
+                   Height="150"
+                   HorizontalAlignment="Start"
+                   VerticalAlignment="Center">
+                <Image.Source>
+                    <FileImageSource FilePath="Images/travel.svg" />
+                </Image.Source>
+            </Image>
+
+            <Frame Grid.Row="1"
+                   Width="Fill"
+                   Height="Fill"
+                   Margin="-50,0"
+                   Padding="50,0"
+                   BackgroundColor="{StaticResource Accent}"
+                   IsClippedToBounds="False">
+                <Text Width="350"
+                      Height="Fill"
+                      Content="BUSINESS STYLED REPORT"
+                      Style="{StaticResource H1}" />
+            </Frame>
+
+            <StackPanel Grid.Row="2"
+                        Width="Fill"
+                        Height="Fill"
+                        Margin="0,50"
+                        Orientation="Vertical"
+                        Spacing="5">
+
+                <Text Margin="0,0,0,10"
+                      Content="YOUR COMPANY'S NAME"
+                      Style="{StaticResource H2}" />
+
+                <Text Margin="0,20,0,10"
+                      Content="PREPARED FOR:"
+                      Style="{StaticResource H3}" />
+                <Text Content="John Smith" />
+                <Text Content="Chief Executive Officer" />
+                <Text Margin="0,20,0,10"
+                      Content="PREPARED BY:"
+                      Style="{StaticResource H3}" />
+                <Text Content="Adam Brown" />
+                <Text Content="Chief Information Officer" />
+            </StackPanel>
+
+        </Grid>
+    </PageHeaderBand>
+
+</Report>
