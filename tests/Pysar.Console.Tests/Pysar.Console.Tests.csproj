@@ -41,7 +41,7 @@
     </ItemGroup>
     
     <ItemGroup>
-      <Folder Include="Reports\CustomControls\" />
+      <PackageReference Include="SkiaSharp.QrCode" />
     </ItemGroup>
     
 </Project>

@@ -1,3 +1,4 @@
+using Pysar.Console.Tests.Reports.CustomControls;
 using Pysar.Core;
 using Pysar.Core.Enums;
 using Pysar.Skia;
@@ -18,5 +19,6 @@ public sealed class ReportBootstrap : IReportBootstrap
         fonts.AddFont("Fonts/Kanit-Regular.ttf", "Kanit");
         fonts.AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold);
         fonts.AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu");
+        renderer.WithDrawer<QRCode>(new QRCodeDrawer());
     }
 }
