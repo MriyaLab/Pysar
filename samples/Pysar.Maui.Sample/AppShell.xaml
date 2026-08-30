@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell x:Class="Pysar.Maui.Sample.AppShell"
+       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       x:Name="This"
+       Title="Pysar Samples"
+       FlyoutBackgroundColor="{DynamicResource Secondary}"
+       FlyoutBehavior="Flyout">
+
+    <Shell.TitleView>
+        <Label x:Name="TitleLabel"
+               FontFamily="CookieRegular"
+               FontSize="32"
+               HorizontalOptions="Center"
+               Text="{Binding Source={x:Reference This}, Path=CurrentItem.Title}"
+               TranslationX="-30"
+               VerticalOptions="Center" />
+    </Shell.TitleView>
+
+    <Shell.FlyoutHeader>
+        <Grid Margin="0,30,0,40" HeightRequest="200">
+            <Image Aspect="AspectFill"
+                   BackgroundColor="AntiqueWhite"
+                   HorizontalOptions="Fill"
+                   Opacity="0.075"
+                   Source="pysar"
+                   VerticalOptions="Fill" />
+            <Label Padding="20"
+                   FontAttributes="Bold"
+                   FontFamily="CookieRegular"
+                   FontSize="42"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Text="Pysar Samples"
+                   TextColor="{DynamicResource Tertiary}"
+                   VerticalOptions="Center" />
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <Shell.ItemTemplate>
+        <DataTemplate x:DataType="ShellContent">
+            <Grid>
+                <Grid Padding="0,10" ColumnDefinitions="0.2*,0.8*">
+                    <Image x:Name="ItemIcon"
+                           Margin="5"
+                           HeightRequest="20"
+                           Source="{Binding FlyoutIcon}" />
+                    <Label x:Name="ItemLabel"
+                           Grid.Column="1"
+                           FontSize="16"
+                           Text="{Binding Title}"
+                           TextColor="{DynamicResource Tertiary}"
+                           VerticalTextAlignment="Center" />
+                </Grid>
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="CommonStates">
+                        <VisualState x:Name="Normal" />
+                        <VisualState x:Name="Selected">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{DynamicResource Gray200}" />
+                                <Setter TargetName="ItemLabel" Property="Label.FontAttributes" Value="Bold" />
+                                <Setter TargetName="ItemIcon" Property="Image.Source">
+                                    <Setter.Value>
+                                        <FontImageSource FontFamily="FontAwesomeRegular"
+                                                         Glyph="circle-right"
+                                                         Size="14"
+                                                         Color="{DynamicResource Tertiary}" />
+                                    </Setter.Value>
+                                </Setter>
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
+            </Grid>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+
+</Shell>

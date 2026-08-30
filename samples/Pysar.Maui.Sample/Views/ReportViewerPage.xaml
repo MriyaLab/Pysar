@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage x:Class="Pysar.Maui.Sample.Views.ReportViewerPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:Pysar.Maui.Sample.Converters"
+             xmlns:pysar="clr-namespace:Pysar.Maui;assembly=Pysar.Maui"
+             xmlns:viewModels="clr-namespace:Pysar.Maui.Sample.ViewModels"
+             Title="Pysar Sample"
+             x:DataType="viewModels:ReportViewerViewModel">
+
+    <ContentPage.Resources>
+        <converters:IsNotEmptyConverter x:Key="IsNotEmpty" />
+    </ContentPage.Resources>
+
+    <Grid BackgroundColor="#262626"
+          RowDefinitions="Auto,Auto,*"
+          RowSpacing="0">
+        <StackLayout Orientation="Horizontal" />
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+            <Entry HorizontalTextAlignment="Center"
+                   Keyboard="Numeric"
+                   Text="{Binding CurrentPageText}"
+                   WidthRequest="52" />
+
+            <Label Grid.Column="1"
+                   Text="{Binding PageCount, StringFormat='/ {0}'}"
+                   VerticalOptions="Center" />
+
+            <Button Grid.Column="2"
+                    BackgroundColor="{StaticResource Gray950}"
+                    Command="{Binding ZoomOutCommand}"
+                    Text="−"
+                    WidthRequest="44" />
+
+            <Button Grid.Column="3"
+                    BackgroundColor="{StaticResource Gray950}"
+                    Command="{Binding ActualSizeCommand}"
+                    Text="{Binding ZoomText}"
+                    WidthRequest="76" />
+
+            <Button Grid.Column="4"
+                    BackgroundColor="{StaticResource Gray950}"
+                    Command="{Binding ZoomInCommand}"
+                    Text="+"
+                    WidthRequest="44" />
+
+            <Button Grid.Column="5"
+                    BackgroundColor="{StaticResource Gray950}"
+                    Command="{Binding ToggleFitCommand}"
+                    Text="{Binding FitButtonText}" />
+
+            <Button Grid.Column="6"
+                    BackgroundColor="{StaticResource Gray950}"
+                    Command="{Binding PrintCommand}"
+                    Text="Print" />
+
+            <Button Grid.Column="7"
+                    BackgroundColor="{StaticResource Gray950}"
+                    Command="{Binding ExportPdfCommand}"
+                    Text="Export PDF" />
+        </Grid>
+
+        <Label Grid.Row="1"
+               IsVisible="{Binding ErrorMessage, Converter={StaticResource IsNotEmpty}}"
+               Text="{Binding ErrorMessage}"
+               TextColor="#C0392B" />
+
+        <pysar:ReportView x:Name="Viewer"
+                            Grid.Row="2"
+                            BackgroundColor="#292929"
+                            CurrentPage="{Binding CurrentPage}"
+                            DocumentPadding="16"
+                            EffectiveZoom="{Binding EffectiveZoom}"
+                            PageBorderColor="#3E4351"
+                            PageBorderThickness="2"
+                            PageCount="{Binding PageCount, Mode=OneWayToSource}"
+                            PageSpacing="16"
+                            RenderBudget="256"
+                            RenderFailed="OnRenderFailed"
+                            Report="{Binding Report}"
+                            Zoom="{Binding Zoom}"
+                            ZoomMode="{Binding ZoomMode}" />
+
+    </Grid>
+
+</ContentPage>

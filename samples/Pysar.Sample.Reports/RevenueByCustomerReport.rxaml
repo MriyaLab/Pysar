@@ -1,0 +1,331 @@
+<Report x:Class="Pysar.Sample.Reports.RevenueByCustomerReport"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:reports="clr-namespace:Pysar.Sample.Reports;assembly=Pysar.Sample.Reports"
+        xmlns:views="clr-namespace:Pysar.Sample.Reports.Views;assembly=Pysar.Sample.Reports"
+        x:Name="Root"
+        d:DataContext="{d:DesignInstance Type=reports:RevenueReportData,
+                                         IsDesignTimeCreatable=True}">
+
+    <Report.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/ReportStyles.rxaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Report.Resources>
+
+    <Metadata Title="Revenue by Customer" Author="Pysar Sample" />
+    <PageFormat Margin="50"
+                Orientation="Portrait"
+                Size="A4" />
+
+    <PageHeaderBand Height="25"
+                    Margin="-50,-50,-50,20"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <Text Content="Pysar - Revenue by Customer"
+              FontColor="{StaticResource DarkGray}"
+              FontSize="7"
+              HorizontalTextAlignment="Start"
+              Size="Fill,Fill"
+              VerticalTextAlignment="Center" />
+    </PageHeaderBand>
+
+    <ReportHeaderBand Height="Auto" Margin="-50,-20,-50,20">
+        <StackPanel Height="Auto">
+            <views:CompanyHeader CompanyAddress="One Portals Way, Twin Points WA, 98156"
+                                 CompanyEmail="northwind@mail.com"
+                                 CompanyName="Northwind Traders"
+                                 CompanyPhone="1-206-555-1417"
+                                 CompanyWebsite="www.northwind.com"
+                                 DocumentDate="7/27/2024"
+                                 DocumentDateLabel="To:"
+                                 DocumentNumber="6/27/2024"
+                                 DocumentNumberLabel="From:"
+                                 DocumentTitle="REVENUE"
+                                 LogoSource="Images/logo.svg" />
+            <Grid Height="Auto"
+                  Margin="0,20,0,0"
+                  Padding="50,0"
+                  ColumnDefinitions="*,*,*"
+                  ColumnSpacing="16">
+
+                <Grid Grid.Column="0"
+                      Padding="16"
+                      VerticalAlignment="Center"
+                      BackgroundColor="{StaticResource LightGray}"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="8"
+                      RowDefinitions="Auto,Auto">
+                    <Image Grid.Row="0"
+                           Grid.RowSpan="2"
+                           Grid.Column="0"
+                           Width="22"
+                           HorizontalAlignment="Center">
+                        <Image.Source>
+                            <FontImageSource FontFamily="FontAwesomeSolid"
+                                             Glyph="&#xf81d;"
+                                             Size="24"
+                                             Color="{StaticResource DarkGray}" />
+                        </Image.Source>
+                    </Image>
+                    <Text Grid.Column="1"
+                          Content="{Binding TotalRevenue, StringFormat='${0:N0}'}"
+                          FontSize="22"
+                          FontStyle="Bold" />
+                    <Text Grid.Row="1"
+                          Grid.Column="1"
+                          Content="Total Revenue"
+                          FontSize="10" />
+                </Grid>
+                <Grid Grid.Column="1"
+                      Padding="16"
+                  VerticalAlignment="Center"
+                      BackgroundColor="{StaticResource LightGray}"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="8"
+                      RowDefinitions="Auto,Auto">
+                    <Image Grid.Row="0"
+                           Grid.RowSpan="2"
+                           Grid.Column="0"
+                           Width="22"
+                           HorizontalAlignment="Center">
+                        <Image.Source>
+                            <FontImageSource FontFamily="FontAwesomeSolid"
+                                             Glyph="&#xf07b;"
+                                             Size="24"
+                                             Color="{StaticResource DarkGray}" />
+                        </Image.Source>
+                    </Image>
+                    <Text Grid.Column="1"
+                          Content="{Binding OrderCount}"
+                          FontSize="22"
+                          FontStyle="Bold" />
+                    <Text Grid.Row="1"
+                          Grid.Column="1"
+                          Content="Order Count"
+                          FontSize="10" />
+                </Grid>
+                <Grid Grid.Column="2"
+                      Padding="16"
+                      VerticalAlignment="Center"
+                      BackgroundColor="{StaticResource LightGray}"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="8"
+                      RowDefinitions="Auto,Auto">
+                    <Image Grid.Row="0"
+                           Grid.RowSpan="2"
+                           Grid.Column="0"
+                           Width="22"
+                           HorizontalAlignment="Center">
+                        <Image.Source>
+                            <FontImageSource FontFamily="FontAwesomeSolid"
+                                             Glyph="&#xf02c;"
+                                             Size="24"
+                                             Color="{StaticResource DarkGray}" />
+                        </Image.Source>
+                    </Image>
+                    <Text Grid.Column="1"
+                          Content="{Binding AverageSaleAmount, StringFormat='${0:N0}'}"
+                          FontSize="22"
+                          FontStyle="Bold" />
+                    <Text Grid.Row="1"
+                          Grid.Column="1"
+                          Content="Average Sale Amount"
+                          FontSize="10" />
+                </Grid>
+            </Grid>
+        </StackPanel>
+    </ReportHeaderBand>
+
+    <DetailBand DataSource="{Binding Customers}">
+        <StackPanel Height="Auto"
+                    Margin="0,12,0,0"
+                    d:DataContext="{d:DesignInstance Type=reports:RevenueCustomer}">
+
+            <Grid Height="24"
+                  Padding="6,0"
+                  BackgroundColor="{StaticResource DarkGray}"
+                  ColumnDefinitions="*, 90, 90, 50, 90"
+                  ColumnSpacing="8">
+                <Text VerticalAlignment="End"
+                      Content="{Binding Company}"
+                      FontColor="White"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Position="0,0"
+                      Size="Auto, 24"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="1"
+                      Content="{Binding City}"
+                      FontColor="White"
+                      FontSize="9"
+                      Position="0,0"
+                      Size="Auto, 24"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="2"
+                      Content="{Binding State}"
+                      FontColor="White"
+                      FontSize="9"
+                      Position="0,0"
+                      Size="Auto, 24"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="{Binding Orders}"
+                      FontColor="White"
+                      FontSize="9"
+                      Position="0,0"
+                      Size="Auto, 24"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="4"
+                      HorizontalAlignment="End"
+                      Content="{Binding AverageSaleAmount, StringFormat='${0:N2}'}"
+                      FontColor="White"
+                      FontSize="9"
+                      Position="0,0"
+                      Size="Auto, 24"
+                      Style="{StaticResource DataCell}" />
+            </Grid>
+
+            <Repeater DataSource="{Binding OrderItems}">
+                <Repeater.Header>
+                    <Grid Height="18"
+                          Padding="6,0"
+                          BackgroundColor="{StaticResource LightGray}"
+                          ColumnDefinitions="90, 80, *, 50, 90"
+                          ColumnSpacing="8">
+                        <Text Content="Order Date"
+                              Position="0,0"
+                              Size="*, 18"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="1"
+                              Content="Invoice #"
+                              Position="0,0"
+                              Size="*, 18"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="2"
+                              Content="Salesperson"
+                              Position="0,0"
+                              Size="*, 18"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="3"
+                              Content="Status"
+                              HorizontalTextAlignment="Center"
+                              Position="0,0"
+                              Size="*, 18"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="4"
+                              Content="Sale Amount"
+                              HorizontalTextAlignment="End"
+                              Position="0,0"
+                              Size="*, 18"
+                              Style="{StaticResource DataTitle}" />
+                    </Grid>
+                </Repeater.Header>
+                <Grid Height="18"
+                      Padding="6,0"
+                      d:DataContext="{d:DesignInstance Type=reports:RevenueOrder}"
+                      BorderColor="{StaticResource LightGray}"
+                      BorderThickness="0,0,0,0.5"
+                      ColumnDefinitions="90, 80, *, 50, 90"
+                      ColumnSpacing="8">
+                    <Text Content="{Binding OrderDate, StringFormat='{0:MM/dd/yyyy}'}"
+                          FontSize="9"
+                          Position="0,0"
+                          Size="*, 18"
+                          Style="{StaticResource DataCell}" />
+                    <Text Grid.Column="1"
+                          Content="{Binding InvoiceNumber}"
+                          FontSize="9"
+                          Position="0,0"
+                          Size="*, 18"
+                          Style="{StaticResource DataCell}" />
+                    <Text Grid.Column="2"
+                          Content="{Binding Salesperson}"
+                          FontSize="9"
+                          Position="0,0"
+                          Size="*, 18"
+                          Style="{StaticResource DataCell}" />
+                    <Image Grid.Column="3" HorizontalAlignment="Center">
+                        <Image.Source>
+                            <FontImageSource FontFamily="FontAwesomeSolid"
+                                             Glyph="{Binding StatusIcon}"
+                                             Size="12"
+                                             Color="{StaticResource DarkGray}">
+                                <FontImageSource.Triggers>
+                                    <DataTrigger Binding="{Binding DeliveryStatus}"
+                                                 CompareType="Equal"
+                                                 Value="Delivered">
+                                        <Setter Member="Color" Value="#339933" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding DeliveryStatus}"
+                                                 CompareType="Equal"
+                                                 Value="Call">
+                                        <Setter Member="Color" Value="Peru" />
+                                        <Setter Member="Size" Value="10" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding DeliveryStatus}"
+                                                 CompareType="Equal"
+                                                 Value="Document">
+                                        <Setter Member="Color" Value="DarkRed" />
+                                    </DataTrigger>
+                                </FontImageSource.Triggers>
+                            </FontImageSource>
+                        </Image.Source>
+                    </Image>
+                    <Text Grid.Column="4"
+                          Content="{Binding SaleAmount, StringFormat='${0:N2}'}"
+                          FontSize="9"
+                          HorizontalTextAlignment="End"
+                          Position="0,0"
+                          Size="*, 18"
+                          Style="{StaticResource DataCell}" />
+                </Grid>
+            </Repeater>
+
+            <Grid Height="30"
+                  Padding="6,0"
+                  BorderColor="#2C3E50"
+                  BorderThickness="0,1,0,0"
+                  ColumnDefinitions="*, Auto">
+                <Text HorizontalAlignment="End"
+                      Content="Grand Total:"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Position="0,0"
+                      Size="*, 20"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding GrandTotal, StringFormat='${0:N2}'}"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Position="0,0"
+                      Size="*, 20"
+                      Style="{StaticResource DataCell}" />
+            </Grid>
+        </StackPanel>
+    </DetailBand>
+
+    <PageFooterBand Height="25"
+                    Margin="-50,20,-50,-50"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <StackPanel Orientation="Horizontal" Size="Fill,Fill">
+            <!--  Fill takes the leftover width, pushing the page number to the right edge.  -->
+            <Text Width="Fill"
+                  Content="{Binding Metadata.Title, Source={x:Reference Root}}"
+                  HorizontalTextAlignment="Start"
+                  Style="{StaticResource PageFooterText}" />
+
+            <Text Content="Page " Style="{StaticResource PageFooterText}" />
+            <Text Content="{Binding PageNumber, Source={x:Reference Root}}" Style="{StaticResource PageFooterText}" />
+            <Text Content=" of " Style="{StaticResource PageFooterText}" />
+            <Text Content="{Binding PageCount, Source={x:Reference Root}}" Style="{StaticResource PageFooterText}" />
+        </StackPanel>
+    </PageFooterBand>
+
+</Report>

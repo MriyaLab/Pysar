@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="https://mriyalab.com/pysar" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="DarkGray">#3E4351</Color>
+    <Color x:Key="Muted">#A9AEBA</Color>
+    <Color x:Key="LightGray">#F0F1F5</Color>
+
+    <!--  Row tints.  -->
+    <Color x:Key="Positive">#e8ffe9</Color>
+    <Color x:Key="Negative">#ffe8e9</Color>
+
+    <!--  Foreground counterpart of the tints, dark enough to stay readable on white.  -->
+    <Color x:Key="NegativeText">#C0392B</Color>
+</ResourceDictionary>

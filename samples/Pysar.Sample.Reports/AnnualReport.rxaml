@@ -1,0 +1,339 @@
+<Report x:Class="Pysar.Sample.Reports.AnnualReport"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:Pysar.Sample.Reports.Converters;assembly=Pysar.Sample.Reports"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:reports="clr-namespace:Pysar.Sample.Reports;assembly=Pysar.Sample.Reports"
+        xmlns:views="clr-namespace:Pysar.Sample.Reports.Views;assembly=Pysar.Sample.Reports"
+        x:Name="Root"
+        d:DataContext="{d:DesignInstance Type=reports:AnnualLedger,
+                                         IsDesignTimeCreatable=True}">
+
+    <Report.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/ReportStyles.rxaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <conv:UppercaseConverter x:Key="Upper" />
+        </ResourceDictionary>
+    </Report.Resources>
+
+    <Metadata Title="Annual Report" Author="Andrii Kolodiichyk" />
+
+    <PageFormat Margin="50"
+                Orientation="Landscape"
+                Size="A4" />
+
+    <PageHeaderBand Height="25"
+                    Margin="-50,-50,-50,20"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <Text Content="Pysar - Nested Data Example"
+              FontColor="{StaticResource DarkGray}"
+              FontSize="7"
+              HorizontalTextAlignment="Start"
+              Size="Fill,Fill"
+              VerticalTextAlignment="Center" />
+    </PageHeaderBand>
+
+    <ReportHeaderBand Height="215" Margin="-50,-20,-50,0">
+        <StackPanel Height="Auto">
+            <views:CompanyHeader CompanyAddress="One Portals Way, Twin Points WA, 98156"
+                                 CompanyEmail="northwind@mail.com"
+                                 CompanyName="{Binding Company}"
+                                 CompanyPhone="1-206-555-1417"
+                                 CompanyWebsite="www.northwind.com"
+                                 DocumentDate="01/15/26"
+                                 DocumentDateLabel="Prepared:"
+                                 DocumentNumber="{Binding YearLabel}"
+                                 DocumentNumberLabel="Year:"
+                                 DocumentTitle="{Binding Metadata.Title, Source={x:Reference Root}, Converter={StaticResource Upper}}"
+                                 LogoSource="Images/logo.svg" />
+
+            <!--  Year at a glance: the totals aggregated from every month's entries.  -->
+            <Grid Height="Auto"
+                  Margin="0,20,0,0"
+                  Padding="50,0"
+                  ColumnDefinitions="Auto, 110, Auto, 110, *, Auto, 110"
+                  ColumnSpacing="16"
+                  RowDefinitions="Auto, Auto, Auto"
+                  RowSpacing="6">
+                <Text Grid.Row="0"
+                      Grid.Column="0"
+                      Grid.ColumnSpan="7"
+                      Content="Year at a glance"
+                      FontColor="{StaticResource DarkGray}"
+                      FontSize="9"
+                      FontStyle="Bold" />
+
+                <Text Grid.Row="1"
+                      Grid.Column="0"
+                      Content="Total income:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="1"
+                      Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding Income, StringFormat='${0:N2}'}"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="1"
+                      Grid.Column="2"
+                      Content="Total expenses:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="1"
+                      Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="{Binding Expense, StringFormat='${0:N2}'}"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="1"
+                      Grid.Column="5"
+                      Content="Net result:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="1"
+                      Grid.Column="6"
+                      HorizontalAlignment="End"
+                      Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                      FontSize="10"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}">
+                    <Text.Triggers>
+                        <DataTrigger Binding="{Binding Net}"
+                                     CompareType="LessThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource NegativeText}" />
+                        </DataTrigger>
+                    </Text.Triggers>
+                </Text>
+
+                <Text Grid.Row="2"
+                      Grid.Column="0"
+                      Content="Best month:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="2"
+                      Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding BestMonth}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="2"
+                      Grid.Column="2"
+                      Content="Weakest month:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="2"
+                      Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="{Binding WorstMonth}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="2"
+                      Grid.Column="5"
+                      Content="Margin:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="2"
+                      Grid.Column="6"
+                      HorizontalAlignment="End"
+                      Content="{Binding MarginLabel}"
+                      Style="{StaticResource FieldValue}" />
+            </Grid>
+        </StackPanel>
+    </ReportHeaderBand>
+
+    <!--  Outer level: one block per month.  -->
+    <DetailBand DataSource="{Binding Months}" RepeatDetailHeaderOnEveryPage="True">
+        <DetailBand.DetailHeader>
+            <Grid Height="22"
+                  BorderColor="#5E6475"
+                  BorderThickness="0,0,0,2"
+                  ColumnDefinitions="*"
+                  RowDefinitions="18">
+                <Text VerticalAlignment="Center"
+                      Content="Monthly breakdown"
+                      FontColor="{StaticResource DarkGray}"
+                      FontSize="9"
+                      FontStyle="Bold" />
+            </Grid>
+        </DetailBand.DetailHeader>
+
+        <StackPanel Height="Auto"
+                    Margin="0,10,0,0"
+                    d:DataContext="{d:DesignInstance Type=reports:MonthSummary}">
+
+            <!--  The month's own summary line; the trigger colors it by the month's net result.  -->
+            <Grid Height="24"
+                  Padding="6,0"
+                  BackgroundColor="{StaticResource LightGray}"
+                  ColumnDefinitions="*, 110, 110, 110"
+                  ColumnSpacing="16"
+                  RowDefinitions="24">
+                <Grid.Triggers>
+                    <DataTrigger Binding="{Binding Net}"
+                                 CompareType="LessThan"
+                                 Value="0">
+                        <Setter Member="BackgroundColor" Value="{StaticResource Negative}" />
+                    </DataTrigger>
+                </Grid.Triggers>
+
+                <Text Grid.Column="0"
+                      Content="{Binding Name}"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding Income, StringFormat='${0:N2}'}"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="2"
+                      HorizontalAlignment="End"
+                      Content="{Binding Expense, StringFormat='${0:N2}'}"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}">
+                    <Text.Triggers>
+                        <DataTrigger Binding="{Binding Net}"
+                                     CompareType="LessThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource NegativeText}" />
+                        </DataTrigger>
+                    </Text.Triggers>
+                </Text>
+            </Grid>
+
+            <!--
+                Inner level: the month's own bookings. The repeater resolves Entries against the month
+                record the outer band is currently on, so its children bind against a LedgerEntry.
+            -->
+            <Repeater DataSource="{Binding Entries}">
+                <Repeater.Header>
+                    <Grid Height="16"
+                          Padding="6,0"
+                          BorderColor="{StaticResource Muted}"
+                          BorderThickness="0,0,0,0.5"
+                          ColumnDefinitions="120, *, 110, 110, 110"
+                          ColumnSpacing="16"
+                          RowDefinitions="14">
+                        <Text Grid.Column="0"
+                              Content="Category"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="1"
+                              Content="Description"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="2"
+                              HorizontalAlignment="End"
+                              Content="Income"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="3"
+                              HorizontalAlignment="End"
+                              Content="Expense"
+                              Style="{StaticResource DataTitle}" />
+                        <Text Grid.Column="4"
+                              HorizontalAlignment="End"
+                              Content="Net"
+                              Style="{StaticResource DataTitle}" />
+                    </Grid>
+                </Repeater.Header>
+
+                <Grid Height="18"
+                      Padding="6,0"
+                      d:DataContext="{d:DesignInstance Type=reports:LedgerEntry}"
+                      BorderColor="{StaticResource LightGray}"
+                      BorderThickness="0,0,0,0.5"
+                      ColumnDefinitions="120, *, 110, 110, 110"
+                      ColumnSpacing="16"
+                      RowDefinitions="18">
+                    <Text Grid.Column="0"
+                          Content="{Binding Category}"
+                          Style="{StaticResource DataCell}" />
+                    <Text Grid.Column="1"
+                          Content="{Binding Description}"
+                          Style="{StaticResource DataCell}" />
+                    <Text Grid.Column="2"
+                          HorizontalAlignment="End"
+                          Content="{Binding Income, StringFormat='${0:N2}'}"
+                          Style="{StaticResource DataCell}" />
+                    <Text Grid.Column="3"
+                          HorizontalAlignment="End"
+                          Content="{Binding Expense, StringFormat='${0:N2}'}"
+                          Style="{StaticResource DataCell}" />
+                    <Text Grid.Column="4"
+                          HorizontalAlignment="End"
+                          Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                          Style="{StaticResource DataCell}">
+                        <Text.Triggers>
+                            <DataTrigger Binding="{Binding Net}"
+                                         CompareType="LessThan"
+                                         Value="0">
+                                <Setter Member="FontColor" Value="{StaticResource NegativeText}" />
+                            </DataTrigger>
+                        </Text.Triggers>
+                    </Text>
+                </Grid>
+            </Repeater>
+        </StackPanel>
+
+        <DetailBand.DetailFooter>
+            <Grid Height="Auto"
+                  Margin="0,16,0,0"
+                  Padding="6,10,6,0"
+                  BorderColor="#5E6475"
+                  BorderThickness="0,2,0,0"
+                  ColumnDefinitions="*, 110, 110, 110"
+                  ColumnSpacing="16"
+                  RowDefinitions="Auto">
+                <Text Grid.Column="0"
+                      Content="Year total"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="1"
+                      HorizontalAlignment="End"
+                      Content="{Binding Income, StringFormat='${0:N2}'}"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="2"
+                      HorizontalAlignment="End"
+                      Content="{Binding Expense, StringFormat='${0:N2}'}"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}" />
+                <Text Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="{Binding Net, StringFormat='{0:$#,##0.00;-$#,##0.00}'}"
+                      FontSize="9"
+                      FontStyle="Bold"
+                      Style="{StaticResource DataCell}">
+                    <Text.Triggers>
+                        <DataTrigger Binding="{Binding Net}"
+                                     CompareType="LessThan"
+                                     Value="0">
+                            <Setter Member="FontColor" Value="{StaticResource NegativeText}" />
+                        </DataTrigger>
+                    </Text.Triggers>
+                </Text>
+            </Grid>
+        </DetailBand.DetailFooter>
+    </DetailBand>
+
+    <PageFooterBand Height="25"
+                    Margin="-50,20,-50,-50"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <StackPanel Orientation="Horizontal" Size="Fill,Fill">
+            <!--  Fill takes the leftover width, pushing the page number to the right edge.  -->
+            <Text Width="Fill"
+                  Content="{Binding Metadata.Title, Source={x:Reference Root}}"
+                  HorizontalTextAlignment="Start"
+                  Style="{StaticResource PageFooterText}" />
+
+            <Text Content="Page " Style="{StaticResource PageFooterText}" />
+            <Text Content="{Binding PageNumber, Source={x:Reference Root}}" Style="{StaticResource PageFooterText}" />
+            <Text Content=" of " Style="{StaticResource PageFooterText}" />
+            <Text Content="{Binding PageCount, Source={x:Reference Root}}" Style="{StaticResource PageFooterText}" />
+        </StackPanel>
+    </PageFooterBand>
+
+</Report>

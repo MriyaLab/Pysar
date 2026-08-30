@@ -1,0 +1,331 @@
+<Report x:Class="Pysar.Sample.Reports.InvoiceReport"
+        xmlns="https://mriyalab.com/pysar"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:Pysar.Sample.Reports.Converters;assembly=Pysar.Sample.Reports"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:qrCode="clr-namespace:Pysar.Sample.Reports.QRCode;assembly=Pysar.Sample.Reports"
+        xmlns:reports="clr-namespace:Pysar.Sample.Reports;assembly=Pysar.Sample.Reports"
+        xmlns:views="clr-namespace:Pysar.Sample.Reports.Views;assembly=Pysar.Sample.Reports"
+        x:Name="Root"
+        d:DataContext="{d:DesignInstance Type=reports:Invoice,
+                                         IsDesignTimeCreatable=True}">
+
+    <Report.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/ReportStyles.rxaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:UppercaseConverter x:Key="Upper" />
+        </ResourceDictionary>
+    </Report.Resources>
+
+    <Metadata Title="Invoice" Author="Andrii Kolodiichyk" />
+
+    <PageFormat Margin="50"
+                Orientation="Portrait"
+                Size="A4" />
+
+    <PageHeaderBand Height="25"
+                    Margin="-50,-50,-50,20"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <Text Content="Pysar - Invoice Example"
+              FontColor="{StaticResource DarkGray}"
+              FontSize="7"
+              HorizontalTextAlignment="Start"
+              Size="Fill, Fill"
+              VerticalTextAlignment="Center" />
+    </PageHeaderBand>
+
+    <ReportHeaderBand Height="245" Margin="-50,-20,-50,0">
+        <StackPanel Height="Auto">
+            <views:CompanyHeader CompanyAddress="One Portals Way, Twin Points WA, 98156"
+                                 CompanyEmail="northwind@mail.com"
+                                 CompanyName="Northwind Traders"
+                                 CompanyPhone="1-206-555-1417"
+                                 CompanyWebsite="www.northwind.com"
+                                 DocumentDate="{Binding Date}"
+                                 DocumentDateLabel="Invoice Date:"
+                                 DocumentNumber="{Binding Number}"
+                                 DocumentNumberLabel="Invoice №:"
+                                 DocumentTitle="{Binding Metadata.Title, Source={x:Reference Root}, Converter={StaticResource Upper}}"
+                                 LogoSource="Images/logo.svg" />
+            <Grid Height="Auto"
+                  Margin="0,20,0,20"
+                  Padding="50,0"
+                  ColumnDefinitions="Auto, *"
+                  ColumnSpacing="24"
+                  DataContext="{Binding Customer}"
+                  RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto"
+                  RowSpacing="6">
+                <Text Grid.Row="0"
+                      Grid.Column="0"
+                      Grid.ColumnSpan="2"
+                      Content="Bill to:"
+                      FontColor="{StaticResource DarkGray}"
+                      FontSize="9"
+                      FontStyle="Bold" />
+
+                <Text Grid.Row="1"
+                      Grid.Column="0"
+                      Content="Company:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="1"
+                      Grid.Column="1"
+                      Content="{Binding Company}"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="2"
+                      Grid.Column="0"
+                      Content="Contact Name:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="2"
+                      Grid.Column="1"
+                      Content="{Binding Name}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="3"
+                      Grid.Column="0"
+                      Content="Address:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="3"
+                      Grid.Column="1"
+                      Content="{Binding Address}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="4"
+                      Grid.Column="0"
+                      Content="Phone:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="4"
+                      Grid.Column="1"
+                      Content="{Binding Phone}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="5"
+                      Grid.Column="0"
+                      Content="Mail:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="5"
+                      Grid.Column="1"
+                      Content="{Binding Email}"
+                      Style="{StaticResource FieldValue}" />
+            </Grid>
+        </StackPanel>
+    </ReportHeaderBand>
+
+    <DetailBand DataSource="{Binding Items}">
+        <DetailBand.DetailHeader>
+            <Grid Height="20"
+                  BorderColor="#5E6475"
+                  BorderThickness="0,2,0,2"
+                  ColumnDefinitions="30, *, 75, 60, 50, 50"
+                  RowDefinitions="16">
+                <Text Grid.Column="0"
+                      Content="#"
+                      Style="{StaticResource DataTitle}" />
+                <Text Grid.Column="1"
+                      Content="Product Name"
+                      Style="{StaticResource DataTitle}" />
+                <Text Grid.Column="2"
+                      HorizontalAlignment="End"
+                      Content="Unit Price"
+                      Style="{StaticResource DataTitle}" />
+                <Text Grid.Column="3"
+                      HorizontalAlignment="End"
+                      Content="Quantity"
+                      Style="{StaticResource DataTitle}" />
+                <Text Grid.Column="4"
+                      HorizontalAlignment="End"
+                      Content="Discount"
+                      Style="{StaticResource DataTitle}" />
+                <Text Grid.Column="5"
+                      HorizontalAlignment="End"
+                      Content="Total"
+                      Style="{StaticResource DataTitle}" />
+            </Grid>
+        </DetailBand.DetailHeader>
+
+        <Grid Height="20"
+              d:DataContext="{d:DesignInstance Type=reports:InvoiceItem}"
+              BackgroundColor="#FFFFFF"
+              BorderColor="{StaticResource LightGray}"
+              BorderThickness="0,0.5,0,0.5"
+              ColumnDefinitions="30, *, 75, 60, 50, 50"
+              RowDefinitions="20">
+            <Grid.Triggers>
+                <DataTrigger Binding="{Binding UnitPrice}"
+                             CompareType="GreaterThanOrEqual"
+                             Value="30">
+                    <Setter Member="BackgroundColor" Value="{StaticResource Positive}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Quantity}"
+                             CompareType="LessThanOrEqual"
+                             Value="1">
+                    <Setter Member="BackgroundColor" Value="{StaticResource Negative}" />
+                </DataTrigger>
+            </Grid.Triggers>
+
+            <Text Grid.Column="0"
+                  Content="{Binding Index}"
+                  Style="{StaticResource DataCell}" />
+            <Text Grid.Column="1"
+                  Content="{Binding Product, Converter={StaticResource Upper}}"
+                  Style="{StaticResource DataCell}">
+                <Text.Triggers>
+                    <DataTrigger Binding="{Binding Product}"
+                                 CompareType="Equal"
+                                 Value="Spegesild">
+                        <Setter Member="FontStyle" Value="Bold" />
+                    </DataTrigger>
+                </Text.Triggers>
+            </Text>
+            <Text Grid.Column="2"
+                  HorizontalAlignment="End"
+                  Content="{Binding UnitPrice, StringFormat='${0:F2}'}"
+                  Style="{StaticResource DataCell}" />
+            <Text Grid.Column="3"
+                  HorizontalAlignment="End"
+                  Content="{Binding Quantity}"
+                  Style="{StaticResource DataCell}" />
+            <Text Grid.Column="4"
+                  HorizontalAlignment="End"
+                  Content="{Binding Discount, StringFormat='${0:F2}'}"
+                  Style="{StaticResource DataCell}" />
+            <Text Grid.Column="5"
+                  HorizontalAlignment="End"
+                  Content="{Binding Total, StringFormat='${0:F2}'}"
+                  Style="{StaticResource DataCell}" />
+        </Grid>
+
+        <DetailBand.DetailFooter>
+            <Grid Height="Auto"
+                  Padding="0,16,0,0"
+                  BorderColor="#5E6475"
+                  BorderThickness="0,2,0,0"
+                  ColumnDefinitions="Auto, Auto, *, Auto, Auto"
+                  ColumnSpacing="24"
+                  RowDefinitions="Auto, Auto, Auto, Auto, Auto"
+                  RowSpacing="6">
+
+                <Text Grid.Row="0"
+                      Grid.Column="0"
+                      Grid.ColumnSpan="2"
+                      VerticalAlignment="Center"
+                      Content="Payment method:"
+                      FontColor="{StaticResource DarkGray}"
+                      FontSize="9"
+                      FontStyle="Bold" />
+                <Text Grid.Row="1"
+                      Grid.Column="0"
+                      Content="Account №:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="1"
+                      Grid.Column="1"
+                      Content="{Binding Payment.Account}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="2"
+                      Grid.Column="0"
+                      Content="Bank:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="2"
+                      Grid.Column="1"
+                      Content="{Binding Payment.Bank}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="3"
+                      Grid.Column="0"
+                      Content="Swift Code:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="3"
+                      Grid.Column="1"
+                      Content="{Binding Payment.Swift}"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="4"
+                      Grid.Column="0"
+                      Content="Payment Options:"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="4"
+                      Grid.Column="1"
+                      Content="{Binding Payment.Options}"
+                      Style="{StaticResource FieldValue}" />
+
+                <!--  Totals block (right)  -->
+                <Text Grid.Row="0"
+                      Grid.Column="3"
+                      Content="Sub Total:"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="0"
+                      Grid.Column="4"
+                      HorizontalAlignment="End"
+                      Content="{Binding SubTotal, StringFormat='${0:F2}'}"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="1"
+                      Grid.Column="3"
+                      Content="Discount Total:"
+                      Style="{StaticResource FieldLabel}"
+                      TextTrimming="None" />
+                <Text Grid.Row="1"
+                      Grid.Column="4"
+                      HorizontalAlignment="End"
+                      Content="{Binding DiscountTotal, StringFormat='${0:F2}'}"
+                      Style="{StaticResource FieldLabel}" />
+                <Text Grid.Row="2"
+                      Grid.Column="3"
+                      Content="Grand Total:"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}" />
+                <Text Grid.Row="2"
+                      Grid.Column="4"
+                      HorizontalAlignment="End"
+                      Content="{Binding GrandTotal, StringFormat='${0:F2}'}"
+                      FontStyle="Bold"
+                      Style="{StaticResource FieldValue}" />
+
+                <Text Grid.Row="3"
+                      Grid.RowSpan="2"
+                      Grid.Column="3"
+                      Grid.ColumnSpan="2"
+                      HorizontalAlignment="End"
+                      Content="{Binding Number}"
+                      FontColor="{StaticResource DarkGray}"
+                      FontFamily="LibreBarcode128"
+                      FontSize="55" />
+            </Grid>
+        </DetailBand.DetailFooter>
+    </DetailBand>
+
+    <PageFooterBand Height="25"
+                    Margin="-50,20,-50,-50"
+                    Padding="25,0"
+                    BackgroundColor="{StaticResource LightGray}">
+        <StackPanel HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Size="*, *">
+            <qrCode:QRCode Grid.Row="0"
+                           Grid.Column="0"
+                           Width="20"
+                           Height="20"
+                           HorizontalAlignment="Start"
+                           VerticalAlignment="Center"
+                           Content="1"
+                           Color="{StaticResource DarkGray}" />
+            <Text Grid.Row="0"
+                  Grid.Column="2"
+                  Width="*"
+                  HorizontalAlignment="Start"
+                  VerticalAlignment="Center"
+                  Content="Northwind Traders"
+                  FontColor="{StaticResource DarkGray}"
+                  FontSize="7"
+                  HorizontalTextAlignment="Start" />
+
+            <Text Content="  Page " Style="{StaticResource PageFooterText}" />
+            <Text Content="{Binding PageNumber, Source={x:Reference Root}}" Style="{StaticResource PageFooterText}" />
+            <Text Padding="3,0"
+                  Content="of"
+                  Style="{StaticResource PageFooterText}" />
+            <Text Content="{Binding PageCount, Source={x:Reference Root}}" Style="{StaticResource PageFooterText}" />
+        </StackPanel>
+    </PageFooterBand>
+
+</Report>

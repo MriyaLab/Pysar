@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pysar.Wpf.Sample</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <EnableDefaultPageItems>true</EnableDefaultPageItems>
+    <EnableDefaultApplicationDefinition>true</EnableDefaultApplicationDefinition>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+  </PropertyGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <Compile Include="NonWindowsStub.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <Compile Remove="NonWindowsStub.cs" />
+    <ProjectReference Include="..\Pysar.Sample.Reports\Pysar.Sample.Reports.csproj" />
+    <ProjectReference Include="..\..\..\Pysar\src\Pysar.Wpf\Pysar.Wpf.csproj" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <EmbeddedResource Include="..\Pysar.Sample.Reports\Fonts\**"
+                      LogicalName="Fonts/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\Pysar.Sample.Reports\Images\**"
+                      LogicalName="Images/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\Pysar.Sample.Reports\Styles\**"
+                      LogicalName="Styles/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

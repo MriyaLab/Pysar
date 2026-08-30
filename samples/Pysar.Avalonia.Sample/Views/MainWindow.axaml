@@ -1,0 +1,84 @@
+<Window x:Class="Pysar.Avalonia.Sample.Views.MainWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:pysar="using:Pysar.Avalonia"
+        xmlns:vm="using:Pysar.Avalonia.Sample.ViewModels"
+        Title="Pysar.Avalonia.Sample"
+        Width="1000"
+        Height="700"
+        d:DesignHeight="700"
+        d:DesignWidth="1000"
+        x:DataType="vm:ReportViewerViewModel"
+        Background="#262626"
+        Icon="/Assets/avalonia-logo.ico"
+        mc:Ignorable="d">
+
+    <Design.DataContext>
+        <!--
+            This only sets the DataContext for the previewer in an IDE,
+            to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs)
+        -->
+        <vm:ReportViewerViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="0">
+
+        <StackPanel Margin="8"
+                    Orientation="Horizontal"
+                    Spacing="8">
+            <ComboBox Width="140"
+                      ItemsSource="{Binding Reports}"
+                      SelectedItem="{Binding SelectedReport}" />
+
+            <TextBox Width="52"
+                     Text="{Binding CurrentPageText}"
+                     TextAlignment="Center" />
+
+            <TextBlock VerticalAlignment="Center"
+                       Foreground="White"
+                       Text="{Binding PageCount, StringFormat='/ {0}'}" />
+
+            <Button Width="36"
+                    Command="{Binding ZoomOutCommand}"
+                    Content="−" />
+
+            <Button Width="64"
+                    Command="{Binding ActualSizeCommand}"
+                    Content="{Binding ZoomText}" />
+
+            <Button Width="36"
+                    Command="{Binding ZoomInCommand}"
+                    Content="+" />
+
+            <Button Command="{Binding ToggleFitCommand}" Content="{Binding FitButtonText}" />
+
+            <Button Command="{Binding PrintCommand}" Content="Print" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="1"
+                   Margin="8,0"
+                   Foreground="#C0392B"
+                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{Binding ErrorMessage}" />
+
+        <pysar:ReportView x:Name="Viewer"
+                            Grid.Row="2"
+                            Background="#292929"
+                            CurrentPage="{Binding CurrentPage}"
+                            DocumentPadding="16"
+                            EffectiveZoom="{Binding EffectiveZoom}"
+                            PageBorderColor="#3E4351"
+                            PageBorderThickness="2"
+                            PageCount="{Binding PageCount, Mode=OneWayToSource}"
+                            PageSpacing="16"
+                            RenderBudget="256"
+                            RenderFailed="OnRenderFailed"
+                            Report="{Binding Report}"
+                            Zoom="{Binding Zoom}"
+                            ZoomMode="{Binding ZoomMode}" />
+
+    </Grid>
+
+</Window>

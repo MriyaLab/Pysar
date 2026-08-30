@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <!--
+          The design-time preview host is published into this project's output directory and loads
+          the reports from there. A library does not copy its NuGet dependencies to bin by default,
+          so SkiaSharp and friends would be missing at that point.
+        -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Pysar\src\Pysar\Pysar.csproj" />
+      <ProjectReference Include="..\..\..\Pysar\src\Pysar.Xaml\Pysar.Xaml.csproj" />
+      <ProjectReference Include="..\..\..\Pysar\src\Pysar.Xaml.SourceGen\Pysar.Xaml.SourceGen.csproj"
+                        OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="SkiaSharp.QrCode" />
+    </ItemGroup>
+
+    <!--
+      Fonts and images are declared as Content rather than None so they flow through the project
+      reference into every host application's output directory, which is where the relative asset
+      paths in the reports are resolved from.
+    -->
+    <ItemGroup>
+      <Content Include="Fonts\**" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="Images\**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

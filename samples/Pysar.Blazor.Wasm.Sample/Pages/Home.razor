@@ -1,0 +1,217 @@
+@page "/"
+@using Pysar.Blazor
+@using Pysar.Elements
+@using Pysar.Export
+@using Pysar.Sample.Reports
+@using Pysar.Skia
+@using Pysar.Viewer.Zoom
+@inject HttpClient Http
+@inject IReportPrinter Printer
+
+<h3>Pysar Blazor WebAssembly viewer</h3>
+
+<div style="display:flex;align-items:center;gap:8px;margin:8px 0">
+    <select style="width:140px" value="@_selectedReport" @onchange="OnReportSelected">
+        @foreach (var option in ReportOptions)
+        {
+            <option value="@option.Title">@option.Title</option>
+        }
+    </select>
+
+    <input style="width:52px;text-align:center" value="@_currentPage" @onchange="OnPageEntered" />
+
+    <span>/ @_pageCount</span>
+
+    <button style="width:36px" @onclick="ZoomOut">&minus;</button>
+
+    <button style="width:64px" @onclick="ActualSize">@ZoomText</button>
+
+    <button style="width:36px" @onclick="ZoomIn">+</button>
+
+    <button @onclick="ToggleFit">@FitButtonText</button>
+
+    <button disabled="@(_isPrinting || _report is null)" @onclick="PrintAsync">
+        @(_isPrinting ? "Printing..." : "Print")
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <pre style="color:#C0392B">@_error</pre>
+}
+
+<div style="height:80vh;border:1px solid #CCCCCC;background:#292929">
+    @if (_report is not null)
+    {
+        <ReportView Report="_report"
+                    CurrentPage="_currentPage"
+                    CurrentPageChanged="page => _currentPage = page"
+                    DocumentPadding="16"
+                    EffectiveZoomChanged="zoom => _effectiveZoom = zoom"
+                    PageBorderColor="#3E4351"
+                    PageBorderThickness="2"
+                    PageCountChanged="count => _pageCount = count"
+                    PageSpacing="16"
+                    RenderBudget="256"
+                    RenderFailed="exception => _error = exception.ToString()"
+                    Zoom="_zoom"
+                    ZoomChanged="zoom => _zoom = zoom"
+                    ZoomMode="_zoomMode"
+                    ZoomModeChanged="mode => _zoomMode = mode" />
+    }
+</div>
+
+@code {
+    /// <summary>One entry of the report picker: a display name and how to build the report.</summary>
+    private sealed record ReportOption(string Title, Func<Report> Create);
+
+    private static readonly ReportOption[] ReportOptions =
+    [
+        new("Invoice", () => new InvoiceReport(Invoice.CreateDesignInstance())),
+        new("Annual", () => new AnnualReport(AnnualLedger.CreateDesignInstance())),
+        new("Revenue By Customer", () => new RevenueByCustomerReport(RevenueReportData.CreateDesignInstance()))
+    ];
+
+    /// <summary>The zoom levels the minus and plus buttons step through, as a browser does.</summary>
+    private static readonly double[] ZoomSteps =
+        [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5];
+
+    // Not "Assets": ComponentBase has a property of that name, and hiding it is a warning.
+    private static readonly string[] ReportAssets =
+    [
+        "Fonts/Ubuntu-Regular.ttf",
+        "Fonts/Ubuntu-Bold.ttf",
+        "Fonts/Ubuntu-Italic.ttf",
+        "Fonts/Font Awesome 6 Free-Solid-900.otf",
+        "Fonts/Font Awesome 6 Free-Regular-400.otf",
+        "Fonts/LibreBarcode128-Regular.ttf",
+        "Images/logo.svg",
+        "Images/student.png",
+        "Styles/ReportStyles.rxaml",
+        "Styles/ReportColors.rxaml"
+    ];
+    
+    private Report? _report;
+    private string? _error;
+    private bool _isPrinting;
+
+    private string _selectedReport = ReportOptions[0].Title;
+
+    private ReportZoomMode _zoomMode = ReportZoomMode.FitWidth;
+
+    /// <summary>The zoom asked for; meaningful only while the mode is Custom.</summary>
+    private double _zoom = 1;
+
+    /// <summary>
+    ///     The zoom the viewer actually settled on, reported back by the control. A fit mode resolves
+    ///     to a factor only the control knows, so the percentage has to come from there.
+    /// </summary>
+    private double _effectiveZoom = 1;
+
+    private int _currentPage = 1;
+    private int _pageCount;
+
+    private string ZoomText => $"{Math.Round(_effectiveZoom * 100)}%";
+
+    private string FitButtonText => _zoomMode == ReportZoomMode.FitWidth ? "Fit Page" : "Fit Width";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            WasmPlatformHandler.Install(await PreloadedFileSystem.FetchAsync(Http, ReportAssets));
+
+            // Not ReportBootstrap.Initialize: that installs a disk-reading file system. These two
+            // registrations are host-agnostic by design and are what the MAUI host calls too.
+            ReportBootstrap.RegisterFonts(
+                Pysar.Core.ReportPlatformHandler.FontCollection);
+        }
+        catch (Exception exception)
+        {
+            _error = exception.ToString();
+
+            return;
+        }
+
+        LoadReport();
+    }
+
+    private void OnReportSelected(ChangeEventArgs args)
+    {
+        _selectedReport = args.Value?.ToString() ?? ReportOptions[0].Title;
+
+        LoadReport();
+    }
+
+    /// <summary>The page number from the toolbar's entry; text that is not a number is ignored.</summary>
+    private void OnPageEntered(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), out var page))
+            _currentPage = Math.Clamp(page, 1, Math.Max(1, _pageCount));
+    }
+
+    private void LoadReport()
+    {
+        try
+        {
+            var report = ReportOptions.First(option => option.Title == _selectedReport).Create();
+            report.Build();
+
+            _report = report;
+            _currentPage = 1;
+            _error = null;
+        }
+        catch (Exception exception)
+        {
+            _report = null;
+            _error = exception.ToString();
+        }
+    }
+
+    private void ToggleFit()
+        => _zoomMode = _zoomMode == ReportZoomMode.FitWidth ? ReportZoomMode.FitPage : ReportZoomMode.FitWidth;
+
+    private void ZoomIn()
+    {
+        var next = ZoomSteps.FirstOrDefault(step => step > _effectiveZoom + 0.001);
+        if (next > 0)
+            SetZoom(next);
+    }
+
+    private void ZoomOut()
+    {
+        var previous = ZoomSteps.LastOrDefault(step => step < _effectiveZoom - 0.001);
+        if (previous > 0)
+            SetZoom(previous);
+    }
+
+    private void ActualSize() => SetZoom(1);
+
+    private void SetZoom(double zoom)
+    {
+        _zoom = zoom;
+        _zoomMode = ReportZoomMode.Custom;
+    }
+
+    private async Task PrintAsync()
+    {
+        if (_report is null || _isPrinting)
+            return;
+
+        _isPrinting = true;
+        _error = null;
+
+        try
+        {
+            await Printer.PrintAsync(_report);
+        }
+        catch (Exception exception)
+        {
+            _error = exception.ToString();
+        }
+        finally
+        {
+            _isPrinting = false;
+        }
+    }
+}

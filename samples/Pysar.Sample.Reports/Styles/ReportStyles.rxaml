@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="https://mriyalab.com/pysar" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="ReportColors.rxaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <Style TargetType="Text">
+        <Setter Member="FontFamily" Value="Ubuntu" />
+    </Style>
+
+    <Style x:Key="DataTitle" TargetType="Text">
+        <Setter Member="HorizontalAlignment" Value="Start" />
+        <Setter Member="VerticalAlignment" Value="Center" />
+        <Setter Member="FontSize" Value="8" />
+        <Setter Member="FontColor" Value="#5E6475" />
+        <Setter Member="FontStyle" Value="Bold" />
+        <Setter Member="FontColor" Value="{StaticResource DarkGray}" />
+    </Style>
+
+    <!--  A data-row cell: start/center aligned, small, dark.  -->
+    <Style x:Key="DataCell" TargetType="Text">
+        <Setter Member="HorizontalAlignment" Value="Start" />
+        <Setter Member="VerticalAlignment" Value="Center" />
+        <Setter Member="FontSize" Value="8" />
+        <Setter Member="FontColor" Value="{StaticResource DarkGray}" />
+    </Style>
+
+    <!--  A muted field label (Bill-To / payment / totals).  -->
+    <Style x:Key="FieldLabel" TargetType="Text">
+        <Setter Member="FontSize" Value="8" />
+        <Setter Member="FontStyle" Value="Bold" />
+        <Setter Member="FontColor" Value="{StaticResource Muted}" />
+    </Style>
+
+    <!--  A field value.  -->
+    <Style x:Key="FieldValue" TargetType="Text">
+        <Setter Member="FontSize" Value="8" />
+        <Setter Member="FontColor" Value="{StaticResource DarkGray}" />
+    </Style>
+
+    <!--  Page-footer text: small and muted, filling the band height so it centres vertically.
+          Trimming is off because word wrap splits on spaces and rejoins, which would swallow the
+          padding spaces that separate the parts of "Page 3 of 4".  -->
+    <Style x:Key="PageFooterText" TargetType="Text">
+        <Setter Member="Height" Value="Fill" />
+        <Setter Member="FontSize" Value="7" />
+        <Setter Member="FontColor" Value="{StaticResource DarkGray}" />
+        <Setter Member="VerticalTextAlignment" Value="Center" />
+        <Setter Member="TextTrimming" Value="None" />
+    </Style>
+</ResourceDictionary>
