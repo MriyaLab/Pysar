@@ -71,16 +71,6 @@ written in `.rxaml` markup, and one platform package for the target UI framework
 
 `Pysar.Viewer` is not referenced directly — it arrives transitively with a platform package.
 
-### Upgrading from 0.1.0.x
-
-`Pysar.Core`, `.Binding`, `.Elements`, `.Export`, `.Skia`, `.Xaml.Model` and `.Xaml.SourceGen`
-were merged away. Replace all of them with `Pysar`, and `Pysar.Xaml` if you write
-`.rxaml` reports — the source generator now ships inside that package.
-
-Namespaces did not change, so no `using` directive needs editing. The one thing that can break is a
-`clr-namespace` mapping in `.rxaml` that names a Pysar **assembly**, because five assemblies became
-one:
-
 ```xml
 <!-- before -->
 xmlns:e="clr-namespace:Pysar.Elements;assembly=Pysar.Elements"
@@ -266,14 +256,16 @@ reference belonging to one browser context.
 ## Repository layout
 
 ```
-src/    the packages listed above
-tests/  one test project per area, plus tests/Assets for shared fixtures
-docs/   quick start, versioning policy, design specs
+src/      the packages listed above
+tests/    one test project per area, plus tests/Assets for shared fixtures
+samples/  a console sample and one demo app per platform package
+docs/     quick start, versioning policy, design specs
 ```
 
-Sample applications are not part of this repository. What they used to demonstrate — application
-startup, asset resolution, and the report view responding to real input — is covered by tests
-instead, so it is verified on every push rather than by hand:
+`samples/` is not part of CI — `Pysar.CI.slnf` excludes it, so nothing there is built or tested on
+push. What the samples demonstrate — application startup, asset resolution, and the report view
+responding to real input — is covered by the test projects below as well, so most of the same ground
+is verified automatically:
 
 | Test project | What it covers |
 | --- | --- |
@@ -309,6 +301,16 @@ Linux leg and the real thing on the Windows one, so a single `dotnet test` cover
 - [API versioning policy](docs/api-versioning.md)
 - [Design specifications](docs/superpowers/specs)
 - IDE plugins — see the `Pysar.Plugins` repository (sibling project, not part of this repo)
+
+### IDE plugins
+
+The Rider and VS Code plugins are not yet published to their marketplaces — install them manually
+from the direct download links below:
+
+- [Rider plugin (0.0.32)](https://mriyalab.github.io/pysar/plugins/Rider/pysar-rider-0.0.32.zip)
+- [VS Code plugin (0.0.3)](https://mriyalab.github.io/pysar/plugins/VSCode/pysar-0.0.3.vsix)
+
+A Visual Studio plugin is not available yet — it is coming soon.
 
 ## One rule worth knowing up front
 
