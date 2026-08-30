@@ -11,15 +11,16 @@ env:
   MSBUILDDISABLENODEREUSE: 1
   NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
 
-# After a release lands, bump PACKAGE_VERSION_PREFIX in pack.yml to the next MAJOR.MINOR so
-# CI builds keep sorting above the version just published.
-
 jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Get version from tag
         id: version
         run: |
@@ -30,6 +31,18 @@ jobs:
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Tag v$VERSION is not a SemVer version (expected vMAJOR.MINOR.PATCH[-prerelease])." >&2
             exit 1
+          fi
+          # pack.yml derives CI versions from the latest release tag via `git describe`, so a
+          # release tag lower than an existing one would make CI silently start counting down
+          # from a stale baseline. Reject it here instead.
+          LATEST_PREV_TAG=$(git tag --list 'v*' --sort=-version:refname | grep -vFx "v$VERSION" | head -n1)
+          if [ -n "$LATEST_PREV_TAG" ]; then
+            LATEST_PREV_VERSION="${LATEST_PREV_TAG#v}"
+            HIGHEST=$(printf '%s\n%s\n' "$LATEST_PREV_VERSION" "$VERSION" | sort -V | tail -n1)
+            if [ "$HIGHEST" != "$VERSION" ]; then
+              echo "::error::Tag v$VERSION is not higher than the latest existing release $LATEST_PREV_TAG." >&2
+              exit 1
+            fi
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 

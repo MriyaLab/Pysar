@@ -7,13 +7,6 @@ on:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
-  # CI builds track the current release line, so they sort above the last nuget.org release.
-  # Bump this to the new MAJOR.MINOR right after every release tag, or CI packages will keep
-  # claiming to be part of a line that has already shipped.
-  PACKAGE_VERSION_PREFIX: '0.1'
-  # Patch number is the run number plus this offset. Reset to 0 when the prefix above changes:
-  # a fresh minor line has no earlier numbering to stay continuous with.
-  PACKAGE_NUMBER_OFFSET: 0
 
 jobs:
   version:
@@ -21,8 +14,25 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      # CI version tracks the latest release tag: on the tagged commit itself it equals the
+      # release version exactly; every commit after that increments the patch by one. This
+      # keeps CI numbering continuous with whatever MAJOR.MINOR.PATCH was last released,
+      # with no manual bumping required.
       - id: version
-        run: echo "version=${PACKAGE_VERSION_PREFIX}.$((GITHUB_RUN_NUMBER + PACKAGE_NUMBER_OFFSET))" >> "$GITHUB_OUTPUT"
+        run: |
+          DESC=$(git describe --tags --long --match 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || true)
+          if [ -z "$DESC" ]; then
+            echo "::error::No vMAJOR.MINOR.PATCH release tag found in this branch's history; cannot compute a CI version." >&2
+            exit 1
+          fi
+          COMMITS_SINCE=$(echo "$DESC" | sed -E 's/^.*-([0-9]+)-g[0-9a-f]+$/\1/')
+          BASE=$(echo "$DESC" | sed -E 's/-[0-9]+-g[0-9a-f]+$//; s/^v//')
+          IFS=. read -r MAJOR MINOR PATCH <<< "$BASE"
+          echo "version=${MAJOR}.${MINOR}.$((PATCH + COMMITS_SINCE))" >> "$GITHUB_OUTPUT"
 
   pack:
     needs: version
