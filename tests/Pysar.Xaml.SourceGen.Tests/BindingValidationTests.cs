@@ -217,7 +217,7 @@ public class BindingValidationTests
     }
 
     [Fact]
-    public void UnresolvableDataType_ReportsWarningNotError()
+    public void UnresolvableDataType_DoesNotAlsoReportEveryBindingUnderIt()
     {
         var xaml = Report("d:DataContext=\"{d:DesignInstance Type=vm:DoesNotExist}\"", "<Text Text=\"{Binding Whatever}\" />");
 
@@ -225,6 +225,21 @@ public class BindingValidationTests
 
         Assert.True(HasDiagnostic(result, "PQX011"));
         Assert.False(HasBindingError(result)); // no PQX010 — bindings under it are not validated
+    }
+
+    [Fact]
+    public void UnresolvableDataType_ReportsError()
+    {
+        // An unresolved hint silently switches binding validation off for everything below it, so a
+        // typo in the type name is the one mistake that costs the most and shows the least. XAML
+        // treats the same mistake as an error, and the IDE plugins mirror this severity - a warning
+        // here and a red squiggle there would be worse than either.
+        var xaml = Report("x:DataType=\"vm:DoesNotExist\"", "<Text Text=\"{Binding Whatever}\" />");
+
+        var result = GeneratorTestHarness.Run(Types, ("Report.rxaml", xaml));
+
+        var diagnostic = System.Linq.Enumerable.Single(result.Diagnostics, d => d.Id == "PQX011");
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
     }
 
     [Fact]

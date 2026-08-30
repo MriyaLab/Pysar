@@ -40,12 +40,21 @@ internal static class BindingValidator
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    /// <remarks>
+    ///     An error rather than a warning, which it used to be. The reasoning for a warning was that
+    ///     the type might exist in an assembly this configuration cannot see - but the cost of being
+    ///     lenient is that a typo in the type name switches binding validation off for the whole
+    ///     scope beneath it and says so only in passing. That is the one mistake that costs the most
+    ///     and shows the least. XAML treats an unresolved <c>x:DataType</c> as an error, and the IDE
+    ///     plugins mirror this severity: a warning here and a red squiggle there would be worse than
+    ///     either on its own.
+    /// </remarks>
     private static readonly DiagnosticDescriptor UnresolvedDataType = new(
         "PQX011",
         "XAML binding",
         "DataType type '{0}' could not be resolved; bindings in this scope are not validated",
         "PysarXaml",
-        DiagnosticSeverity.Warning,
+        DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     private static readonly char[] UnsupportedPathChars = { '[', ']', '(', ')', '/' };
