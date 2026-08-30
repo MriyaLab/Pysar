@@ -44,7 +44,7 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore Pysar.CI.slnf
       - run: dotnet build Pysar.CI.slnf -c Release --no-restore
-      - run: dotnet pack Pysar.CI.slnf -c Release -o artifacts --no-build -p:PackageVersion=${{ needs.version.outputs.version }}
+      - run: dotnet pack Pysar.CI.slnf -c Release -o artifacts --no-build -p:PackageVersion=${{ needs.version.outputs.version }} -p:BuildProjectReferences=false
       - uses: actions/upload-artifact@v6
         with:
           name: nupkg
