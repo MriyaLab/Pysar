@@ -22,6 +22,7 @@
     <VersionPrefix>0.1.0</VersionPrefix>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageProjectUrl>https://github.com/MriyaLab/Pysar</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MriyaLab/Pysar</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
