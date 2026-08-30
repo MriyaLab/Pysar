@@ -7,8 +7,13 @@ on:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
-  # pack.yml started a new run_number series. Last ci.yml package was 0.0.21.
-  PACKAGE_NUMBER_OFFSET: 21
+  # CI builds track the current release line, so they sort above the last nuget.org release.
+  # Bump this to the new MAJOR.MINOR right after every release tag, or CI packages will keep
+  # claiming to be part of a line that has already shipped.
+  PACKAGE_VERSION_PREFIX: '0.1'
+  # Patch number is the run number plus this offset. Reset to 0 when the prefix above changes:
+  # a fresh minor line has no earlier numbering to stay continuous with.
+  PACKAGE_NUMBER_OFFSET: 0
 
 jobs:
   version:
@@ -17,7 +22,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - id: version
-        run: echo "version=0.0.$((GITHUB_RUN_NUMBER + PACKAGE_NUMBER_OFFSET))" >> "$GITHUB_OUTPUT"
+        run: echo "version=${PACKAGE_VERSION_PREFIX}.$((GITHUB_RUN_NUMBER + PACKAGE_NUMBER_OFFSET))" >> "$GITHUB_OUTPUT"
 
   pack:
     needs: version

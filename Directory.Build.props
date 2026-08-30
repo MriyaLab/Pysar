@@ -18,12 +18,12 @@
     <Authors>Andrii Kolodiichyk</Authors>
     <Product>Pysar</Product>
     <Copyright>Copyright (c) 2026 Andrii Kolodiichyk</Copyright>
-    <!-- Pre-1.0 per README; bump here, never per project. -->
-    <VersionPrefix>0.0.1</VersionPrefix>
+    <!-- CI overrides this via -p:PackageVersion; bump here, never per project. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/kolodiichyk/Pysar</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kolodiichyk/Pysar</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/MriyaLab/Pysar</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MriyaLab/Pysar</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 

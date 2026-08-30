@@ -157,6 +157,21 @@ internal static class TextMeasurer
     }
 
     /// <summary>
+    ///     The vertical extent the drawn lines actually occupy, in whatever units <paramref name="font"/>
+    ///     and <paramref name="lineHeight"/> are expressed in. Lines advance by <paramref name="lineHeight"/>,
+    ///     but <see cref="Rendering.TextDrawer"/> puts the first baseline an ascent below the box top, so the
+    ///     last line's descenders reach ascent+descent below it. A font whose own extent exceeds its line
+    ///     height - Kanit and most faces carrying Thai or Devanagari, or any explicitly small LineHeight -
+    ///     would otherwise be clipped at the bottom by the enclosing container.
+    /// </summary>
+    internal static float MeasureLinesHeight(SKFont font, int lineCount, float lineHeight)
+    {
+        if (lineCount <= 0) return 0f;
+        var fontExtent = font.Metrics.Descent - font.Metrics.Ascent;
+        return Math.Max(lineCount * lineHeight, fontExtent + (lineCount - 1) * lineHeight);
+    }
+
+    /// <summary>
     /// Calculates the maximum number of lines that can fit in the given height.
     /// </summary>
     internal static int CalculateMaxLines(float maxHeightPx, float lineHeight)
@@ -391,7 +406,7 @@ internal static class TextMeasurer
         using var font = BuildFont(element, fontSize, FontService.GetTypeface(element.Font));
         
         var textWidth = MeasureText(element.Content, font) / scale;
-        var textHeight = element.Font.Size * element.LineHeight;
+        var textHeight = MeasureLinesHeight(font, 1, element.Font.Size * element.LineHeight * scale) / scale;
         
         return (textWidth, textHeight);
     }
@@ -406,7 +421,7 @@ internal static class TextMeasurer
         using var font = BuildFont(element, fontSize, FontService.GetTypeface(element.Font));
         
         var actualWidth = Math.Min(MeasureText(element.Content, font) / scale, maxWidth);
-        var textHeight = element.Font.Size * element.LineHeight;
+        var textHeight = MeasureLinesHeight(font, 1, element.Font.Size * element.LineHeight * scale) / scale;
         
         return (actualWidth, textHeight);
     }
@@ -424,7 +439,7 @@ internal static class TextMeasurer
         
         var lines = WordWrap(element.Content, font, maxWidth * scale, TextTrimming.WordWrap);
         var lineHeight = element.Font.Size * element.LineHeight * scale;
-        var textHeightPx = lines.Count * lineHeight;
+        var textHeightPx = MeasureLinesHeight(font, lines.Count, lineHeight);
         
         var maxHeightPx = maxHeight * scale;
         if (textHeightPx > maxHeightPx && maxHeightPx > 0)
@@ -446,7 +461,7 @@ internal static class TextMeasurer
                     }
                 }
                 
-                textHeightPx = lines.Count * lineHeight;
+                textHeightPx = MeasureLinesHeight(font, lines.Count, lineHeight);
             }
         }
         
@@ -466,7 +481,7 @@ internal static class TextMeasurer
         
         var lines = ApplyTailTruncation(element.Content, font, maxWidth * scale);
         var textWidth = lines.Count > 0 ? MeasureText(lines[0], font) / scale : 0;
-        var textHeight = element.Font.Size * element.LineHeight;
+        var textHeight = MeasureLinesHeight(font, 1, element.Font.Size * element.LineHeight * scale) / scale;
         
         return (textWidth, textHeight);
     }
@@ -482,7 +497,7 @@ internal static class TextMeasurer
         
         var lines = ApplyHeadTruncation(element.Content, font, maxWidth * scale);
         var textWidth = lines.Count > 0 ? MeasureText(lines[0], font) / scale : 0;
-        var textHeight = element.Font.Size * element.LineHeight;
+        var textHeight = MeasureLinesHeight(font, 1, element.Font.Size * element.LineHeight * scale) / scale;
         
         return (textWidth, textHeight);
     }
@@ -498,7 +513,7 @@ internal static class TextMeasurer
         
         var lines = ApplyMiddleTruncation(element.Content, font, maxWidth * scale);
         var textWidth = lines.Count > 0 ? MeasureText(lines[0], font) / scale : 0;
-        var textHeight = element.Font.Size * element.LineHeight;
+        var textHeight = MeasureLinesHeight(font, 1, element.Font.Size * element.LineHeight * scale) / scale;
         
         return (textWidth, textHeight);
     }

@@ -11,6 +11,9 @@ env:
   MSBUILDDISABLENODEREUSE: 1
   NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
 
+# After a release lands, bump PACKAGE_VERSION_PREFIX in pack.yml to the next MAJOR.MINOR so
+# CI builds keep sorting above the version just published.
+
 jobs:
   version:
     runs-on: ubuntu-latest
@@ -22,10 +25,10 @@ jobs:
         run: |
           VERSION="${{ github.ref }}"
           VERSION="${VERSION#refs/tags/v}"
-          # Guards the 0.0.x pre-1.0 series: a stray tag (e.g. v1.0.0) would otherwise publish
-          # a version nuget.org can never take back, silently outside the intended range.
-          if [[ ! "$VERSION" =~ ^0\.0\. ]]; then
-            echo "::error::Tag v$VERSION is outside the 0.0.x series. Update this guard once a 1.0 release is intended." >&2
+          # Guards the tag shape only: a malformed tag (e.g. vlatest, v1.2) would otherwise
+          # publish a version nuget.org can never take back. Any SemVer version is allowed.
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag v$VERSION is not a SemVer version (expected vMAJOR.MINOR.PATCH[-prerelease])." >&2
             exit 1
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT

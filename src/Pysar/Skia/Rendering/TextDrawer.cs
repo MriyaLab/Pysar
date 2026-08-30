@@ -80,7 +80,9 @@ internal sealed class TextDrawer : IElementDrawer
 
     private static float AlignVertical(SKFont font, int lineCount, float lineHeight, float y, float boxHeight, TextAlignment alignment)
     {
-        var totalHeight = lineCount * lineHeight;
+        // The same extent the measure phase sized an Auto box to, so Center/End align the painted
+        // block - descenders included - instead of a line-box stack that may be shorter than it.
+        var totalHeight = TextMeasurer.MeasureLinesHeight(font, lineCount, lineHeight);
         var offset = alignment switch
         {
             TextAlignment.Center => (boxHeight - totalHeight) / 2f,

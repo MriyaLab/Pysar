@@ -139,15 +139,17 @@ public static class LayoutEngine
                 new MeasureConstraint(contentRect, widthOverride, heightOverride), ctx, ct));
         }
 
-        // Auto sizes from the children's extents; Fill height grows to max(available, content)
+        // Auto sizes from the children's extents; Fill height grows to max(available, content).
+        // The extents are measured from the container's own origin (avail), not from the topmost
+        // child, so a child's leading margin stays inside the box - the box is repositioned below by
+        // PositionResolver, which would otherwise discard an origin derived from the children and
+        // leave the box ending short of its content.
         if (children.Count > 0)
         {
-            var minLeft = children.Min(n => n.Bounds.Left) - iL;
-            var minTop = children.Min(n => n.Bounds.Top) - iT;
-            var maxRight = children.Max(n => n.Bounds.Right) + iR;
-            var maxBottom = children.Max(n => n.Bounds.Bottom) + iB;
-            if (isAutoW) { left = element.Position.IsEmpty && !constraint.IgnorePosition ? minLeft : left; boxW = maxRight - minLeft; }
-            if (isAutoH) { top = element.Position.IsEmpty && !constraint.IgnorePosition ? minTop : top; boxH = maxBottom - minTop; }
+            var maxRight = children.Max(n => n.Bounds.Right + n.Element.Margin.Right) + iR;
+            var maxBottom = children.Max(n => n.Bounds.Bottom + n.Element.Margin.Bottom) + iB;
+            if (isAutoW) boxW = maxRight - avail.Left;
+            if (isAutoH) boxH = maxBottom - avail.Top;
             if (effH.IsFill) boxH = Math.Max(boxH, maxBottom - top);       // max(window, content) rule
         }
 

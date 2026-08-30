@@ -3,6 +3,7 @@ using Pysar.Console.Tests.Reports;
 using Pysar.Console.Tests.Reports.Base;
 using Pysar.Console.Tests.Reports.CustomControls;
 using Pysar.Console.Tests.Reports.Data;
+using Pysar.Console.Tests.Reports.MasterDitails;
 using Pysar.Console.Tests.Reports.Styles;
 using Pysar.Console.Tests.Reports.Triggers;
 using Pysar.Elements;
@@ -31,6 +32,9 @@ var reports = new (string Title, string FileName, Func<Report> Build)[]
     ("QR Code (Custom Control)", "qrCode.pdf", () => new QRCodeReport().Build()),
     ("QR Code (Custom Control, Fluent API)", "qrCodeFluent.pdf", () => new QRCodeReportFluentApi().Build()),
     ("QR Code (Custom Control, XAML)", "qrCodeXaml.pdf", () => new QRCodeReportXaml().Build()),
+    ("Master-Detail Report", "masterDetail.pdf", () => new MasterDetailReport().Build()),
+    ("Master-Detail Report (Fluent API)", "masterDetailFluent.pdf", () => new MasterDetailReportFluentApi().Build()),
+    ("Master-Detail Report (XAML)", "masterDetailXaml.pdf", () => new MasterDetailReportXaml().Build()),
 };
 
 while (true)

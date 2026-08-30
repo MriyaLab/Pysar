@@ -76,6 +76,58 @@ public class MarginMeasurementTests
     }
 
     [Fact]
+    public async Task AutoContainer_ChildTopMargin_BoxCoversChild()
+    {
+        // An Auto-height container measures from its own origin, so a child's leading margin is part
+        // of the box. Otherwise the box ends above the child and the content bleeds onto the sibling.
+        var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Auto) };
+        frame.AddElement(new Frame
+        {
+            Size = new Size(SizeLength.Fill, SizeLength.Fixed(30)),
+            Margin = new Thickness(0, 10, 0, 0)
+        });
+
+        var node = await Measure(frame, new Rect(0, 0, 200, 500));
+
+        Assert.Equal(0, node.Bounds.Top);
+        Assert.Equal(40, node.Bounds.Bottom);   // 10 top margin + 30 child
+        Assert.Equal(10, node.Children[0].Bounds.Top);
+        Assert.Equal(40, node.Children[0].Bounds.Bottom);
+    }
+
+    [Fact]
+    public async Task AutoContainer_ChildBottomMargin_BoxClearsChild()
+    {
+        var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Auto) };
+        frame.AddElement(new Frame
+        {
+            Size = new Size(SizeLength.Fill, SizeLength.Fixed(30)),
+            Margin = new Thickness(0, 0, 0, 12)
+        });
+
+        var node = await Measure(frame, new Rect(0, 0, 200, 500));
+
+        Assert.Equal(0, node.Bounds.Top);
+        Assert.Equal(42, node.Bounds.Bottom);   // 30 child + 12 bottom margin
+    }
+
+    [Fact]
+    public async Task AutoContainer_ChildLeftMargin_BoxCoversChild()
+    {
+        var frame = new Frame { Size = new Size(SizeLength.Auto, SizeLength.Auto) };
+        frame.AddElement(new Frame
+        {
+            Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(30)),
+            Margin = new Thickness(15, 0, 0, 0)
+        });
+
+        var node = await Measure(frame, new Rect(0, 0, 200, 500));
+
+        Assert.Equal(0, node.Bounds.Left);
+        Assert.Equal(65, node.Bounds.Right);    // 15 left margin + 50 child
+    }
+
+    [Fact]
     public async Task VerticalStack_TextTopMargin_CreatesGapAbove()
     {
         var stack = new StackPanel { Size = new Size(SizeLength.Fill, SizeLength.Auto) };
