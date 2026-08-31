@@ -54,4 +54,22 @@ public sealed class PackageLayoutTests : IClassFixture<PackFixture>
         foreach (var gone in new[] { "Core", "Binding", "Elements", "Export", "Skia", "Xaml.Model", "Xaml.SourceGen" })
             Assert.DoesNotContain($"id=\"Pysar.{gone}\"", nuspec);
     }
+
+    [Fact]
+    public void EveryPackage_ShipsAReadme()
+    {
+        foreach (var packageId in new[] { "Pysar", "Pysar.Xaml" })
+            Assert.Contains("README.md", _pack.EntriesOf(packageId));
+    }
+
+    [Fact]
+    public void EveryPackage_ShipsItsOwnReadme()
+    {
+        // Directory.Build.targets packs the project-local README.md over the repository-root one;
+        // the first heading names the package the README actually belongs to.
+        Assert.Equal("# Pysar", FirstLine(_pack.ReadTextOf("Pysar", "README.md")));
+        Assert.Equal("# Pysar.Xaml", FirstLine(_pack.ReadTextOf("Pysar.Xaml", "README.md")));
+    }
+
+    private static string FirstLine(string text) => text.Split('\n', 2)[0].TrimEnd('\r');
 }
