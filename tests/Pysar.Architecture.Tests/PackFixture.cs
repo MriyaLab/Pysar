@@ -33,6 +33,15 @@ public sealed class PackFixture : IDisposable
         return reader.ReadToEnd();
     }
 
+    public string ReadTextOf(string packageId, string entryName)
+    {
+        using var zip = ZipFile.OpenRead(FindNupkg(packageId));
+        var entry = zip.GetEntry(entryName)
+                    ?? throw new InvalidOperationException($"No {entryName} in the {packageId} package.");
+        using var reader = new StreamReader(entry.Open());
+        return reader.ReadToEnd();
+    }
+
     /// <summary>
     ///     Resolves the .nupkg for exactly this package id. A plain "&lt;id&gt;.*.nupkg" glob would
     ///     also match a longer id sharing the prefix - Pysar.*.nupkg matches
