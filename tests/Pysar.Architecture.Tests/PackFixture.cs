@@ -85,12 +85,17 @@ public sealed class PackFixture : IDisposable
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+        // Reusable MSBuild nodes and compiler servers outlive the pack process itself and keep
+        // the inherited stdout pipe open, so ReadToEnd below would never reach EOF. Both are
+        // disabled for the child build only.
+        psi.Environment["MSBUILDDISABLENODEREUSE"] = "1";
         psi.ArgumentList.Add("pack");
         psi.ArgumentList.Add(projectRelativePath);
         psi.ArgumentList.Add("-c");
         psi.ArgumentList.Add("Release");
         psi.ArgumentList.Add("-o");
         psi.ArgumentList.Add(_outputDir);
+        psi.ArgumentList.Add("-p:UseSharedCompilation=false");
 
         using var process = Process.Start(psi)!;
         var stdout = process.StandardOutput.ReadToEnd();
