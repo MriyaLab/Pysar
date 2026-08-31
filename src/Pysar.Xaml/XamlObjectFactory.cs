@@ -60,6 +60,14 @@ internal sealed class XamlObjectFactory
         }
 
         _members.ApplyAttributes(instance, node);
+
+        // Implicit style, explicit Style, and local attributes are now resolved in the correct
+        // precedence order. StyleEngine.Apply runs again later, at Report.Build() - marking this
+        // object tells it to leave the result alone rather than reapplying the implicit style's
+        // setters on top and overwriting a local override.
+        if (instance is ReportObject resolvedObject)
+            resolvedObject.StylesResolved = true;
+
         _context.CaptureName(instance, node);
         ApplyContent(instance, node);
         return instance;
