@@ -36,6 +36,37 @@ public class ReportViewTilesTests
         Assert.Empty(tiles.TilesFor(pageIndex: 0, scale - 0.005f));
     }
 
+    /// <summary>
+    ///     A cell answers for the page it was drawn for and no other. The cache indexes cells by page
+    ///     rather than walking them all, because the view asks per page on every pass, and an index is
+    ///     a second place for a page to be recorded - so this is what stops the two drifting apart.
+    /// </summary>
+    [Fact]
+    public async Task ACellDrawnForOnePage_IsNotOfferedForAnother()
+    {
+        var session = await TallSessionAsync();
+        using var tiles = new ReportViewTiles(session, new TaskRunScheduler());
+
+        Assert.True(session.PageCount >= 2, $"the report should span several pages, not {session.PageCount}");
+
+        const float scale = 1f;
+
+        var first = new TileRequest(new TileKey(PageIndex: 0, Column: 0, Row: 0, scale), new RectPt(0, 0, 200, 200));
+        var second = new TileRequest(new TileKey(PageIndex: 1, Column: 0, Row: 0, scale), new RectPt(0, 0, 200, 200));
+
+        tiles.RequestTiles([first, second]);
+
+        await WaitUntilAsync(tiles,
+            () => tiles.TilesFor(0, scale).Any() && tiles.TilesFor(1, scale).Any());
+
+        Assert.Equal(first.Key, tiles.TilesFor(0, scale).Single().Key);
+        Assert.Equal(second.Key, tiles.TilesFor(1, scale).Single().Key);
+        Assert.Empty(tiles.TilesFor(2, scale));
+
+        // And the other scales of a page are its own too, not every page's.
+        Assert.Empty(tiles.BridgeTilesFor(0, scale));
+    }
+
     [Fact]
     public async Task TaskRunScheduler_RunsTheWorkOffTheCallingThread()
     {
@@ -60,6 +91,20 @@ public class ReportViewTilesTests
         };
 
         design.Detail.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(200)) });
+        design.Build();
+
+        return await ReportRenderSession.CreateAsync(design);
+    }
+
+    /// <summary>The same report, on a band tall enough that the renderer splits it over several pages.</summary>
+    private static async Task<ReportRenderSession> TallSessionAsync()
+    {
+        var design = new Report
+        {
+            PageFormat = new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 }
+        };
+
+        design.Detail.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(4000)) });
         design.Build();
 
         return await ReportRenderSession.CreateAsync(design);

@@ -119,7 +119,7 @@ public partial class ReportView
             view._platformPinchActive = true;
 
             // The focus is in device pixels, while the viewport is measured in device independent units.
-            var density = Density;
+            var density = view._density;
 
             view.BeginPinch(new Point(detector.FocusX / density, detector.FocusY / density));
 

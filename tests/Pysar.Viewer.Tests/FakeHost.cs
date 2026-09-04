@@ -37,9 +37,23 @@ public sealed class FakeHost : IReportViewHost
         ScrollY = y;
     }
 
-    public void SetExtent(double width, double height) => Extent = new ViewPoint(width, height);
+    /// <summary>How often the extent was written, however little the value changed.</summary>
+    public int ExtentWrites { get; private set; }
 
-    public void PlacePage(int index, ViewRect bounds) => Pages[index] = bounds;
+    /// <summary>How often a page was placed, counting every page of every pass.</summary>
+    public int PagePlacements { get; private set; }
+
+    public void SetExtent(double width, double height)
+    {
+        ExtentWrites++;
+        Extent = new ViewPoint(width, height);
+    }
+
+    public void PlacePage(int index, ViewRect bounds)
+    {
+        PagePlacements++;
+        Pages[index] = bounds;
+    }
 
     public Dictionary<TileKey, (ViewRect Bounds, Tile Tile)> Tiles { get; } = [];
 

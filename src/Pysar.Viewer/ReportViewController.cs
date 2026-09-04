@@ -46,13 +46,19 @@ public sealed class ReportViewController
     public event Action<Exception>? Failed;
 
     /// <summary>The viewport scrolled. Ignored while a gesture is driving it.</summary>
+    /// <remarks>
+    ///     No refresh of its own: a scroll does not move a cell relative to the page it belongs to, so
+    ///     the platform has already put every one of them where it goes. Only the plan can change, and
+    ///     <see cref="RequestTiles"/> refreshes when it does - which is what keeps the per-frame cost
+    ///     of a scroll to planning alone.
+    /// </remarks>
     public void Scrolled()
     {
         if (_surface.SuppressesViewportReaction)
             return;
 
         _presenter.Scrolled();
-        AfterPresenterUpdate(immediate: true);
+        RequestTiles();
     }
 
     /// <summary>The viewport's size or density changed.</summary>
@@ -99,6 +105,13 @@ public sealed class ReportViewController
             return;
 
         tiles.RequestTiles(plan.Requests);
+
+        // The plan has just dropped from the cache the cells it no longer wants, and the views showing
+        // them have to go with them. Here rather than before the request, so this sees what the plan
+        // actually did - and only when there was a new plan, which is what makes it affordable on the
+        // scroll path, where a refresh per frame was the most expensive thing the view did.
+        _surface.RefreshVisuals();
+
         TilesRequested?.Invoke(plan);
     }
 

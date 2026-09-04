@@ -45,6 +45,21 @@ public class ReportViewControllerTests
         return design;
     }
 
+    /// <summary>A report of several pages, so that scrolling brings different ones into play.</summary>
+    private static Report ATallReport()
+    {
+        var design = new Report
+        {
+            PageFormat = new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 }
+        };
+
+        // One band taller than several pages: the renderer splits it, which is what makes the pages.
+        design.Detail.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(4000)) });
+        design.Build();
+
+        return design;
+    }
+
     private static (FakeHost Host, FakeSurface Surface, ReportViewPresenter Presenter, ReportViewController Controller)
         Subject()
     {
@@ -91,15 +106,52 @@ public class ReportViewControllerTests
         Assert.Equal(0, chrome.Refreshes);
     }
 
+    /// <summary>
+    ///     A scroll asks for cells and nothing else. The platform has already moved every page and
+    ///     cell - they are real views inside its own scroll view - so refreshing them per frame was
+    ///     work with no result, and the most expensive thing the view did while the reader scrolled.
+    /// </summary>
     [Fact]
-    public void Scrolled_WhenNothingIsDrivingTheViewport_UpdatesImmediately()
+    public void Scrolled_DoesNotRepaintWhatTheScrollViewHasAlreadyMoved()
     {
         var (_, chrome, _, controller) = Subject();
 
         controller.Scrolled();
 
-        Assert.Equal(1, chrome.Refreshes);
+        Assert.Equal(0, chrome.Refreshes);
         Assert.Equal(0, chrome.Invalidations);
+    }
+
+    /// <summary>
+    ///     A new plan drops from the cache the cells it no longer wants, so the views showing them
+    ///     have to go - but only then. That is what makes a refresh affordable on the scroll path: the
+    ///     planner answers most frames with "nothing has changed".
+    /// </summary>
+    [Fact]
+    public async Task Scrolled_RefreshesOnlyWhenThePlanChanged()
+    {
+        var (host, chrome, presenter, controller) = Subject();
+
+        await controller.Session.LoadAsync(ATallReport(), Renderer);
+        host.RunPosted();
+
+        controller.ViewportChanged();
+        controller.RequestTiles();
+
+        var refreshes = chrome.Refreshes;
+
+        // Onto another page, which is what the planner's answer is made of.
+        host.ScrollY += 2 * host.Pages[0].Height;
+        controller.Scrolled();
+
+        Assert.Equal(3, presenter.CurrentPage);
+
+        Assert.Equal(refreshes + 1, chrome.Refreshes);
+
+        // And not at all for a frame that changes nothing.
+        controller.Scrolled();
+
+        Assert.Equal(refreshes + 1, chrome.Refreshes);
     }
 
     [Fact]
