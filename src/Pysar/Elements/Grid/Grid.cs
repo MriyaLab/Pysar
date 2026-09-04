@@ -33,6 +33,8 @@ public class Grid : ReportContainer<Grid>
 
     public Grid()
     {
+        // At Default precedence: a type's own defaults must not shadow a later style (see Text).
+        using var defaults = PushWritePrecedence(ValuePrecedence.Default);
         RowDefinitions = new List<RowDefinition>();
         ColumnDefinitions = new List<ColumnDefinition>();
     }

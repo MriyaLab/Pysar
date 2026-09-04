@@ -40,16 +40,6 @@ public abstract class ReportObject : BindableObject, IReportObject
     /// </summary>
     public Style? Style { get; set; }
 
-    /// <summary>
-    /// Set once the XAML loader has already applied this object's implicit style, explicit
-    /// <see cref="Style"/>, and local attributes, in that precedence order. <see cref="StyleEngine"/>
-    /// skips objects with this set: re-running its own implicit/explicit style pass on top of an
-    /// already-resolved XAML object would reapply the implicit style's setters unconditionally,
-    /// silently overwriting local attribute values (e.g. a `FontFamily` override) that were
-    /// deliberately set to something other than the style's default.
-    /// </summary>
-    public bool StylesResolved { get; set; }
-
     /// <summary>Conditional formatters evaluated at build time (see TriggerEngine). Empty by default.</summary>
     public IList<DataTrigger> Triggers { get; } = new List<DataTrigger>();
 

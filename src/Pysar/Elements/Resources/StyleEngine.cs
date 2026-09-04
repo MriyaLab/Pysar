@@ -1,3 +1,4 @@
+using Pysar.Binding;
 using Pysar.Core.Abstractions;
 using Pysar.Elements.Base;
 
@@ -38,19 +39,17 @@ public static class StyleEngine
         }
     }
 
+    /// <remarks>
+    ///     Safe to run over a tree the XAML loader already styled: each setter is applied only where its
+    ///     precedence still outranks whatever wrote the member, so a member the author set locally is left
+    ///     alone and one the same style already wrote is simply rewritten with the same value.
+    /// </remarks>
     private static void ApplyTo(ReportObject reportObject, ResourceDictionary resources)
     {
-        // The XAML loader already resolved this object's implicit style, explicit Style, and local
-        // attributes, in that precedence order, while it built the object. Doing it again here would
-        // reapply the implicit style's setters after those local attributes are already in place -
-        // unconditionally overwriting any of them the style also happens to set.
-        if (reportObject.StylesResolved)
-            return;
-
         if (TryGetImplicitStyle(resources, reportObject.GetType(), out var implicitStyle))
-            StyleApplicator.Apply(reportObject, implicitStyle);
+            StyleApplicator.Apply(reportObject, implicitStyle, ValuePrecedence.ImplicitStyle);
         if (reportObject.Style is not null)
-            StyleApplicator.Apply(reportObject, reportObject.Style);
+            StyleApplicator.Apply(reportObject, reportObject.Style, ValuePrecedence.ExplicitStyle);
     }
 
     private static bool TryGetImplicitStyle(ResourceDictionary resources, Type type, out Style style)

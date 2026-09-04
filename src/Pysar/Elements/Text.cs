@@ -32,6 +32,10 @@ public class Text : ReportElement<Text>
 
     public Text()
     {
+        // Written at Default precedence: a type's own defaults must not read as author assignments,
+        // or a style could never set Size/Width/Height again. The constructor body runs before any
+        // object initializer, so `new Text { Size = ... }` still records Local.
+        using var defaults = PushWritePrecedence(ValuePrecedence.Default);
         Size = Size.Auto;
     }
 
@@ -49,28 +53,30 @@ public class Text : ReportElement<Text>
 
     // Facades over Font so XAML can set font parts as flat attributes (FontFamily="Ubuntu" FontSize="9"
     // FontStyle="Bold" FontColor="#444444"). Font is a struct: read a copy, mutate, write it back.
+    // Each records its own member name: writing Font only records "Font", so without this a style would
+    // keep overwriting a locally set part - and precedence would be shared by all four parts at once.
     public string FontFamily
     {
         get => Font.Family;
-        set { var f = Font; f.Family = value; Font = f; }
+        set { var f = Font; f.Family = value; Font = f; RecordValue(nameof(FontFamily)); }
     }
 
     public float FontSize
     {
         get => Font.Size;
-        set { var f = Font; f.Size = value; Font = f; }
+        set { var f = Font; f.Size = value; Font = f; RecordValue(nameof(FontSize)); }
     }
 
     public FontStyle FontStyle
     {
         get => Font.Style;
-        set { var f = Font; f.Style = value; Font = f; }
+        set { var f = Font; f.Style = value; Font = f; RecordValue(nameof(FontStyle)); }
     }
 
     public Color FontColor
     {
         get => Font.Color;
-        set { var f = Font; f.Color = value; Font = f; }
+        set { var f = Font; f.Color = value; Font = f; RecordValue(nameof(FontColor)); }
     }
 
     public float LineHeight

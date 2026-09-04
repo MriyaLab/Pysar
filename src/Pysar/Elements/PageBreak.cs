@@ -1,3 +1,4 @@
+using Pysar.Binding;
 using Pysar.Core.Structs;
 using Pysar.Elements.Base;
 
@@ -14,6 +15,8 @@ public sealed class PageBreak : ReportElement<PageBreak>
     public PageBreak()
     {
         // Full width so it stacks like a normal block, but no height — it only marks a y position.
+        // At Default precedence: a type's own default must not shadow a later style (see Text).
+        using var defaults = PushWritePrecedence(ValuePrecedence.Default);
         Size = new Size(SizeLength.Fill, SizeLength.Fixed(0));
     }
 }

@@ -43,8 +43,16 @@
 
     <!-- SkiaSharp & Vector Graphics -->
     <PackageVersion Include="SkiaSharp" Version="4.151.1" />
-    <!-- The main SkiaSharp package only bundles win-x64/win-x86 and osx native binaries; Linux
-         needs this separate package, or DllNotFoundException on libSkiaSharp at runtime. -->
+    <!-- The main SkiaSharp package only bundles win-x64/win-x86 and osx native binaries, but
+         leaving that implicit lets a transitive dependency on an older SkiaSharp line (SkiaSharp.QrCode
+         1.1.1 wants 4.148.0) resolve its own Win32/macOS native assets unpinned, so two incompatible
+         copies of libSkiaSharp end up in the same output and whichever copies last wins - the native
+         library then reports an internal engine version the 4.151.1 managed wrapper rejects at
+         startup ("SkiaSharpVersion.CheckNativeLibraryCompatible" throws). Pinning these here, exactly
+         like the platforms below that always needed it explicitly, forces one consistent version.
+    -->
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="4.151.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.macOS" Version="4.151.1" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.151.1" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Android" Version="4.151.1" />
     <PackageVersion Include="SkiaSharp.NativeAssets.iOS" Version="4.151.1" />

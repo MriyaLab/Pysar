@@ -1,3 +1,4 @@
+using Pysar.Binding;
 using Pysar.Elements.Base;
 
 namespace Pysar.Elements;
@@ -16,8 +17,8 @@ public static class StyleExtensions
 
         element.Style = style;
         if (TryGetImplicitStyle(resources, element.GetType(), out var implicitStyle))
-            StyleApplicator.Apply(element, implicitStyle);
-        StyleApplicator.Apply(element, style);
+            StyleApplicator.Apply(element, implicitStyle, ValuePrecedence.ImplicitStyle);
+        StyleApplicator.Apply(element, style, ValuePrecedence.ExplicitStyle);
         return element;
     }
 
