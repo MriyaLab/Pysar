@@ -30,6 +30,18 @@ public sealed class ReportViewSession(
 {
     private CancellationTokenSource? _cancellation;
 
+    /// <summary>
+    ///     Set while a redraw is already on its way to the host's thread, so a burst of arrivals is
+    ///     worth one pass rather than one each.
+    /// </summary>
+    /// <remarks>
+    ///     A page is a dozen cells at a usual zoom, and they are asked for together and land together
+    ///     as that page scrolls in. Announcing each one separately put a dozen full refreshes - each
+    ///     of them relaying out every page and cell - into the very frame where the page crossed the
+    ///     edge of the viewport, which is where the reader felt the scroll catch.
+    /// </remarks>
+    private int _redrawPosted;
+
     /// <summary>The cache for the loaded report, or <c>null</c> when there is none.</summary>
     public ReportViewTiles? Tiles { get; private set; }
 
@@ -68,6 +80,10 @@ public sealed class ReportViewSession(
         Tiles = null;
         presenter.SetTiles(null);
 
+        // Whatever the previous report left owed, this one does not owe: a redraw posted for a cache
+        // that has just gone must not be what keeps the next report's first redraw from being posted.
+        Interlocked.Exchange(ref _redrawPosted, 0);
+
         Cleared?.Invoke();
 
         if (report is null)
@@ -85,7 +101,7 @@ public sealed class ReportViewSession(
 
             var tiles = new ReportViewTiles(session, scheduler, package, maxDegreeOfParallelism);
 
-            tiles.Invalidated += () => host.Post(() => Invalidated?.Invoke());
+            tiles.Invalidated += PostRedraw;
             tiles.Failed += exception => host.Post(() => Failed?.Invoke(exception));
 
             Tiles = tiles;
@@ -104,6 +120,27 @@ public sealed class ReportViewSession(
         {
             Failed?.Invoke(exception);
         }
+    }
+
+    /// <summary>
+    ///     Asks the host to redraw, unless it has already been asked and has not got to it yet.
+    /// </summary>
+    /// <remarks>
+    ///     Raised from whichever thread drew the cell, so the flag is exchanged rather than tested and
+    ///     set. It is cleared before the event is raised, not after: a cell that lands while the host
+    ///     is redrawing is a cell the current pass may already have missed, so it must be able to ask
+    ///     for the next one.
+    /// </remarks>
+    private void PostRedraw()
+    {
+        if (Interlocked.Exchange(ref _redrawPosted, 1) == 1)
+            return;
+
+        host.Post(() =>
+        {
+            Interlocked.Exchange(ref _redrawPosted, 0);
+            Invalidated?.Invoke();
+        });
     }
 
     /// <summary>

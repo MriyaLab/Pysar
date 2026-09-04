@@ -91,6 +91,26 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
     /// </remarks>
     private readonly List<TileKey> _placedKeys = [];
 
+    /// <summary>
+    ///     Image views a cell has finished with, kept in the layout and hidden, ready for the next one.
+    /// </summary>
+    /// <remarks>
+    ///     Adding a view to the layout builds a platform view and tears it down again on removal, and
+    ///     a page's worth of cells arrives and departs together as that page crosses the edge of the
+    ///     viewport - so all of that churn landed on one frame of the scroll. A hidden child costs the
+    ///     layout nothing and already has the platform view the next cell wants.
+    /// </remarks>
+    private readonly Stack<Image> _spareTileImages = new();
+
+    /// <summary>The cells placed in the current pass, in the order they were placed.</summary>
+    private readonly List<Image> _paintOrder = [];
+
+    /// <summary>Whether the current pass placed cells of more than one scale.</summary>
+    private bool _paintOrderMixed;
+
+    /// <summary>The scale of the first cell placed in the current pass.</summary>
+    private float _paintOrderScale;
+
     /// <summary>Device pixels per device independent unit, which cells are rendered against.</summary>
     /// <remarks>
     ///     Held rather than read per use: this is a platform call, and the planner asks for it on
@@ -519,7 +539,41 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
         _placedKeys.Clear();
         _placedKeys.AddRange(_tileViews.Keys);
 
+        _paintOrder.Clear();
+        _paintOrderMixed = false;
+
         _presenter.PlaceTiles(_placedKeys);
+
+        ApplyPaintOrder();
+    }
+
+    /// <summary>
+    ///     Puts the cells of this pass in front of one another in the order they were placed.
+    /// </summary>
+    /// <remarks>
+    ///     Only when the pass placed more than one scale. Cells of a single scale are disjoint squares
+    ///     of a page and never overlap, so their order in the tree does not matter - which is what
+    ///     lets a recycled view stay wherever it happens to sit. Two scales do overlap: for the short
+    ///     while after a zoom the previous scale's cells are stretched under the new ones, and the new
+    ///     ones have to stay on top or the release looks softer than the gesture that preceded it.
+    ///     <para>
+    ///     Through <see cref="VisualElement.ZIndex"/> rather than by reordering the children, so the
+    ///     ordering costs a property each instead of a removal and an insertion each. Pages keep the
+    ///     default of zero and so stay behind every cell.
+    ///     </para>
+    /// </remarks>
+    private void ApplyPaintOrder()
+    {
+        if (!_paintOrderMixed)
+            return;
+
+        for (var index = 0; index < _paintOrder.Count; index++)
+        {
+            var wanted = index + 1;
+
+            if (_paintOrder[index].ZIndex != wanted)
+                _paintOrder[index].ZIndex = wanted;
+        }
     }
 
     private void ApplyPageBorder(Border page)
@@ -534,6 +588,11 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
         _content.Children.Clear();
         _pageViews.Clear();
         _tileViews.Clear();
+
+        // The pool holds views that were in the children just cleared; keeping them would hand the
+        // next report views that belong to no layout.
+        _spareTileImages.Clear();
+        _paintOrder.Clear();
     }
 
     // -- IReportViewHost -----------------------------------------------------------------------
@@ -609,31 +668,85 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
         if (page.Content is Image image && image.Source is null && _reportSession.Tiles?.BaseLayer(index) is { } baseLayer)
             image.Source = ImageSource.FromStream(() => new MemoryStream(baseLayer));
 
-        AbsoluteLayout.SetLayoutBounds(page, ToRect(bounds));
+        SetBounds(page, bounds);
     }
 
     void IReportViewHost.PlaceTile(ViewRect bounds, Tile tile)
     {
         if (!_tileViews.TryGetValue(tile.Key, out var placed))
         {
-            placed = new TileView(new Image { Aspect = Aspect.Fill });
-
+            placed = new TileView(TakeTileImage());
             _tileViews[tile.Key] = placed;
-            _content.Children.Add(placed.Image);
         }
 
         placed.Show(tile.Bytes);
 
-        AbsoluteLayout.SetLayoutBounds(placed.Image, ToRect(bounds));
+        SetBounds(placed.Image, bounds);
+
+        _paintOrder.Add(placed.Image);
+
+        // The first cell of the pass names the scale the rest are compared against; a pass that sees
+        // a second one is a pass whose cells overlap, and only that one has an order worth imposing.
+        if (_paintOrder.Count == 1)
+            _paintOrderScale = tile.Key.Scale;
+        else if (tile.Key.Scale != _paintOrderScale)
+            _paintOrderMixed = true;
     }
 
     void IReportViewHost.RemoveTile(TileKey key)
     {
-        if (!_tileViews.TryGetValue(key, out var placed))
+        if (!_tileViews.Remove(key, out var placed))
             return;
 
-        _content.Children.Remove(placed.Image);
-        _tileViews.Remove(key);
+        ReleaseTileImage(placed.Image);
+    }
+
+    /// <summary>An image view for a cell: a view a previous cell has finished with, or a new one.</summary>
+    private Image TakeTileImage()
+    {
+        if (_spareTileImages.TryPop(out var spare))
+        {
+            spare.IsVisible = true;
+
+            return spare;
+        }
+
+        var image = new Image { Aspect = Aspect.Fill };
+        _content.Children.Add(image);
+
+        return image;
+    }
+
+    /// <summary>
+    ///     Hands an image view back, hidden and holding nothing, but still in the layout.
+    /// </summary>
+    /// <remarks>
+    ///     The source is dropped so the pixels it was showing are not held by a view nobody can see;
+    ///     the view itself stays, because building another one is what this exists to avoid.
+    /// </remarks>
+    private void ReleaseTileImage(Image image)
+    {
+        image.IsVisible = false;
+        image.Source = null;
+
+        _spareTileImages.Push(image);
+    }
+
+    /// <summary>
+    ///     Places a view, unless it is already exactly there.
+    /// </summary>
+    /// <remarks>
+    ///     Writing the bounds invalidates the layout whether or not the value differs, and a pass
+    ///     rewrites the bounds of every page and every cell on screen. Nothing about where a cell sits
+    ///     depends on the scroll, so on the pass that follows a cell arriving almost every one of
+    ///     those writes is the value already there.
+    /// </remarks>
+    private static void SetBounds(View view, ViewRect bounds)
+    {
+        var wanted = ToRect(bounds);
+
+        if (AbsoluteLayout.GetLayoutBounds(view) != wanted)
+            AbsoluteLayout.SetLayoutBounds(view, wanted);
     }
 
     /// <summary>A cell on screen, and the bytes the pixels it shows were decoded from.</summary>
