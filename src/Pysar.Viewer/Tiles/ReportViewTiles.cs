@@ -39,7 +39,7 @@ public sealed class ReportViewTiles(
     private const float BaseScale = 1f;
 
     private readonly Dictionary<int, byte[]> _baseLayers = [];
-    private readonly Dictionary<TileKey, Tile> _tiles = [];
+    private readonly TileCache _tiles = new();
     private readonly HashSet<TileKey> _inFlightKeys = [];
     private readonly object _gate = new();
 
@@ -84,8 +84,8 @@ public sealed class ReportViewTiles(
         lock (_gate)
         {
             snapshot = [];
-            foreach (var tile in _tiles.Values)
-                if (tile.Key.PageIndex == pageIndex && Math.Abs(tile.Key.Scale - scale) <= tolerance)
+            foreach (var tile in _tiles.ForPage(pageIndex))
+                if (Math.Abs(tile.Key.Scale - scale) <= tolerance)
                     snapshot.Add(tile);
         }
 
@@ -105,8 +105,8 @@ public sealed class ReportViewTiles(
         lock (_gate)
         {
             snapshot = [];
-            foreach (var tile in _tiles.Values)
-                if (tile.Key.PageIndex == pageIndex && Math.Abs(tile.Key.Scale - scale) > tolerance)
+            foreach (var tile in _tiles.ForPage(pageIndex))
+                if (Math.Abs(tile.Key.Scale - scale) > tolerance)
                     snapshot.Add(tile);
         }
 
@@ -269,7 +269,7 @@ public sealed class ReportViewTiles(
                     if (wanted.Key != request.Key)
                         continue;
 
-                    _tiles[request.Key] = tile;
+                    _tiles.Set(tile);
                     stored = true;
                     break;
                 }
@@ -356,7 +356,7 @@ public sealed class ReportViewTiles(
         var wanted = requests.Select(request => request.Key).ToHashSet();
         var activeScales = requests.Select(request => request.Key.Scale).ToList();
 
-        foreach (var key in _tiles.Keys.ToList())
+        foreach (var key in _tiles.Keys())
         {
             if (!wanted.Contains(key) && IsActiveScale(key.Scale, activeScales))
                 _tiles.Remove(key);
@@ -392,7 +392,7 @@ public sealed class ReportViewTiles(
 
         var activeScales = _wanted.Select(request => request.Key.Scale).ToList();
 
-        foreach (var key in _tiles.Keys.ToList())
+        foreach (var key in _tiles.Keys())
             if (!IsActiveScale(key.Scale, activeScales))
                 _tiles.Remove(key);
     }
@@ -428,6 +428,62 @@ public sealed class ReportViewTiles(
     /// </summary>
     private static SKRect ToSkia(RectPt region) => new(
         (float)region.Left, (float)region.Top, (float)region.Right, (float)region.Bottom);
+
+    /// <summary>The drawn cells, reachable both by their key and by the page they belong to.</summary>
+    /// <remarks>
+    ///     A plain dictionary was enough until the host began asking for one page's cells on every
+    ///     frame of a scroll: answering that by walking every cell made one frame cost the whole cache
+    ///     times the pages on screen, under the lock the render workers also want. The index is kept up
+    ///     to date at the two places a cell is added or dropped, and a read then costs the answer.
+    /// </remarks>
+    private sealed class TileCache
+    {
+        private readonly Dictionary<TileKey, Tile> _byKey = [];
+        private readonly Dictionary<int, List<Tile>> _byPage = [];
+
+        /// <summary>Every key in the cache, as a snapshot safe to remove from while iterating.</summary>
+        public List<TileKey> Keys() => [.. _byKey.Keys];
+
+        public bool ContainsKey(TileKey key) => _byKey.ContainsKey(key);
+
+        /// <summary>The cells drawn for one page, at every scale. Empty for a page with none.</summary>
+        public IReadOnlyList<Tile> ForPage(int pageIndex)
+            => _byPage.TryGetValue(pageIndex, out var page) ? page : [];
+
+        public void Set(Tile tile)
+        {
+            // Dropped first so a key that is written twice leaves one entry in the page index rather
+            // than two, the second of them stale.
+            Remove(tile.Key);
+
+            _byKey[tile.Key] = tile;
+
+            if (!_byPage.TryGetValue(tile.Key.PageIndex, out var page))
+                _byPage[tile.Key.PageIndex] = page = [];
+
+            page.Add(tile);
+        }
+
+        public void Remove(TileKey key)
+        {
+            if (!_byKey.Remove(key))
+                return;
+
+            if (!_byPage.TryGetValue(key.PageIndex, out var page))
+                return;
+
+            page.RemoveAll(tile => tile.Key == key);
+
+            if (page.Count == 0)
+                _byPage.Remove(key.PageIndex);
+        }
+
+        public void Clear()
+        {
+            _byKey.Clear();
+            _byPage.Clear();
+        }
+    }
 
     /// <summary>The default packaging, and what every host had before the choice existed.</summary>
     private static byte[] EncodePng(SKBitmap bitmap)

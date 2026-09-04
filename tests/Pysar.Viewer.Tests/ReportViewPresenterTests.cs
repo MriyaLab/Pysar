@@ -323,6 +323,73 @@ public class ReportViewPresenterTests
         Assert.Equal(2, presenter.CurrentPage);
     }
 
+    /// <summary>
+    ///     A scroll view has already moved every page and cell by the time this is heard about, and a
+    ///     scroll changes neither the size of the document nor where a page sits in it. Laying any of
+    ///     it out again costs the length of the report on every frame of a scroll - and on UIKit the
+    ///     extent write alone re-clamps the offset, which is felt as the view snagging.
+    /// </summary>
+    [Fact]
+    public void AScroll_LeavesTheExtentAndThePagePositionsAlone()
+    {
+        var (host, presenter) = Subject();
+
+        presenter.SetZoom(ReportZoomMode.Custom, 1, new ViewPoint(400, 500));
+
+        var extent = host.Extent;
+        var pages = host.Pages.ToDictionary(page => page.Key, page => page.Value);
+
+        var extentWrites = host.ExtentWrites;
+        var placements = host.PagePlacements;
+
+        host.ScrollY = host.Pages[0].Height / 3;
+        presenter.Scrolled();
+
+        Assert.Equal(extentWrites, host.ExtentWrites);
+        Assert.Equal(placements, host.PagePlacements);
+
+        // And what was laid out before is still where it was, since nothing about it depends on the
+        // scroll: a page's position is a position in the document, not on the screen.
+        Assert.Equal(extent, host.Extent);
+        Assert.Equal(pages, host.Pages);
+    }
+
+    /// <summary>
+    ///     What a scroll does still have to do: say which page is at the top, and say so only when it
+    ///     has changed - a host writes that into a bindable property, and this runs per frame.
+    /// </summary>
+    [Fact]
+    public void AScroll_ReportsTheCurrentPageOnlyWhenItMovedToAnother()
+    {
+        var (host, presenter) = Subject();
+
+        presenter.SetZoom(ReportZoomMode.Custom, 1, new ViewPoint(400, 500));
+
+        var reports = 0;
+        presenter.StateChanged += () => reports++;
+
+        var step = host.Pages[0].Height;
+
+        // Within the first page: nothing to say.
+        host.ScrollY = step / 4;
+        presenter.Scrolled();
+
+        Assert.Equal(0, reports);
+        Assert.Equal(1, presenter.CurrentPage);
+
+        // Onto the second: said once.
+        host.ScrollY = step + 24 + 10;
+        presenter.Scrolled();
+
+        Assert.Equal(1, reports);
+        Assert.Equal(2, presenter.CurrentPage);
+
+        host.ScrollY += 5;
+        presenter.Scrolled();
+
+        Assert.Equal(1, reports);
+    }
+
     [Fact]
     public void AZoomBeforeAReportIsLoaded_DoesNotScroll()
     {
@@ -620,5 +687,57 @@ public class ReportViewPresenterTests
 
         Assert.Equal(before.Bounds.Width * 2, after.Bounds.Width, 3);
         Assert.Equal(before.Bounds.Height * 2, after.Bounds.Height, 3);
+    }
+
+    /// <summary>
+    ///     Placement walks the pages the planner draws for, not the whole report: a pass otherwise
+    ///     costs the length of the report however little of it is on screen, and this runs whenever a
+    ///     cell arrives. A page left far behind gives its views up, which is also what the next plan
+    ///     does to its cells.
+    /// </summary>
+    [Fact]
+    public async Task PlacingCells_LeavesBehindThePagesTheViewHasScrolledAwayFrom()
+    {
+        var design = new Report
+        {
+            PageFormat = new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 }
+        };
+
+        // One band taller than several pages, so there is a page far enough away to be left behind.
+        design.Detail.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(4000)) });
+        design.Build();
+
+        var host = new FakeHost();
+        var presenter = new ReportViewPresenter(host);
+
+        using var tiles = new ReportViewTiles(
+            await ReportRenderSession.CreateAsync(design), new TaskRunScheduler());
+
+        presenter.SetTiles(tiles);
+        presenter.ViewportChanged();
+
+        Assert.True(presenter.PageCount >= 4, $"the report should span several pages, not {presenter.PageCount}");
+
+        var plan = presenter.PlanTiles();
+        Assert.NotNull(plan);
+
+        var arrived = new TaskCompletionSource();
+
+        tiles.Invalidated += () => arrived.TrySetResult();
+        tiles.RequestTiles(plan.Requests);
+
+        await arrived.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        presenter.PlaceTiles([]);
+
+        Assert.Contains(host.Tiles.Keys, key => key.PageIndex == 0);
+
+        // To the last page, with the first one now several viewports behind.
+        host.ScrollY = Math.Max(0, host.Extent.Y - host.ViewportHeight);
+        presenter.Scrolled();
+
+        presenter.PlaceTiles(host.Tiles.Keys.ToList());
+
+        Assert.DoesNotContain(host.Tiles.Keys, key => key.PageIndex == 0);
     }
 }

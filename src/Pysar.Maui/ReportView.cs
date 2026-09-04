@@ -82,6 +82,23 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
     private readonly Dictionary<int, Border> _pageViews = [];
     private readonly Dictionary<TileKey, TileView> _tileViews = [];
 
+    /// <summary>
+    ///     The keys handed to the presenter at the last refresh, reused rather than allocated afresh.
+    /// </summary>
+    /// <remarks>
+    ///     A snapshot is needed - the presenter removes views as it walks it - but a new list per
+    ///     refresh is not, and a refresh happens whenever a cell arrives.
+    /// </remarks>
+    private readonly List<TileKey> _placedKeys = [];
+
+    /// <summary>Device pixels per device independent unit, which cells are rendered against.</summary>
+    /// <remarks>
+    ///     Held rather than read per use: this is a platform call, and the planner asks for it on
+    ///     every pass. Refreshed when the view changes size and when the display itself changes,
+    ///     between them covering everything that can put the window on a screen of another density.
+    /// </remarks>
+    private double _density = 1;
+
     private readonly ReportViewPresenter _presenter;
 
     private readonly ReportViewSession _reportSession;
@@ -147,7 +164,20 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
         HandlerChanged += (_, _) =>
         {
             if (Handler is null)
+            {
+                DeviceDisplay.Current.MainDisplayInfoChanged -= OnDisplayChanged;
                 _reportSession.DisposeWhenStillDetached(() => Handler is not null);
+
+                return;
+            }
+
+            // Dropped above and taken again here, so a control that moves between parents ends up
+            // subscribed exactly once. The density is read now because nothing else will read it
+            // until something changes.
+            DeviceDisplay.Current.MainDisplayInfoChanged -= OnDisplayChanged;
+            DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayChanged;
+
+            RefreshDensity();
         };
 
         _scroll.Content = _content;
@@ -420,7 +450,36 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
     ///     Reacts to the view having changed size. Zoom and resize invalidate every tile at once, so
     ///     unlike a scroll this waits for the view to settle before asking for anything sharp.
     /// </summary>
-    private void OnViewportChanged() => _controller.ViewportChanged();
+    private void OnViewportChanged()
+    {
+        RefreshDensity();
+
+        _controller.ViewportChanged();
+    }
+
+    /// <summary>The window has moved to a display that may not have the density the last one had.</summary>
+    private void OnDisplayChanged(object? sender, DisplayInfoChangedEventArgs e)
+    {
+        if (!RefreshDensity())
+            return;
+
+        // Every cell on screen was drawn for the display the window has just left, so the whole set
+        // has to be planned again - which is what a viewport change means here.
+        _controller.ViewportChanged();
+    }
+
+    /// <summary>Reads the display's density, and says whether it moved.</summary>
+    private bool RefreshDensity()
+    {
+        var density = DeviceDisplay.Current.MainDisplayInfo.Density;
+
+        if (density <= 0 || Math.Abs(density - _density) < 1e-6)
+            return false;
+
+        _density = density;
+
+        return true;
+    }
 
     /// <summary>Redraws what changed, and asks for tiles now or once the view settles.</summary>
     private void AfterPresenterUpdate(bool immediate) => _controller.AfterPresenterUpdate(immediate);
@@ -430,9 +489,6 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
 
     /// <summary>The scroll view's own height, which every measurement here is against; never zero.</summary>
     private double ViewportHeight => Math.Max(1, _scroll.Height);
-
-    /// <summary>Device pixels per device independent unit, which cells are rendered against.</summary>
-    private static double Density => DeviceDisplay.Current.MainDisplayInfo.Density;
 
     /// <summary>The centre of the viewport, in the units <see cref="ReportViewPresenter.SetZoom"/> anchors by.</summary>
     private ViewPoint CenterAnchor() => new(ViewportWidth / 2, ViewportHeight / 2);
@@ -460,7 +516,10 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
             return;
         }
 
-        _presenter.PlaceTiles(_tileViews.Keys.ToList());
+        _placedKeys.Clear();
+        _placedKeys.AddRange(_tileViews.Keys);
+
+        _presenter.PlaceTiles(_placedKeys);
     }
 
     private void ApplyPageBorder(Border page)
@@ -487,7 +546,7 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
 
     double IReportViewHost.ScrollY => _scroll.ScrollY;
 
-    double IReportViewHost.Density => Density;
+    double IReportViewHost.Density => _density;
 
     void IReportViewHost.ScrollTo(double x, double y)
     {

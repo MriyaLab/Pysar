@@ -158,6 +158,19 @@ public sealed class ReportViewPresenter
     public void ViewportChanged() => Update();
 
     /// <summary>The view has been scrolled.</summary>
+    /// <remarks>
+    ///     Deliberately not a full <see cref="Update"/>. A scroll changes neither the size of the
+    ///     document nor where a page sits in it, so there is nothing to lay out for it: the platform's
+    ///     own scroll view has already moved every page and cell, which is the whole reason they are
+    ///     real views. What is left is which page is at the top, and the cells the controller plans
+    ///     next.
+    ///     <para>
+    ///     This runs on every frame of a scroll, so what it does not do matters more than what it
+    ///     does. Rewriting the extent and replacing the bounds of every page here cost the length of
+    ///     the report per frame - and on UIKit writing the content size mid-scroll re-clamps the
+    ///     offset, which the reader feels as the view snagging.
+    ///     </para>
+    /// </remarks>
     public void Scrolled()
     {
         // A shrink of the extent clamps the offset and raises this from inside Update. That clamp is
@@ -171,7 +184,10 @@ public sealed class ReportViewPresenter
         // measured against.
         _pendingScroll = null;
 
-        Update();
+        // Only when it moved to another page: the zoom cannot have changed, so there is nothing else
+        // for a host to hear about, and a host writes these into bindable properties.
+        if (UpdateCurrentPage())
+            StateChanged?.Invoke();
     }
 
     /// <summary>
@@ -294,6 +310,12 @@ public sealed class ReportViewPresenter
     ///     After a zoom, cells of the previous scale are placed first (stretched into the new page
     ///     geometry) and current-scale cells on top. That keeps the release from looking softer than
     ///     the pinch preview, which had been scaling those same sharp pixels.
+    ///     <para>
+    ///     Only the pages the planner is drawing for are walked, over the same window and the same
+    ///     page either side of it, so a cell that has just been asked for is never removed the moment
+    ///     it arrives. Walking the whole report instead made one pass cost the length of the report
+    ///     however little of it was on screen.
+    ///     </para>
     /// </remarks>
     public void PlaceTiles(IReadOnlyCollection<TileKey> placed)
     {
@@ -304,11 +326,11 @@ public sealed class ReportViewPresenter
         var offsetX = PageOffsetX(viewport);
         var unitsPerPoint = viewport.UnitsPerPoint;
         var scale = viewport.RenderScale(_host.Density);
-        var tolerance = Math.Abs(scale) * 1e-4f;
 
         var wanted = new HashSet<TileKey>();
+        var (firstPage, lastPage) = DrawnPages(viewport);
 
-        for (var index = 0; index < viewport.PageCount; index++)
+        for (var index = firstPage; index <= lastPage; index++)
         {
             foreach (var tile in _tiles.BridgeTilesFor(index, scale))
             {
@@ -343,6 +365,27 @@ public sealed class ReportViewPresenter
             Snap(viewport.PageTop(tile.Key.PageIndex) + tile.RegionPt.Top * unitsPerPoint),
             tile.RegionPt.Width * unitsPerPoint,
             tile.RegionPt.Height * unitsPerPoint), tile);
+    }
+
+    /// <summary>
+    ///     The range of pages cells are drawn for, inclusive, or an empty range when none are.
+    /// </summary>
+    /// <remarks>
+    ///     The planner's own window - the viewport grown by the overdraw, and one page either side of
+    ///     what that covers - so the cells this places and the cells it asks for are the same set. A
+    ///     narrower window here would remove a cell the planner has just asked for as soon as it
+    ///     arrived, and the two would take turns undoing each other for as long as the view sat still.
+    /// </remarks>
+    private (int First, int Last) DrawnPages(PageViewport viewport)
+    {
+        var margin = _host.ViewportHeight * VerticalOverdraw;
+        var pages = viewport.VisiblePages(
+            _host.ScrollY - margin, _host.ScrollY + _host.ViewportHeight + margin);
+
+        if (pages.Count == 0)
+            return (0, -1);
+
+        return (Math.Max(0, pages[0] - 1), Math.Min(viewport.PageCount - 1, pages[^1] + 1));
     }
 
     /// <summary>
@@ -457,13 +500,14 @@ public sealed class ReportViewPresenter
                 viewport.PageHeight + 2 * border));
     }
 
-    private void UpdateCurrentPage()
+    /// <summary>Whether the page at the top of the viewport is now a different one.</summary>
+    private bool UpdateCurrentPage()
     {
         var viewport = Viewport();
         var step = viewport.PageHeight + viewport.PageSpacing;
 
         if (viewport.PageCount == 0 || step <= 0)
-            return;
+            return false;
 
         // Measured from the first page rather than from the document, so the padding above it does
         // not count as part of the first page's height.
@@ -471,7 +515,7 @@ public sealed class ReportViewPresenter
         page = Math.Clamp(page, 1, viewport.PageCount);
 
         if (page == CurrentPage)
-            return;
+            return false;
 
         // Reporting where the scroll landed must not be mistaken for a request to go there: that
         // would scroll to the top of that page mid-gesture, which is felt as the view tugging itself
@@ -485,6 +529,8 @@ public sealed class ReportViewPresenter
         {
             _reportingScrollPosition = false;
         }
+
+        return true;
     }
 
     private double PageOffsetX(PageViewport viewport) => viewport.PageOffsetX(_host.ViewportWidth);
