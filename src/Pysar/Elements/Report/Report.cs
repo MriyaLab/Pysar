@@ -1,3 +1,4 @@
+using Pysar.Binding;
 using Pysar.Core.Abstractions;
 using Pysar.Core.Structs;
 using Pysar.Elements.Base;
@@ -12,7 +13,9 @@ public class Report : ReportObject, IResourceHost
     public Report()
     {
         // Page surface defaults to paper white; element BackgroundColor stays Transparent.
-        BackgroundColor = Colors.White;
+        // At Default precedence: a type's own default must not shadow a later style (see Text).
+        using (PushWritePrecedence(ValuePrecedence.Default))
+            BackgroundColor = Colors.White;
         Bands = new BandCollection(this);
         Bands.Add(new DetailBand());
     }

@@ -47,7 +47,7 @@ internal sealed class XamlObjectFactory
                        ?? throw new XamlException($"Cannot instantiate {type.FullName}.");
 
         if (_context.TryGetResource(type, out var implicitResource) && implicitResource is Style implicitStyle)
-            _members.ApplyStyle(instance, implicitStyle);
+            _members.ApplyStyle(instance, implicitStyle, ValuePrecedence.ImplicitStyle);
 
         var styleMember = FindMember(node, XamlMemberKind.Attribute, "Style");
         if (styleMember?.Value is XamlStaticResourceNode resource)
@@ -56,17 +56,12 @@ internal sealed class XamlObjectFactory
                 throw new XamlException($"Resource '{resource.Key}' is not a Style.");
             if (instance is ReportObject reportObject)
                 reportObject.Style = style;
-            _members.ApplyStyle(instance, style);
+            _members.ApplyStyle(instance, style, ValuePrecedence.ExplicitStyle);
         }
 
+        // Local attributes last, at the default Local precedence: they outrank both styles above, and
+        // the second style pass in StyleEngine.Apply (at Report.Build) will leave them alone.
         _members.ApplyAttributes(instance, node);
-
-        // Implicit style, explicit Style, and local attributes are now resolved in the correct
-        // precedence order. StyleEngine.Apply runs again later, at Report.Build() - marking this
-        // object tells it to leave the result alone rather than reapplying the implicit style's
-        // setters on top and overwriting a local override.
-        if (instance is ReportObject resolvedObject)
-            resolvedObject.StylesResolved = true;
 
         _context.CaptureName(instance, node);
         ApplyContent(instance, node);

@@ -46,18 +46,24 @@ public abstract class ReportElement : ReportObject, IReportElement
         set => SetValue(SizeProperty, value);
     }
 
+    // The size facades below record their own member name for the same reason the font facades in
+    // Text do: they write a differently named backing property, so without this a style would keep
+    // overwriting a locally set part. Note that MinSize/MaxSize both flow through SetMinMax, which
+    // writes both backing properties - so any min/max write records both of those container member
+    // names. A style setting MinSize/MaxSize wholesale is therefore blocked by any local min/max
+    // write; the per-part members (MinWidth, ...) stay precise.
     /// <summary>Facade over <see cref="Size"/>'s width (e.g. XAML <c>Width="Fill"</c> / <c>Width="60"</c>).</summary>
     public SizeLength Width
     {
         get => Size.Width;
-        set => Size = new Size(value, Size.Height);
+        set { Size = new Size(value, Size.Height); RecordValue(nameof(Width)); }
     }
 
     /// <summary>Facade over <see cref="Size"/>'s height.</summary>
     public SizeLength Height
     {
         get => Size.Height;
-        set => Size = new Size(Size.Width, value);
+        set { Size = new Size(Size.Width, value); RecordValue(nameof(Height)); }
     }
 
     public SizeConstraint MinSize
@@ -76,28 +82,28 @@ public abstract class ReportElement : ReportObject, IReportElement
     public MinMaxLength MinWidth
     {
         get => MinSize.Width;
-        set => MinSize = new SizeConstraint(value, MinSize.Height);
+        set { MinSize = new SizeConstraint(value, MinSize.Height); RecordValue(nameof(MinWidth)); }
     }
 
     /// <summary>Facade over <see cref="MinSize"/>'s height.</summary>
     public MinMaxLength MinHeight
     {
         get => MinSize.Height;
-        set => MinSize = new SizeConstraint(MinSize.Width, value);
+        set { MinSize = new SizeConstraint(MinSize.Width, value); RecordValue(nameof(MinHeight)); }
     }
 
     /// <summary>Facade over <see cref="MaxSize"/>'s width.</summary>
     public MinMaxLength MaxWidth
     {
         get => MaxSize.Width;
-        set => MaxSize = new SizeConstraint(value, MaxSize.Height);
+        set { MaxSize = new SizeConstraint(value, MaxSize.Height); RecordValue(nameof(MaxWidth)); }
     }
 
     /// <summary>Facade over <see cref="MaxSize"/>'s height.</summary>
     public MinMaxLength MaxHeight
     {
         get => MaxSize.Height;
-        set => MaxSize = new SizeConstraint(MaxSize.Width, value);
+        set { MaxSize = new SizeConstraint(MaxSize.Width, value); RecordValue(nameof(MaxHeight)); }
     }
 
     public Position Position

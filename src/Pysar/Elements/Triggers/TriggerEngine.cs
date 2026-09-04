@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using Pysar.Binding;
 using Pysar.Core;
 using Pysar.Core.Abstractions;
 using Pysar.Elements.Base;
@@ -46,9 +47,13 @@ internal static class TriggerEngine
     }
 
     /// <summary>Applies each setter to the element by CLR property (works for both BindableProperty-backed
-    /// properties and struct facades such as <c>FontColor</c>), coercing the literal to the property type.</summary>
+    /// properties and struct facades such as <c>FontColor</c>), coercing the literal to the property type.
+    /// Written at <see cref="ValuePrecedence.Trigger"/>, the top of the precedence order: a satisfied
+    /// trigger is conditional formatting and outranks both styles and the author's own value.</summary>
     private static void ApplySetters(object element, IEnumerable<Setter> setters)
     {
+        using var scope = (element as BindableObject)?.PushWritePrecedence(ValuePrecedence.Trigger);
+
         foreach (var setter in setters)
         {
             var prop = element.GetType().GetProperty(setter.Member, BindingFlags.Public | BindingFlags.Instance);

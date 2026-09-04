@@ -7,12 +7,72 @@ namespace Pysar.Binding;
 public abstract class BindableObject : IBindableObject, IBindingStore
 {
     private readonly Dictionary<BindableProperty, object?> _values = new();
+    private readonly Dictionary<string, ValuePrecedence> _memberPrecedence = new(StringComparer.Ordinal);
     protected readonly Dictionary<BindableProperty, BindingInfo> _pendingBindings = new();
+
+    /// <summary>
+    ///     The precedence recorded for writes happening right now. <see cref="ValuePrecedence.Local"/> -
+    ///     an assignment by the report author - unless a style, trigger or constructor pass has changed it
+    ///     via <see cref="PushWritePrecedence"/>.
+    /// </summary>
+    public ValuePrecedence WritePrecedence { get; private set; } = ValuePrecedence.Local;
+
+    /// <summary>
+    ///     True when a write at <paramref name="precedence"/> may set <paramref name="member"/> - that is,
+    ///     when nothing of higher precedence has written it. Styles must consult this before assigning;
+    ///     local assignments and triggers write unconditionally.
+    /// </summary>
+    public bool CanApplyValue(string member, ValuePrecedence precedence)
+        => precedence >= (_memberPrecedence.TryGetValue(member, out var current)
+            ? current
+            : ValuePrecedence.Default);
+
+    /// <summary>
+    ///     Records <paramref name="member"/> as written at the current <see cref="WritePrecedence"/>.
+    ///     <see cref="SetValue"/> does this for every <see cref="BindableProperty"/> under its own name; a
+    ///     CLR facade over a differently named backing property (e.g. <c>FontFamily</c> over <c>Font</c>)
+    ///     must call this itself, or a style would keep overwriting it.
+    /// </summary>
+    /// <remarks>
+    ///     Only ever raises. Facades that share a backing property write it on each other's behalf -
+    ///     setting <c>Height</c> also writes <c>Size</c> - so a style legitimately setting one facade
+    ///     would otherwise re-record the shared backing member at style precedence, and a later style
+    ///     could then set that member wholesale and drop the value the author had set through the other
+    ///     facade. A value's source only moves up; <see cref="ClearValue"/> is what takes it back down.
+    /// </remarks>
+    protected void RecordValue(string member)
+    {
+        if (!_memberPrecedence.TryGetValue(member, out var current) || current < WritePrecedence)
+            _memberPrecedence[member] = WritePrecedence;
+    }
+
+    /// <summary>
+    ///     Makes every write until the returned scope is disposed record <paramref name="precedence"/>
+    ///     instead of <see cref="ValuePrecedence.Local"/>. Scopes nest and restore the previous value.
+    /// </summary>
+    public IDisposable PushWritePrecedence(ValuePrecedence precedence)
+        => new PrecedenceScope(this, precedence);
+
+    private sealed class PrecedenceScope : IDisposable
+    {
+        private readonly BindableObject _owner;
+        private readonly ValuePrecedence _previous;
+
+        public PrecedenceScope(BindableObject owner, ValuePrecedence precedence)
+        {
+            _owner = owner;
+            _previous = owner.WritePrecedence;
+            owner.WritePrecedence = precedence;
+        }
+
+        public void Dispose() => _owner.WritePrecedence = _previous;
+    }
 
     public void SetValue(BindableProperty property, object? value)
     {
         var oldValue = GetValueInternal(property);
         SetValueInternal(property, value);
+        RecordValue(property.Name);
         property.OnPropertyChanged(this, oldValue, value);
     }
 
@@ -43,10 +103,16 @@ public abstract class BindableObject : IBindableObject, IBindingStore
         _values[property] = value;
     }
 
+    /// <remarks>
+    ///     Also forgets the property's recorded precedence, so the member is open to a style again -
+    ///     this is the only way back down the precedence order. A facade over this property
+    ///     (e.g. <c>Height</c> over <c>Size</c>) keeps its own recording and must be cleared by name.
+    /// </remarks>
     public void ClearValue(BindableProperty property)
     {
         var oldValue = GetValueInternal(property);
         _values.Remove(property);
+        _memberPrecedence.Remove(property.Name);
         property.OnPropertyChanged(this, oldValue, property.DefaultValue);
     }
 
@@ -132,6 +198,8 @@ public abstract class BindableObject : IBindableObject, IBindingStore
     {
         foreach (var kvp in _values)
             target._values[kvp.Key] = kvp.Value;
+        foreach (var kvp in _memberPrecedence)
+            target._memberPrecedence[kvp.Key] = kvp.Value;
         foreach (var kvp in _pendingBindings)
             target._pendingBindings[kvp.Key] = kvp.Value;
     }

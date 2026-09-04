@@ -23,10 +23,21 @@ internal sealed class XamlMemberAssigner(XamlLoadContext context)
         }
     }
 
-    public void ApplyStyle(object instance, Style style)
+    /// <summary>
+    ///     Applies a style's setters at <paramref name="precedence"/>, skipping members already written by
+    ///     something that outranks it. Mirrors <c>StyleApplicator</c>, which it cannot delegate to: setter
+    ///     values here may still be unparsed markup extensions.
+    /// </summary>
+    public void ApplyStyle(object instance, Style style, ValuePrecedence precedence)
     {
+        var bindable = instance as BindableObject;
+        using var scope = bindable?.PushWritePrecedence(precedence);
+
         foreach (var setter in style.Setters)
         {
+            if (bindable is not null && !bindable.CanApplyValue(setter.Member, precedence))
+                continue;
+
             if (setter.Value is string text)
             {
                 AssignValue(
