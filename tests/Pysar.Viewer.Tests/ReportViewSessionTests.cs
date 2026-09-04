@@ -183,6 +183,76 @@ public class ReportViewSessionTests
         Assert.Null(session.Tiles);
     }
 
+    /// <summary>
+    ///     A page is a dozen cells at a usual zoom, asked for together and landing together as that
+    ///     page scrolls in. Announcing each one separately put a dozen full refreshes - each of them
+    ///     relaying out every page and cell - into the one frame where the page crossed the edge of
+    ///     the viewport, which is where the reader felt the scroll catch.
+    /// </summary>
+    [Fact]
+    public async Task ManyCellsLandingTogether_AreWorthOneRedraw()
+    {
+        var host = new FakeHost();
+        var presenter = new ReportViewPresenter(host);
+        var session = new ReportViewSession(presenter, host, new TaskRunScheduler());
+
+        await session.LoadAsync(AReport(), Renderer);
+
+        var tiles = session.Tiles;
+        Assert.NotNull(tiles);
+
+        presenter.ViewportChanged();
+
+        var plan = presenter.PlanTiles();
+        Assert.NotNull(plan);
+        Assert.True(plan.Requests.Count >= 4, $"the page should be several cells, not {plan.Requests.Count}");
+
+        // The load draws the base layer too, and that announces itself the same way. Let it land and
+        // drop what it posted, so what is counted below is the burst of cells and nothing else.
+        await WaitUntilAsync(() => tiles.BaseLayer(0) is not null);
+        await Task.Delay(50);
+
+        // Only from here on is anything the host is asked to do a redraw for the cells.
+        host.DeferPosts = true;
+        host.Posted.Clear();
+
+        var arrivals = 0;
+        var drawn = new TaskCompletionSource();
+
+        tiles.Invalidated += () =>
+        {
+            if (Interlocked.Increment(ref arrivals) >= plan.Requests.Count)
+                drawn.TrySetResult();
+        };
+
+        tiles.RequestTiles(plan.Requests);
+
+        await drawn.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.True(arrivals >= 4, $"the cells should have arrived separately, and {arrivals} did");
+        Assert.Single(host.Posted);
+
+        // And the pass that follows is not swallowed: a cell that lands while the host is redrawing
+        // has to be able to ask for the next one.
+        host.RunPosted();
+        await DrawOneAsync(tiles);
+
+        Assert.NotEmpty(host.Posted);
+    }
+
+    /// <summary>Waits for something the render threads will bring about, or fails the test.</summary>
+    private static async Task WaitUntilAsync(Func<bool> predicate)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+
+        while (!predicate())
+        {
+            Assert.True(DateTime.UtcNow < deadline, "the condition was never reached");
+
+            await Task.Delay(10);
+        }
+    }
+
     /// <summary>Asks for one cell and waits for it, as <see cref="ReportViewTilesTests"/> does.</summary>
     private static async Task<Tile> DrawOneAsync(ReportViewTiles tiles)
     {
