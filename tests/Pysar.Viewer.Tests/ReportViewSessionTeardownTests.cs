@@ -69,6 +69,20 @@ public class ReportViewSessionTeardownTests
     }
 
     [Fact]
+    public async Task LoadAsync_AfterDispose_RebuildsTheCache()
+    {
+        var (host, session) = await LoadedSubject();
+
+        session.Dispose();
+        Assert.Null(session.Tiles);
+
+        await session.LoadAsync(AReport(), Renderer);
+        host.RunPosted();
+
+        Assert.NotNull(session.Tiles);
+    }
+
+    [Fact]
     public async Task Dispose_IsSafeToCallTwice()
     {
         var (_, session) = await LoadedSubject();
