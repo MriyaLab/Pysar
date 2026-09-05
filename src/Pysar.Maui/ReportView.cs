@@ -198,6 +198,16 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
             DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayChanged;
 
             RefreshDensity();
+
+            // Shell flyout navigation disconnects the handler for more than one turn, so the
+            // deferred dispose above actually runs. Coming back does not change Report, and
+            // nothing else would load the tiles again - the toolbar still shows the last zoom
+            // and the page is blank. Reload when the session is gone; otherwise re-apply extent
+            // now that the native scroll view exists.
+            if (Report is not null && _reportSession.Tiles is null)
+                _ = StartSessionAsync(Report);
+            else
+                OnViewportChanged();
         };
 
         _scroll.Content = _content;
