@@ -70,6 +70,17 @@ nunit-*.xml
 .fake
 artifacts/
 
+# Samples.
+#
+# The samples live in the Pysar.Samples repository and are not duplicated here. Pysar.Dev.sln is
+# Pysar.sln plus those projects, reached as ..\Pysar.Samples\src\ - it only opens where that
+# repository is checked out next to this one, so it stays local rather than tracked. samples/ is
+# ignored as well: earlier layouts kept a copy or a symbolic link there, and neither belongs in
+# this repository now.
+Pysar.Dev.sln
+Pysar.Dev.slnf
+samples/
+
 # Git worktrees
 .worktrees/
 
