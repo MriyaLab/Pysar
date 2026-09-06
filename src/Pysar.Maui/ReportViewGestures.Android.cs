@@ -25,6 +25,12 @@ public partial class ReportView
 {
     private ScaleGestureDetector? _scaleDetector;
 
+    /// <summary>
+    ///     The scroll view the touch listener was attached to, so it can be taken off that same view
+    ///     rather than off whichever one the handler holds by then.
+    /// </summary>
+    private AView? _scaleTouchView;
+
     /// <summary>The horizontal scroller under the NestedScrollView, once found and wired.</summary>
     private HorizontalScrollView? _horizontalScrollTouch;
 
@@ -35,16 +41,45 @@ public partial class ReportView
 
     partial void AddPlatformGestures()
     {
-        if (_scaleDetector is not null || _scroll.Handler?.PlatformView is not AView view)
+        if (_scroll.Handler?.PlatformView is not AView view || view.Context is null)
             return;
 
-        if (view.Context is null)
+        // Against the view rather than against the detector: after Shell flyout navigation the
+        // handler comes back with a new NestedScrollView, and a listener still held from the previous
+        // one is attached to a view nobody's fingers can reach - which is what left a report reopened
+        // from the flyout no longer zooming.
+        if (ReferenceEquals(_scaleTouchView, view))
             return;
+
+        RemovePlatformGestures();
 
         _scaleDetector = new ScaleGestureDetector(view.Context, new PinchListener(this));
+        _scaleTouchView = view;
 
         view.Touch += OnPlatformTouch;
         TryWireHorizontalScrollTouch(view);
+    }
+
+    partial void RemovePlatformGestures()
+    {
+        // Handle checked rather than trusted: this runs from HandlerChanging, where the views are
+        // still alive, but a disposed peer arriving by any other route must not throw out of teardown.
+        if (_scaleTouchView is { } view && view.Handle != IntPtr.Zero)
+            view.Touch -= OnPlatformTouch;
+
+        if (_horizontalScrollTouch is { } horizontal && horizontal.Handle != IntPtr.Zero)
+            horizontal.Touch -= OnPlatformTouch;
+
+        _scaleTouchView = null;
+        _horizontalScrollTouch = null;
+        _scaleDetector = null;
+
+        // A half-finished gesture must not describe the next scroll view: the dedupe would drop its
+        // first event if it happened to carry the same time and action, and a pinch left marked as
+        // active would keep the cross-platform recogniser out of the way for good.
+        _lastScaleEventTime = long.MinValue;
+        _lastScaleAction = int.MinValue;
+        _platformPinchActive = false;
     }
 
     private void OnPlatformTouch(object? sender, AView.TouchEventArgs e)

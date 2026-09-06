@@ -45,6 +45,17 @@ public partial class ReportView
         _content.GestureRecognizers.Add(pinch);
         _content.GestureRecognizers.Add(doubleTap);
 
+        // A platform recogniser lives on the native scroll view, and Shell flyout navigation
+        // disconnects the handler and builds a new native view when the page comes back - so the
+        // recognisers have to move with it, or the reader returns to a report that no longer zooms.
+        // Dropped from HandlerChanging, which is the last moment the old native view is still there
+        // to be unhooked from; by HandlerChanged it is already gone.
+        _scroll.HandlerChanging += (_, e) =>
+        {
+            if (e.OldHandler is not null)
+                RemovePlatformGestures();
+        };
+
         _scroll.HandlerChanged += (_, _) => AddPlatformGestures();
     }
 
@@ -52,6 +63,12 @@ public partial class ReportView
     ///     Hook for gestures the cross-platform recognisers do not deliver on a given platform.
     /// </summary>
     partial void AddPlatformGestures();
+
+    /// <summary>
+    ///     Unhooks what <see cref="AddPlatformGestures"/> attached, so the next native view can be
+    ///     wired in its turn. Called while the view it attached to is still alive.
+    /// </summary>
+    partial void RemovePlatformGestures();
 
     private void OnPinchUpdated(object? sender, PinchGestureUpdatedEventArgs e)
     {

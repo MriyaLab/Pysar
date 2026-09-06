@@ -1,4 +1,5 @@
 #if MACCATALYST
+using ObjCRuntime;
 using UIKit;
 
 namespace Pysar.Maui;
@@ -17,10 +18,25 @@ public partial class ReportView
 {
     private UIPinchGestureRecognizer? _platformPinch;
 
+    /// <summary>
+    ///     The view <see cref="_platformPinch"/> was added to, so it can be taken off that same view
+    ///     rather than off whichever one the handler holds by then.
+    /// </summary>
+    private UIView? _platformPinchView;
+
     partial void AddPlatformGestures()
     {
-        if (_platformPinch is not null || _scroll.Handler?.PlatformView is not UIView view)
+        if (_scroll.Handler?.PlatformView is not UIView view)
             return;
+
+        // Against the view rather than against the recogniser: after Shell flyout navigation the
+        // handler comes back with a new UIScrollView, and a recogniser still held from the previous
+        // one is attached to a view nobody's fingers can reach - which is what left a report reopened
+        // from the flyout no longer zooming.
+        if (ReferenceEquals(_platformPinchView, view))
+            return;
+
+        RemovePlatformGestures();
 
         _platformPinch = new UIPinchGestureRecognizer(OnPlatformPinch)
         {
@@ -28,7 +44,20 @@ public partial class ReportView
             ShouldRecognizeSimultaneously = (_, _) => true
         };
 
+        _platformPinchView = view;
         view.AddGestureRecognizer(_platformPinch);
+    }
+
+    partial void RemovePlatformGestures()
+    {
+        // Handle checked rather than trusted: this runs from HandlerChanging, where the view is still
+        // alive, but a disposed peer arriving by any other route must not throw out of teardown.
+        if (_platformPinchView is { } view && view.Handle != NativeHandle.Zero && _platformPinch is { } recognizer)
+            view.RemoveGestureRecognizer(recognizer);
+
+        _platformPinch = null;
+        _platformPinchView = null;
+        _platformPinchActive = false;
     }
 
     private void OnPlatformPinch(UIPinchGestureRecognizer recognizer)
