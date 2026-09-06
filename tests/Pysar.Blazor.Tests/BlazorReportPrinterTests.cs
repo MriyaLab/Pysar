@@ -1,4 +1,5 @@
 using Microsoft.JSInterop;
+using Pysar.Core.Enums;
 using Pysar.Core.Structs;
 using Pysar.Elements;
 using Pysar.Skia;
@@ -23,10 +24,28 @@ public class BlazorReportPrinterTests
         Assert.Equal("./_content/Pysar.Blazor/reportPrint.js", js.ImportedModule);
         Assert.Equal("printPdf", js.Module.Identifier);
 
-        var pdf = Assert.IsType<byte[]>(Assert.Single(js.Module.Arguments!));
+        var pdf = Assert.IsType<byte[]>(js.Module.Arguments![0]);
 
         // A PDF, not just any bytes: the browser is handed a document, not a bitmap.
         Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
+    }
+
+    [Fact]
+    public async Task PrintAsync_HandsPageSizeAndOrientationToThePrintModule()
+    {
+        var js = new RecordingJsRuntime();
+        var printer = new BlazorReportPrinter(new SkiaReportRenderer(), js);
+
+        await printer.PrintAsync(BuildReport(Orientation.Landscape));
+
+        Assert.Equal("printPdf", js.Module.Identifier);
+
+        var args = js.Module.Arguments!;
+        Assert.Equal(4, args.Length);
+        Assert.IsType<byte[]>(args[0]);
+        Assert.Equal(842f, args[1]);
+        Assert.Equal(595.5f, args[2]);
+        Assert.Equal(true, args[3]);
     }
 
     [Fact]
@@ -63,9 +82,14 @@ public class BlazorReportPrinterTests
         Assert.Throws<ArgumentNullException>(() => new BlazorReportPrinter(new SkiaReportRenderer(), null!));
     }
 
-    private static Report BuildReport()
+    private static Report BuildReport(Orientation orientation = Orientation.Portrait)
         => ReportBuilder.Create("Print")
-            .WithPageFormat(new PageFormat { Margin = new Thickness(30) })
+            .WithPageFormat(new PageFormat
+            {
+                Margin = new Thickness(30),
+                Size = PageSize.A4,
+                Orientation = orientation
+            })
             .WithDetail(detail => detail.AddElement(new Text { Content = "Hello" }))
             .Build();
 

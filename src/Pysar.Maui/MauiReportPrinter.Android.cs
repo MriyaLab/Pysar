@@ -2,12 +2,13 @@ using Android.Content;
 using Android.OS;
 using Android.Print;
 using Java.IO;
+using Pysar.Export;
 
 namespace Pysar.Maui;
 
 public sealed partial class MauiReportPrinter
 {
-    private partial Task PrintPdfAsync(byte[] pdfBytes, string jobName)
+    private partial Task PrintPdfAsync(byte[] pdfBytes, string jobName, PrintPaper paper)
     {
         var activity = Platform.CurrentActivity
             ?? throw new InvalidOperationException("No current Android activity for printing.");
@@ -16,9 +17,28 @@ public sealed partial class MauiReportPrinter
             ?? throw new InvalidOperationException("Print service is unavailable.");
 
         var adapter = new PdfPrintDocumentAdapter(jobName, pdfBytes);
-        printManager.Print(jobName, adapter, null);
+        printManager.Print(jobName, adapter, CreatePrintAttributes(paper, jobName));
 
         return Task.CompletedTask;
+    }
+
+    private static PrintAttributes CreatePrintAttributes(PrintPaper paper, string jobName)
+    {
+        var mediaSize = paper.PaperName == "iso-a4"
+            ? PrintAttributes.MediaSize.IsoA4!
+            : new PrintAttributes.MediaSize(
+                "pysar:report",
+                jobName,
+                paper.PortraitWidthMils,
+                paper.PortraitHeightMils);
+
+        if (paper.IsLandscape)
+            mediaSize = mediaSize.AsLandscape();
+
+        return new PrintAttributes.Builder()
+            .SetMediaSize(mediaSize)
+            .SetMinMargins(PrintAttributes.Margins.NoMargins!)
+            .Build();
     }
 
     private sealed class PdfPrintDocumentAdapter : PrintDocumentAdapter

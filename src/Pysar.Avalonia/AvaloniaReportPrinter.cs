@@ -32,20 +32,21 @@ public sealed class AvaloniaReportPrinter : IReportPrinter
         var jobName = string.IsNullOrWhiteSpace(report.Metadata.Title)
             ? "Report"
             : report.Metadata.Title;
+        var paper = PrintPaper.From(report.PageFormat);
 
         if (OperatingSystem.IsMacOS())
         {
             // PDFKit runOperation must run on the AppKit UI thread.
             if (Dispatcher.UIThread.CheckAccess())
             {
-                if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName))
+                if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper))
                     throw new InvalidOperationException("macOS print panel could not be shown for this PDF.");
             }
             else
             {
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName))
+                    if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper))
                         throw new InvalidOperationException("macOS print panel could not be shown for this PDF.");
                 });
             }

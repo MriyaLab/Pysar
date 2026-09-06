@@ -25,7 +25,8 @@ public sealed partial class MauiReportPrinter : IReportPrinter
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        await MainThread.InvokeOnMainThreadAsync(() => PrintPdfAsync(pdfBytes, GetJobName(report)))
+        await MainThread.InvokeOnMainThreadAsync(
+                () => PrintPdfAsync(pdfBytes, GetJobName(report), PrintPaper.From(report.PageFormat)))
             .ConfigureAwait(false);
     }
 
@@ -34,5 +35,5 @@ public sealed partial class MauiReportPrinter : IReportPrinter
             ? "Report"
             : report.Metadata.Title;
 
-    private partial Task PrintPdfAsync(byte[] pdfBytes, string jobName);
+    private partial Task PrintPdfAsync(byte[] pdfBytes, string jobName, PrintPaper paper);
 }
