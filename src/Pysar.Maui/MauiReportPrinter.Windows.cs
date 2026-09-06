@@ -1,3 +1,4 @@
+using Pysar.Export;
 using Windows.Storage;
 using Windows.System;
 
@@ -5,8 +6,10 @@ namespace Pysar.Maui;
 
 public sealed partial class MauiReportPrinter
 {
-    private partial async Task PrintPdfAsync(byte[] pdfBytes, string jobName)
+    private partial async Task PrintPdfAsync(byte[] pdfBytes, string jobName, PrintPaper paper)
     {
+        _ = paper;
+
         var fileName = $"{Sanitize(jobName)}.pdf";
         var folder = ApplicationData.Current.TemporaryFolder;
         var file = await folder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);

@@ -34,7 +34,14 @@ public sealed class BlazorReportPrinter : IReportPrinter, IAsyncDisposable
             cancellationToken,
             "./_content/Pysar.Blazor/reportPrint.js").ConfigureAwait(false);
 
-        await _module.InvokeVoidAsync("printPdf", cancellationToken, pdfBytes)
+        var paper = PrintPaper.From(report.PageFormat);
+        await _module.InvokeVoidAsync(
+                "printPdf",
+                cancellationToken,
+                pdfBytes,
+                paper.WidthPt,
+                paper.HeightPt,
+                paper.IsLandscape)
             .ConfigureAwait(false);
     }
 

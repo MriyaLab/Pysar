@@ -54,6 +54,8 @@
     </ItemGroup>
     <ItemGroup Condition="$(TargetFramework.Contains('maccatalyst'))">
         <PackageReference Include="SkiaSharp.NativeAssets.MacCatalyst" />
+        <LinkerArg Include="-framework" />
+        <LinkerArg Include="AppKit" />
     </ItemGroup>
     <ItemGroup Condition="$(TargetFramework.Contains('-ios'))">
         <PackageReference Include="SkiaSharp.NativeAssets.iOS" />
