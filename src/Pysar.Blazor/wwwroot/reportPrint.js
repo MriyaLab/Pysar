@@ -4,7 +4,7 @@
 let previousUrl = null;
 let previousIframe = null;
 
-export function printPdf(bytes) {
+export function printPdf(bytes, pageWidthPt, pageHeightPt) {
     if (previousUrl) {
         URL.revokeObjectURL(previousUrl);
         previousUrl = null;
@@ -36,6 +36,13 @@ export function printPdf(bytes) {
                 try {
                     const win = iframe.contentWindow;
                     if (win) {
+                        const doc = win.document;
+                        if (doc && doc.head && pageWidthPt && pageHeightPt) {
+                            const style = doc.createElement('style');
+                            style.textContent =
+                                `@page { size: ${pageWidthPt}pt ${pageHeightPt}pt; margin: 0; }`;
+                            doc.head.appendChild(style);
+                        }
                         win.focus();
                         win.print();
                     }

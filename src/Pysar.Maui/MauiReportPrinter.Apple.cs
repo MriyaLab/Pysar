@@ -1,18 +1,21 @@
 #if __IOS__ || __MACCATALYST__
 using CoreGraphics;
 using Foundation;
+using Pysar.Export;
 using UIKit;
 
 namespace Pysar.Maui;
 
 public sealed partial class MauiReportPrinter
 {
-    private partial async Task PrintPdfAsync(byte[] pdfBytes, string jobName)
+    private partial async Task PrintPdfAsync(byte[] pdfBytes, string jobName, PrintPaper paper)
     {
-        // Mac Catalyst does not implement PDFKit's macOS-only
-        // -[PDFDocument printOperationForPrintInfo:scalingMode:autoRotate:].
-        // UIPrintInteractionController + a page renderer that draws CGPDF pages
-        // shows the system Print panel on both iOS and Mac Catalyst.
+#if __MACCATALYST__
+        if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper))
+            throw new InvalidOperationException("macOS print panel could not be shown for this PDF.");
+        await Task.CompletedTask;
+        return;
+#else
         if (!UIPrintInteractionController.PrintingAvailable)
             throw new NotSupportedException("Printing is not available on this device.");
 
@@ -31,13 +34,17 @@ public sealed partial class MauiReportPrinter
         var printInfo = UIPrintInfo.PrintInfo;
         printInfo.JobName = jobName;
         printInfo.OutputType = UIPrintInfoOutputType.General;
-        printInfo.Orientation = UIPrintInfoOrientation.Portrait;
+        printInfo.Orientation = paper.IsLandscape
+            ? UIPrintInfoOrientation.Landscape
+            : UIPrintInfoOrientation.Portrait;
 
         var controller = UIPrintInteractionController.SharedPrintController
             ?? throw new InvalidOperationException("The system print controller is unavailable.");
 
+        var paperDelegate = new PaperChoosingDelegate(new CGSize(paper.WidthPt, paper.HeightPt));
         controller.PrintInfo = printInfo;
         controller.PrintPageRenderer = new PdfPrintPageRenderer(pdf);
+        controller.Delegate = paperDelegate;
 
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -51,6 +58,8 @@ public sealed partial class MauiReportPrinter
         });
 
         await tcs.Task.ConfigureAwait(true);
+        GC.KeepAlive(paperDelegate);
+#endif
     }
 
     private static string SanitizeFileName(string name)
@@ -59,6 +68,39 @@ public sealed partial class MauiReportPrinter
             name = name.Replace(c, '_');
 
         return string.IsNullOrWhiteSpace(name) ? "Report" : name;
+    }
+
+    /// <summary>Picks printer stock that matches the report page size.</summary>
+    private sealed class PaperChoosingDelegate : UIPrintInteractionControllerDelegate
+    {
+        private readonly CGSize _pageSize;
+
+        public PaperChoosingDelegate(CGSize pageSize)
+        {
+            _pageSize = pageSize;
+        }
+
+        public override UIPrintPaper ChoosePaper(
+            UIPrintInteractionController printInteractionController,
+            UIPrintPaper[] paperList)
+        {
+            UIPrintPaper? best = null;
+            var bestDelta = double.MaxValue;
+            foreach (var candidate in paperList)
+            {
+                var size = candidate.PaperSize;
+                var aligned = Math.Abs(size.Width - _pageSize.Width) + Math.Abs(size.Height - _pageSize.Height);
+                var rotated = Math.Abs(size.Width - _pageSize.Height) + Math.Abs(size.Height - _pageSize.Width);
+                var delta = Math.Min(aligned, rotated);
+                if (delta < bestDelta)
+                {
+                    bestDelta = delta;
+                    best = candidate;
+                }
+            }
+
+            return best ?? UIPrintPaper.ForPageSize(_pageSize, paperList);
+        }
     }
 
     /// <summary>Draws each page of a <see cref="CGPDFDocument"/> into the print context.</summary>

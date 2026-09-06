@@ -10,6 +10,11 @@ plain .NET on top of SkiaSharp, so the same report produces the same document on
 Linux, Android, iOS and in the browser. The host application only supplies the two things that are
 genuinely platform-specific: where files come from, and which fonts are available.
 
+![An .rxaml report open in Rider, with the design-time preview rendering the invoice beside the markup](docs/images/rider-design-preview.png)
+
+*An `.rxaml` invoice in Rider: the markup on the left, the design-time preview — the same layout
+engine that produces the PDF — on the right.*
+
 ```csharp
 var report = ReportBuilder.Create("Hello report")
     .WithPageFormat(new PageFormat { Margin = new Thickness(30) })
@@ -234,6 +239,21 @@ platform print dialog.
 Pinch zooms around the fingers and a double tap switches between fitting the width and reading close
 up, both anchored on the point they were made at.
 
+![The MAUI sample on Mac Catalyst, showing a paginated annual report with zoom, print and share controls](docs/images/maui-mac-catalyst.png)
+
+*The same `ReportView` on Mac Catalyst — a five-page annual report built from nested repeaters.*
+
+<table>
+  <tr>
+    <td width="62%"><img src="docs/images/maui-android.png" alt="The MAUI sample on an Android tablet, showing the invoice report at 90% zoom" /></td>
+    <td width="38%"><img src="docs/images/maui-ios.png" alt="The MAUI sample on iPhone, showing a six-page revenue report fitted to the screen width" /></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Android tablet</em></td>
+    <td align="center"><em>iOS</em></td>
+  </tr>
+</table>
+
 Android, iOS and Mac Catalyst are the platforms the package is built for; the Windows target only
 appears when packing on a Windows host, and ships untested.
 
@@ -314,6 +334,10 @@ WasmPlatformHandler.Install(files);
 ```razor
 <ReportView Report="@_report" ZoomMode="@ReportZoomMode.FitWidth" PageSpacing="24" />
 ```
+
+![The Blazor WebAssembly sample in a browser, showing the invoice report with page, zoom and print controls](docs/images/blazor-wasm.png)
+
+*The Blazor WebAssembly sample: the same report, rasterised tile by tile in the browser.*
 
 `IReportPrinter` resolves to `BlazorReportPrinter`, which renders the report to PDF off the UI thread
 and hands it to the browser's own print dialog. It is registered scoped, because it holds a JS module
