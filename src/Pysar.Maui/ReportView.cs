@@ -186,6 +186,7 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
             if (Handler is null)
             {
                 DeviceDisplay.Current.MainDisplayInfoChanged -= OnDisplayChanged;
+                RemovePlatformGestures();
                 _reportSession.DisposeWhenStillDetached(() => Handler is not null);
 
                 return;
@@ -198,6 +199,7 @@ public partial class ReportView : ContentView, IReportViewHost, IReportViewSurfa
             DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayChanged;
 
             RefreshDensity();
+            AddPlatformGestures();
 
             // Shell flyout navigation disconnects the handler for more than one turn, so the
             // deferred dispose above actually runs. Coming back does not change Report, and

@@ -2,8 +2,8 @@
   <!-- Central Package Management: all package versions defined here. -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
-
   <ItemGroup>
     <!-- Avalonia UI framework -->
     <PackageVersion Include="Avalonia" Version="12.1.1" />
@@ -17,55 +17,55 @@
     <PackageVersion Include="Avalonia.Skia" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.1" />
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
-
     <!-- MAUI -->
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.90" />
-
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.100" />
     <!-- Roslyn / Code Analysis -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
-
     <!-- Dependency Injection & Extensions -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.14" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.11" />
-
     <!-- Blazor WebAssembly -->
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.11" />
-
     <!-- Testing (used in src, tests, and plugins) -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="NUnit" Version="4.3.2" />
     <PackageVersion Include="NUnit3TestAdapter" Version="5.1.0" />
-
     <!-- SkiaSharp & Vector Graphics -->
-    <PackageVersion Include="SkiaSharp" Version="4.151.1" />
+    <PackageVersion Include="SkiaSharp" Version="4.151.2" />
     <!-- The main SkiaSharp package only bundles win-x64/win-x86 and osx native binaries, but
          leaving that implicit lets a transitive dependency on an older SkiaSharp line (SkiaSharp.QrCode
-         1.1.1 wants 4.148.0) resolve its own Win32/macOS native assets unpinned, so two incompatible
+         wants 4.148.0) resolve its own Win32/macOS native assets unpinned, so two incompatible
          copies of libSkiaSharp end up in the same output and whichever copies last wins - the native
-         library then reports an internal engine version the 4.151.1 managed wrapper rejects at
+         library then reports an internal engine version the 4.151.2 managed wrapper rejects at
          startup ("SkiaSharpVersion.CheckNativeLibraryCompatible" throws). Pinning these here, exactly
          like the platforms below that always needed it explicitly, forces one consistent version.
     -->
-    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="4.151.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.macOS" Version="4.151.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.151.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Android" Version="4.151.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.iOS" Version="4.151.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.MacCatalyst" Version="4.151.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.WebAssembly" Version="4.151.1" />
-    <PackageVersion Include="SkiaSharp.QrCode" Version="1.1.1" />
-    <PackageVersion Include="Svg.Skia" Version="5.2.0" />
-
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.macOS" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Android" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.iOS" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.MacCatalyst" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.WebAssembly" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.QrCode" Version="1.2.0" />
+    <PackageVersion Include="HarfBuzzSharp" Version="14.2.0" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="14.2.0" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.macOS" Version="14.2.0" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.0" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Android" Version="14.2.0" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.iOS" Version="14.2.0" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.MacCatalyst" Version="14.2.0" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="14.2.0" />
+    <PackageVersion Include="Svg.Skia" Version="5.2.3" />
     <!-- JetBrains Rider SDK -->
     <PackageVersion Include="JetBrains.Rider.SDK" Version="2026.1.1" />
     <PackageVersion Include="Wave" Version="261.0.0" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
-
     <!-- Misc -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="System.Text.Json" Version="8.0.5" />
