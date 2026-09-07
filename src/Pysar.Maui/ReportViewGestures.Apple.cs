@@ -32,8 +32,12 @@ public partial class ReportView
         // Against the view rather than against the recogniser: after Shell flyout navigation the
         // handler comes back with a new UIScrollView, and a recogniser still held from the previous
         // one is attached to a view nobody's fingers can reach - which is what left a report reopened
-        // from the flyout no longer zooming.
-        if (ReferenceEquals(_platformPinchView, view))
+        // from the flyout no longer zooming. The same UIView can also come back with UIKit having
+        // stripped the recogniser, so identity alone is not enough to skip.
+        if (ReferenceEquals(_platformPinchView, view)
+            && _platformPinch is not null
+            && view.GestureRecognizers is { } recognizers
+            && Array.IndexOf(recognizers, _platformPinch) >= 0)
             return;
 
         RemovePlatformGestures();

@@ -57,6 +57,11 @@ public partial class ReportView
         };
 
         _scroll.HandlerChanged += (_, _) => AddPlatformGestures();
+
+        // HandlerChanged on the scroll view is not enough: Shell can reconnect this control
+        // without replacing the scroll handler, and UIKit may have stripped the recogniser
+        // from a reused UIScrollView. Loaded is the point the native view is in a window.
+        Loaded += (_, _) => AddPlatformGestures();
     }
 
     /// <summary>

@@ -46,7 +46,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Maui.Controls" />
         <!--
-          Align native libSkiaSharp with managed SkiaSharp from Pysar.Skia (4.151.1).
+          Align native libSkiaSharp with managed SkiaSharp from Pysar.Skia (4.151.2).
           Without this, a stale 3.119 framework can remain in the app bundle after upgrades and
           crash at startup: native 119.0 is outside the supported [151.0, 152.0) range.
         -->
@@ -54,14 +54,17 @@
     </ItemGroup>
     <ItemGroup Condition="$(TargetFramework.Contains('maccatalyst'))">
         <PackageReference Include="SkiaSharp.NativeAssets.MacCatalyst" />
+        <PackageReference Include="HarfBuzzSharp.NativeAssets.MacCatalyst" />
         <LinkerArg Include="-framework" />
         <LinkerArg Include="AppKit" />
     </ItemGroup>
     <ItemGroup Condition="$(TargetFramework.Contains('-ios'))">
         <PackageReference Include="SkiaSharp.NativeAssets.iOS" />
+        <PackageReference Include="HarfBuzzSharp.NativeAssets.iOS" />
     </ItemGroup>
     <ItemGroup Condition="$(TargetFramework.Contains('android'))">
         <PackageReference Include="SkiaSharp.NativeAssets.Android" />
+        <PackageReference Include="HarfBuzzSharp.NativeAssets.Android" />
     </ItemGroup>
 
     <ItemGroup>
