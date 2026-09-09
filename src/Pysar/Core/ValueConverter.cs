@@ -15,7 +15,8 @@ public static class ValueConverter
         var u = Nullable.GetUnderlyingType(target) ?? target;
         return u == typeof(string) || u.IsEnum || u == typeof(bool) || u == typeof(int)
             || u == typeof(float) || u == typeof(double)
-            || u == typeof(Thickness) || u == typeof(SizeLength) || u == typeof(Size)
+            || u == typeof(Thickness) || u == typeof(CornerRadius)
+            || u == typeof(SizeLength) || u == typeof(Size)
             || u == typeof(GridLength) || u == typeof(Color) || u == typeof(Position)
             || u == typeof(Uri)
             || u == typeof(MinMaxLength) || u == typeof(SizeConstraint);
@@ -29,6 +30,7 @@ public static class ValueConverter
 
         if (underlying.IsEnum) return Enum.Parse(underlying, text, ignoreCase: true);
         if (underlying == typeof(Thickness)) return ParseThickness(text);
+        if (underlying == typeof(CornerRadius)) return ParseCornerRadius(text);
         if (underlying == typeof(SizeLength)) return ParseSizeLength(text);
         if (underlying == typeof(Size)) return ParseSize(text);
         if (underlying == typeof(Position)) return ParsePosition(text);
@@ -50,6 +52,21 @@ public static class ValueConverter
             2 => new Thickness(n[0], n[1]),
             4 => new Thickness(n[0], n[1], n[2], n[3]),
             _ => throw new FormatException($"Invalid Thickness '{s}' (expected 1, 2, or 4 numbers).")
+        };
+    }
+
+    /// <summary>
+    ///     Parses 1 or 4 numbers. Unlike <see cref="ParseThickness"/> there is no two-number form:
+    ///     corners have no horizontal/vertical pairing to collapse into.
+    /// </summary>
+    private static CornerRadius ParseCornerRadius(string s)
+    {
+        var n = s.Split(',', StringSplitOptions.TrimEntries).Select(F).ToArray();
+        return n.Length switch
+        {
+            1 => new CornerRadius(n[0]),
+            4 => new CornerRadius(n[0], n[1], n[2], n[3]),
+            _ => throw new FormatException($"Invalid CornerRadius '{s}' (expected 1 or 4 numbers).")
         };
     }
 

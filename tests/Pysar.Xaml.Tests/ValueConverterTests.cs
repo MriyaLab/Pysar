@@ -18,6 +18,26 @@ public class ValueConverterTests
         => Assert.Equal(new Thickness(10, 20, 30, 40), (Thickness)XamlValueConverter.Convert("10,20,30,40", typeof(Thickness))!);
 
     [Fact]
+    public void Convert_CornerRadius_Uniform()
+        => Assert.Equal(new CornerRadius(8), (CornerRadius)XamlValueConverter.Convert("8", typeof(CornerRadius))!);
+
+    [Fact]
+    public void Convert_CornerRadius_FourValues()
+        => Assert.Equal(new CornerRadius(5, 10, 20, 30),
+            (CornerRadius)XamlValueConverter.Convert("5,10,20,30", typeof(CornerRadius))!);
+
+    [Theory]
+    [InlineData("1,2")]
+    [InlineData("1,2,3")]
+    [InlineData("a")]
+    public void Convert_CornerRadius_Invalid_Throws(string text)
+        => Assert.Throws<XamlException>(() => XamlValueConverter.Convert(text, typeof(CornerRadius)));
+
+    [Fact]
+    public void IsConvertible_CornerRadius()
+        => Assert.True(XamlValueConverter.IsConvertible(typeof(CornerRadius)));
+
+    [Fact]
     public void Convert_SizeLength_KeywordsAndFixed()
     {
         Assert.True(((SizeLength)XamlValueConverter.Convert("Fill", typeof(SizeLength))!).IsFill);
