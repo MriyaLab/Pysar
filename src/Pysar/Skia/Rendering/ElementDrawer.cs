@@ -13,6 +13,8 @@ namespace Pysar.Skia.Rendering;
 ///     drawers live in the default registry alongside custom ones), otherwise the structural container
 ///     fallback (clip + draw children in ZIndex order). Only containers — identified by the
 ///     <see cref="IReportContainer"/> interface rather than an exact type — are handled structurally.
+///     An <see cref="IRoundedElement"/> rounds its background and border, and its child clip follows
+///     the same rounded box.
 /// </summary>
 public static class ElementDrawer
 {
@@ -29,9 +31,10 @@ public static class ElementDrawer
             return;
 
         var boundsPx = node.Bounds.ToSkiaRect(ctx.Scale);
-        RenderHelper.DrawBackground(ctx.Canvas, element.BackgroundColor.ToSkiaColor(), boundsPx);
+        var radius = (element as IRoundedElement)?.CornerRadius ?? CornerRadius.Zero;
+        RenderHelper.DrawBackground(ctx.Canvas, element.BackgroundColor.ToSkiaColor(), boundsPx, radius, ctx.Scale);
         RenderHelper.DrawBorder(ctx.Canvas, element.BorderColor.ToSkiaColor(), element.BorderThickness,
-            element.BorderLineStyle, boundsPx, ctx.Scale);
+            element.BorderLineStyle, boundsPx, ctx.Scale, radius);
 
         var registry = drawers ?? DefaultDrawers;
 
@@ -44,10 +47,11 @@ public static class ElementDrawer
 
         // Containers are polymorphic (any IReportContainer), so they can't be keyed by exact type.
         if (element is IReportContainer container)
-            DrawContainer(node, container, ctx, registry);
+            DrawContainer(node, container, ctx, registry, radius);
     }
 
-    private static void DrawContainer(LayoutNode node, IReportContainer container, RenderContext ctx, DrawerRegistry registry)
+    private static void DrawContainer(
+        LayoutNode node, IReportContainer container, RenderContext ctx, DrawerRegistry registry, CornerRadius radius)
     {
         var clipped = container.IsClippedToBounds;
         if (clipped)
@@ -55,8 +59,13 @@ public static class ElementDrawer
             // node.Bounds is already the border-box (margin is outside it after measurement), so clip the
             // children directly to it. Re-insetting by the margin would double-count it and cut off content
             // whenever the container has a non-zero margin.
+            var boundsPx = node.Bounds.ToSkiaRect(ctx.Scale);
             ctx.Canvas.Save();
-            ctx.Canvas.ClipRect(node.Bounds.ToSkiaRect(ctx.Scale));
+            if (radius.IsZero)
+                ctx.Canvas.ClipRect(boundsPx);
+            else
+                ctx.Canvas.ClipRoundRect(RenderHelper.ToRoundRect(boundsPx, radius, ctx.Scale),
+                    SKClipOperation.Intersect, antialias: true);
         }
 
         try

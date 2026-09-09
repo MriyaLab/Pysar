@@ -139,7 +139,9 @@ public static class PageRenderer
             pageChrome.BorderThickness,
             pageChrome.BorderLineStyle,
             rect,
-            scale);
+            scale,
+            // Page chrome is the sheet itself: square by definition.
+            CornerRadius.Zero);
     }
 
     /// <summary>
