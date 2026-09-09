@@ -32,7 +32,8 @@ public static class ElementDrawer
 
         var boundsPx = node.Bounds.ToSkiaRect(ctx.Scale);
         var radius = (element as IRoundedElement)?.CornerRadius ?? CornerRadius.Zero;
-        RenderHelper.DrawBackground(ctx.Canvas, element.BackgroundColor.ToSkiaColor(), boundsPx, radius, ctx.Scale);
+        RenderHelper.DrawBackground(ctx.Canvas, element.BackgroundColor.ToSkiaColor(), boundsPx, radius,
+            element.BorderThickness, ctx.Scale);
         RenderHelper.DrawBorder(ctx.Canvas, element.BorderColor.ToSkiaColor(), element.BorderThickness,
             element.BorderLineStyle, boundsPx, ctx.Scale, radius);
 
@@ -64,7 +65,10 @@ public static class ElementDrawer
             if (radius.IsZero)
                 ctx.Canvas.ClipRect(boundsPx);
             else
-                ctx.Canvas.ClipRoundRect(RenderHelper.ToRoundRect(boundsPx, radius, ctx.Scale),
+                // Rounded: clip to the inner (padding-box) arc, so a child's square corner cannot
+                // paint over the border curve. With no border this is the border-box arc itself.
+                ctx.Canvas.ClipRoundRect(
+                    RenderHelper.ToInnerRoundRect(boundsPx, radius, node.Element.BorderThickness, ctx.Scale),
                     SKClipOperation.Intersect, antialias: true);
         }
 

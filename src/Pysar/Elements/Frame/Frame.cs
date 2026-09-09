@@ -11,9 +11,11 @@ public class Frame : ReportContainer<Frame>, IRoundedElement
         BindableProperty.Create(nameof(CornerRadius), typeof(CornerRadius), typeof(Frame), CornerRadius.Zero);
 
     /// <summary>
-    ///     Corner radii, in the MAUI order (top-left, top-right, bottom-left, bottom-right). Rounds the
-    ///     background and the border, and — when <see cref="ReportContainer{T}.IsClippedToBounds"/> is
-    ///     set — clips children along the rounded corners.
+    ///     Corner radii, in the MAUI order (top-left, top-right, bottom-left, bottom-right). This is the
+    ///     <em>content</em> corner — the border's inner edge — so the box's own corner comes out at
+    ///     <c>CornerRadius + BorderThickness</c> and the rounding an author asks for survives however
+    ///     thick the border gets. Rounds the background and the border, and — when
+    ///     <see cref="ReportContainer{T}.IsClippedToBounds"/> is set — clips children along the inner arc.
     /// </summary>
     public CornerRadius CornerRadius
     {
