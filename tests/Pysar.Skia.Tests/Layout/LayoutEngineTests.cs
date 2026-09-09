@@ -203,4 +203,53 @@ public class LayoutEngineTests
             new MeasureConstraint(new Rect(0, 0, 400, 100)), Ctx, CancellationToken.None);
         Assert.Equal(new Rect(350, 0, 400, 40), node.Children[0].Bounds);
     }
+
+    [Fact]
+    public async Task Frame_AutoHeight_CenteredChild_ShrinkWrapsToContent()
+    {
+        // An Auto axis has no free space, so Center must not offset the child - the offset used to
+        // be measured against the available window and folded into the frame's own height.
+        var child = new Frame
+        {
+            Size = new Size(SizeLength.Fixed(100), SizeLength.Fixed(40)),
+            VerticalAlignment = Alignment.Center
+        };
+        var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Auto) };
+        frame.AddElement(child);
+
+        var node = await LayoutEngine.MeasureAsync(frame,
+            new MeasureConstraint(new Rect(0, 0, 300, 10000)), Ctx, CancellationToken.None);
+
+        Assert.Equal(40, node.Bounds.Height);
+        Assert.Equal(new Rect(0, 0, 100, 40), node.Children[0].Bounds);
+    }
+
+    [Fact]
+    public async Task Frame_InAutoRowGrid_MatchesBareGridSibling()
+    {
+        // Repro: a Frame wrapping a Center-aligned card blew the grid's Auto row up to half the
+        // 10000pt sizing box the grid probes its children in.
+        var outer = new Grid { Height = SizeLength.Auto, ColumnSpacing = 16 };
+        outer.WithColumnDefinitions("*,*");
+        var frame = new Frame { Height = SizeLength.Auto, VerticalAlignment = Alignment.Center };
+        frame.AddElement(Card());
+        outer.AddElement(frame, 0, 0);
+        outer.AddElement(Card(), 0, 1);
+
+        var node = await LayoutEngine.MeasureAsync(outer,
+            new MeasureConstraint(new Rect(0, 0, 600, 800)), Ctx, CancellationToken.None);
+
+        Assert.Equal(node.Children[1].Bounds.Height, node.Children[0].Bounds.Height, 3);
+        Assert.Equal(node.Children[1].Bounds.Height, node.Bounds.Height, 3);
+        return;
+
+        static Grid Card()
+        {
+            var card = new Grid { Padding = new Thickness(16), VerticalAlignment = Alignment.Center };
+            card.WithRowDefinitions("Auto,Auto");
+            card.AddElement(new Frame { Size = new Size(SizeLength.Fixed(80), SizeLength.Fixed(22)) }, 0, 0);
+            card.AddElement(new Frame { Size = new Size(SizeLength.Fixed(80), SizeLength.Fixed(10)) }, 1, 0);
+            return card;
+        }
+    }
 }

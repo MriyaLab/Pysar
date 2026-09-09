@@ -114,17 +114,61 @@ public static class LayoutEngine
         var boxH = ResolveLength(effH, avail.Height);
         var (left, top) = ResolvePosition(element, boxW, boxH, avail, constraint.IgnorePosition);
 
-        // Content zone for the children (for Auto — the whole available rect, as in MeasurerHelper)
         var iL = element.Padding.Left + element.BorderThickness.Left;
         var iT = element.Padding.Top + element.BorderThickness.Top;
         var iR = element.Padding.Right + element.BorderThickness.Right;
         var iB = element.Padding.Bottom + element.BorderThickness.Bottom;
-        var contentRect = new Rect(
+
+        // Phase 1: probe the children inside the available window (for Auto - the whole rect, since
+        // the box has no size yet) to learn how much room each of them needs.
+        var probeRect = new Rect(
             (isAutoW ? avail.Left : left) + iL,
             (isAutoH ? avail.Top : top) + iT,
             (isAutoW ? avail.Right : left + boxW) - iR,
             (isAutoH ? avail.Bottom : top + boxH) - iB);
+        var children = await MeasureChildrenAsync(element, probeRect, isAutoW, isAutoH, ctx, ct);
 
+        // Phase 2: settle the box. An Auto axis shrink-wraps its content and therefore has no free
+        // space for a child's alignment to consume, so it is sized from each child's own extent
+        // (margins and an explicit At offset included) rather than from the position the child took
+        // inside the probe window - a Center/End child would otherwise fold that window's slack into
+        // the box. Fill keeps the max(window, content) rule, where the window - and the alignment
+        // resolved against it - is real.
+        if (children.Count > 0)
+        {
+            if (isAutoW || isAutoH)
+            {
+                var extents = children
+                    .Select(n => PositionResolver.ShrinkWrapExtent(n.Element, n.Bounds.Width, n.Bounds.Height))
+                    .ToList();
+                if (isAutoW) boxW = iL + extents.Max(e => e.Width) + iR;
+                if (isAutoH) boxH = iT + extents.Max(e => e.Height) + iB;
+            }
+            if (effH.IsFill)
+                boxH = Math.Max(boxH, children.Max(n => n.Bounds.Bottom + n.Element.Margin.Bottom) + iB - top);
+        }
+
+        (boxW, boxH) = SizeConstraints.Clamp(boxW, boxH, element.MinSize, element.MaxSize);
+        if (!constraint.IgnorePosition)
+            (left, top) = PositionResolver.Resolve(element, boxW, boxH, avail);
+
+        // Phase 3: re-measure the children against the settled content zone, so their positions
+        // resolve against the final box instead of the probe window. Also covers a Min/Max clamp
+        // having moved the origin after the probe.
+        var contentRect = new Rect(left + iL, top + iT, left + boxW - iR, top + boxH - iB);
+        if (contentRect != probeRect)
+            children = await MeasureChildrenAsync(element, contentRect, isAutoW, isAutoH, ctx, ct);
+
+        var cutHints = children.Count > 0
+            ? children.Select(n => n.Bounds.Bottom).Where(y => y > top && y < top + boxH).Distinct().OrderBy(y => y).ToArray()
+            : LayoutNode.NoCuts;
+
+        return new LayoutNode(element, new Rect(left, top, left + boxW, top + boxH), children, cutHints);
+    }
+
+    private static async Task<List<LayoutNode>> MeasureChildrenAsync(
+        IReportContainer element, Rect contentRect, bool isAutoW, bool isAutoH, MeasureContext ctx, CancellationToken ct)
+    {
         var children = new List<LayoutNode>();
         foreach (var child in element.Children)
         {
@@ -138,29 +182,6 @@ public static class LayoutEngine
             children.Add(await MeasureAsync(child,
                 new MeasureConstraint(contentRect, widthOverride, heightOverride), ctx, ct));
         }
-
-        // Auto sizes from the children's extents; Fill height grows to max(available, content).
-        // The extents are measured from the container's own origin (avail), not from the topmost
-        // child, so a child's leading margin stays inside the box - the box is repositioned below by
-        // PositionResolver, which would otherwise discard an origin derived from the children and
-        // leave the box ending short of its content.
-        if (children.Count > 0)
-        {
-            var maxRight = children.Max(n => n.Bounds.Right + n.Element.Margin.Right) + iR;
-            var maxBottom = children.Max(n => n.Bounds.Bottom + n.Element.Margin.Bottom) + iB;
-            if (isAutoW) boxW = maxRight - avail.Left;
-            if (isAutoH) boxH = maxBottom - avail.Top;
-            if (effH.IsFill) boxH = Math.Max(boxH, maxBottom - top);       // max(window, content) rule
-        }
-
-        (boxW, boxH) = SizeConstraints.Clamp(boxW, boxH, element.MinSize, element.MaxSize);
-        if (!constraint.IgnorePosition)
-            (left, top) = PositionResolver.Resolve(element, boxW, boxH, avail);
-
-        var cutHints = children.Count > 0
-            ? children.Select(n => n.Bounds.Bottom).Where(y => y > top && y < top + boxH).Distinct().OrderBy(y => y).ToArray()
-            : LayoutNode.NoCuts;
-
-        return new LayoutNode(element, new Rect(left, top, left + boxW, top + boxH), children, cutHints);
+        return children;
     }
 }

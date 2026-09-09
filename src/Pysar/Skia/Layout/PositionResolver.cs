@@ -31,4 +31,18 @@ internal static class PositionResolver
         };
         return (left, top);
     }
+
+    /// <summary>
+    ///     The room a child needs inside a parent axis that shrink-wraps (Auto): its margins, an
+    ///     explicit <see cref="IReportElement.Position"/> offset and its own size. Alignment is left
+    ///     out by design - an Auto axis has no free space, so resolving Center/End against the
+    ///     parent's probe window would fold that window's slack into the parent's box.
+    /// </summary>
+    public static (float Width, float Height) ShrinkWrapExtent(IReportElement element, float width, float height)
+    {
+        var offsetX = element.Position.IsEmpty ? 0f : element.Position.X ?? 0f;
+        var offsetY = element.Position.IsEmpty ? 0f : element.Position.Y ?? 0f;
+        return (element.Margin.Left + offsetX + width + element.Margin.Right,
+                element.Margin.Top + offsetY + height + element.Margin.Bottom);
+    }
 }
