@@ -27,28 +27,56 @@ public static class ElementDrawer
 
         // Region tiles pass a padded cull rect in the same point space as Bounds; skip work that
         // cannot affect any pixel of the tile (shadows/bleed are covered by the pad).
-        if (ctx.CullBoundsPt is { } cull && !Intersects(node.Bounds, cull))
+        if (ctx.CullBoundsPt is { } cull && !Intersects(node.Bounds, cull, element.Rotation))
             return;
 
-        var boundsPx = node.Bounds.ToSkiaRect(ctx.Scale);
-        var radius = (element as IRoundedElement)?.CornerRadius ?? CornerRadius.Zero;
-        RenderHelper.DrawBackground(ctx.Canvas, element.BackgroundColor.ToSkiaColor(), boundsPx, radius,
-            element.BorderThickness, ctx.Scale);
-        RenderHelper.DrawBorder(ctx.Canvas, element.BorderColor.ToSkiaColor(), element.BorderThickness,
-            element.BorderLineStyle, boundsPx, ctx.Scale, radius);
-
-        var registry = drawers ?? DefaultDrawers;
-
-        // Built-in and custom leaf drawers are looked up the same way, by exact type.
-        if (registry.TryGet(element.GetType(), out var drawer))
+        var opacity = Math.Clamp(element.Opacity, 0f, 1f);
+        var rotation = element.Rotation;
+        SKPaint? layerPaint = null;
+        var saved = false;
+        if (opacity < 1f)
         {
-            drawer.Draw(node, ctx);
-            return;
+            var alpha = (byte)Math.Clamp((int)MathF.Round(opacity * 255f), 0, 255);
+            layerPaint = new SKPaint { Color = SKColors.White.WithAlpha(alpha) };
+            ctx.Canvas.SaveLayer(layerPaint);
+            saved = true;
+        }
+        else if (rotation != 0f)
+        {
+            ctx.Canvas.Save();
+            saved = true;
         }
 
-        // Containers are polymorphic (any IReportContainer), so they can't be keyed by exact type.
-        if (element is IReportContainer container)
-            DrawContainer(node, container, ctx, registry, radius);
+        try
+        {
+            var boundsPx = node.Bounds.ToSkiaRect(ctx.Scale);
+            if (rotation != 0f)
+                ctx.Canvas.RotateDegrees(rotation, boundsPx.MidX, boundsPx.MidY);
+
+            var radius = (element as IRoundedElement)?.CornerRadius ?? CornerRadius.Zero;
+            RenderHelper.DrawBackground(ctx.Canvas, element.BackgroundColor.ToSkiaColor(), boundsPx, radius,
+                element.BorderThickness, ctx.Scale);
+            RenderHelper.DrawBorder(ctx.Canvas, element.BorderColor.ToSkiaColor(), element.BorderThickness,
+                element.BorderLineStyle, boundsPx, ctx.Scale, radius);
+
+            var registry = drawers ?? DefaultDrawers;
+
+            // Built-in and custom leaf drawers are looked up the same way, by exact type.
+            if (registry.TryGet(element.GetType(), out var drawer))
+            {
+                drawer.Draw(node, ctx);
+                return;
+            }
+
+            // Containers are polymorphic (any IReportContainer), so they can't be keyed by exact type.
+            if (element is IReportContainer container)
+                DrawContainer(node, container, ctx, registry, radius);
+        }
+        finally
+        {
+            if (saved) ctx.Canvas.Restore();
+            layerPaint?.Dispose();
+        }
     }
 
     private static void DrawContainer(
@@ -83,9 +111,48 @@ public static class ElementDrawer
         }
     }
 
-    private static bool Intersects(Rect bounds, SKRect cull) =>
-        bounds.Left < cull.Right
-        && bounds.Right > cull.Left
-        && bounds.Top < cull.Bottom
-        && bounds.Bottom > cull.Top;
+    private static bool Intersects(Rect bounds, SKRect cull, float rotation = 0f)
+    {
+        if (rotation == 0f)
+        {
+            return bounds.Left < cull.Right
+                && bounds.Right > cull.Left
+                && bounds.Top < cull.Bottom
+                && bounds.Bottom > cull.Top;
+        }
+
+        var cx = (bounds.Left + bounds.Right) * 0.5f;
+        var cy = (bounds.Top + bounds.Bottom) * 0.5f;
+        var rad = rotation * (MathF.PI / 180f);
+        var cos = MathF.Cos(rad);
+        var sin = MathF.Sin(rad);
+
+        var minX = float.PositiveInfinity;
+        var minY = float.PositiveInfinity;
+        var maxX = float.NegativeInfinity;
+        var maxY = float.NegativeInfinity;
+        ReadOnlySpan<(float X, float Y)> corners =
+        [
+            (bounds.Left, bounds.Top),
+            (bounds.Right, bounds.Top),
+            (bounds.Right, bounds.Bottom),
+            (bounds.Left, bounds.Bottom)
+        ];
+        foreach (var (x, y) in corners)
+        {
+            var dx = x - cx;
+            var dy = y - cy;
+            var rx = cx + dx * cos - dy * sin;
+            var ry = cy + dx * sin + dy * cos;
+            if (rx < minX) minX = rx;
+            if (ry < minY) minY = ry;
+            if (rx > maxX) maxX = rx;
+            if (ry > maxY) maxY = ry;
+        }
+
+        return minX < cull.Right
+            && maxX > cull.Left
+            && minY < cull.Bottom
+            && maxY > cull.Top;
+    }
 }

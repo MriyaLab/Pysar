@@ -238,4 +238,43 @@ public class ReportLayoutEngineTests
 
         Assert.Equal("Northwind", footerText.Content);
     }
+
+    [Fact]
+    public async Task Measure_Watermark_DoesNotReduceContentWindow()
+    {
+        var without = ReportBuilder.Create("t")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(30), Size = PageSize.A4 })
+            .WithPageHeader(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(40)))
+            .WithPageFooter(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(30)))
+            .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
+            .Build();
+
+        var with = ReportBuilder.Create("t")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(30), Size = PageSize.A4 })
+            .WithPageHeader(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(40)))
+            .WithPageFooter(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(30)))
+            .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
+            .WithWatermark(w => w.WithBackgroundColor(Colors.Red))
+            .Build();
+
+        var layoutWithout = await ReportLayoutEngine.MeasureAsync(without, new MeasureContext(1f), CancellationToken.None);
+        var layoutWith = await ReportLayoutEngine.MeasureAsync(with, new MeasureContext(1f), CancellationToken.None);
+
+        Assert.Equal(layoutWithout.ContentWindowHeight, layoutWith.ContentWindowHeight);
+        Assert.NotNull(layoutWith.Watermark);
+        var page = with.PageFormat.GetPageSizePt();
+        Assert.Equal(page.Width, layoutWith.Watermark!.Bounds.Width);
+        Assert.Equal(page.Height, layoutWith.Watermark.Bounds.Height);
+    }
+
+    [Fact]
+    public async Task Measure_NoWatermark_NodeIsNull()
+    {
+        var design = ReportBuilder.Create("t")
+            .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
+            .Build();
+
+        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        Assert.Null(layout.Watermark);
+    }
 }

@@ -56,4 +56,25 @@ public class GeneratorConstructionTests
             < src.IndexOf("source: this.Root", StringComparison.Ordinal),
             "Root must be assigned before deferred Source bindings run.");
     }
+
+    [Fact]
+    public void Report_WatermarkChild_AssignsWatermarkNotBands()
+    {
+        var src = Gen($"<Report x:Class=\"MyApp.R\" {Head}>" +
+                      "<Watermark x:Name=\"Stamp\">" +
+                      "<Text Content=\"DRAFT\"/>" +
+                      "</Watermark>" +
+                      "<DetailBand/></Report>");
+
+        Assert.Contains("new global::Pysar.Elements.Watermark()", src);
+        Assert.Contains("this.Watermark = ", src);
+        Assert.Contains("this.Stamp = ", src);
+
+        foreach (var line in src.Split('\n'))
+        {
+            if (line.Contains("Bands.Set", StringComparison.Ordinal)
+                && line.Contains("Watermark", StringComparison.Ordinal))
+                Assert.Fail($"Watermark must not go through Bands.Set: {line.Trim()}");
+        }
+    }
 }

@@ -1,4 +1,5 @@
 using Pysar.Core.Abstractions;
+using Pysar.Core.Enums;
 using Pysar.Core.Structs;
 using Pysar.Elements;
 using Pysar.Skia.Helpers;
@@ -176,6 +177,9 @@ public static class PageRenderer
         var contentLeft = layout.ContentZone.Left;
         var paddedVisible = InflateRegion(visibleRegionPt, RegionCullPadPt);
 
+        if (WatermarkLayerOf(layout) == WatermarkLayer.Behind)
+            DrawWatermark(ctx, layout, pageWidth, scale, drawers, paddedVisible);
+
         // PageHeader: measured at (0,0) → translate to the top of the content zone.
         if (pageHeader is not null)
         {
@@ -256,6 +260,28 @@ public static class PageRenderer
                     ctx, footerOx, footerOy, scale, drawers);
             }
         }
+
+        if (WatermarkLayerOf(layout) == WatermarkLayer.Front)
+            DrawWatermark(ctx, layout, pageWidth, scale, drawers, paddedVisible);
+    }
+
+    private static WatermarkLayer WatermarkLayerOf(ReportLayout layout)
+        => layout.Watermark?.Element is Watermark watermark
+            ? watermark.Layer
+            : WatermarkLayer.Behind;
+
+    private static void DrawWatermark(
+        RenderContext ctx, ReportLayout layout, float pageWidth, float scale,
+        DrawerRegistry? drawers, SKRect? paddedVisible)
+    {
+        if (layout.Watermark is not { } watermark)
+            return;
+        if (!IntersectsVisible(watermark.Bounds, 0, 0, paddedVisible))
+            return;
+
+        ctx.CullBoundsPt = ToLocalCull(paddedVisible, 0, 0);
+        DrawTranslated(ApplyEdgeBleed(watermark, 0, pageWidth),
+            ctx, 0, 0, scale, drawers);
     }
 
     private static SKRect? InflateRegion(SKRect? region, float pad)
@@ -351,8 +377,13 @@ public static class PageRenderer
         foreach (var band in design.Bands)
             CollectImagesFromElement(band, list);
 
+        if (design.Watermark is not null)
+            CollectImagesFromElement(design.Watermark, list);
+
         if (layout.PageHeader is not null)
             CollectImagesFromNode(layout.PageHeader, list);
+        if (layout.Watermark is not null)
+            CollectImagesFromNode(layout.Watermark, list);
         if (layout.PageFooter is not null)
             CollectImagesFromNode(layout.PageFooter, list);
         if (layout.RepeatDetailHeader is not null)

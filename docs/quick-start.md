@@ -226,7 +226,7 @@ public partial class InvoiceReport
     protected override Task OnPageChangedAsync(int pageNumber, CancellationToken ct)
     {
         Stamp.Content = pageNumber == 1 ? "Original" : "Copy";
-        Watermark.BackgroundColor = IsLastPage ? Colors.Red : Colors.Transparent;
+        StampBack.BackgroundColor = IsLastPage ? Colors.Red : Colors.Transparent;
         return Task.CompletedTask;
     }
 }
@@ -247,6 +247,29 @@ from depending on its own result. A band sized by auto-height content that wraps
 Two limits worth knowing: page numbers are available in page bands only, not in `ReportHeader`,
 `Detail`, or `ReportFooter`; and data triggers on page bands are evaluated once at build time against
 the report data, not per page.
+
+## Watermark
+
+`Watermark` is a `Frame` painted on every page under the bands, covering the physical page
+(including margins). It does not reserve height and is not a band — pagination is unchanged.
+
+```xml
+<Report>
+  <Watermark Layer="Front">
+    <Text Content="DRAFT"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          FontColor="#33000000" />
+  </Watermark>
+  <PageHeaderBand Height="30"/>
+  <DetailBand/>
+</Report>
+```
+
+It is measured once. `PageNumber` / `OnPageChanged` do not apply to it. `Layer="Behind"` (default)
+paints under the bands; `Layer="Front"` paints over them. There is no rotation or opacity primitive
+in this version: use a faded `FontColor` or `BackgroundColor`. Fluent:
+`ReportBuilder.Create("t").WithWatermark(w => w.AddElement(...))`.
 
 ## Report lifetime
 

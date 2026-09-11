@@ -11,6 +11,8 @@ public interface IReportElement : IReportObject
     public string? Name { get; set; }
     public Position Position { get; set; }
     public bool IsVisible { get; set; }
+    public float Opacity { get; set; }
+    public float Rotation { get; set; }
     public Alignment HorizontalAlignment { get; set; }
     public Alignment VerticalAlignment { get; set; }
     public int ZIndex { get; set; }
