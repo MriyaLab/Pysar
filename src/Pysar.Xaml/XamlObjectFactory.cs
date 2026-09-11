@@ -196,12 +196,17 @@ internal sealed class XamlObjectFactory
         if (!_context.MarkResourceDictionaryLoaded(fromPackage ? packagePath! : filePath!))
             return;
 
-        if (!fromPackage && !File.Exists(filePath!))
+        Stream? overlayStream = null;
+        var fromOverlay = !fromPackage
+                          && filePath is not null
+                          && XamlFileOverlay.TryOpen(filePath, out overlayStream);
+
+        if (!fromPackage && !fromOverlay && !File.Exists(filePath!))
             throw new XamlException($"ResourceDictionary Source file not found: {filePath}");
 
         using Stream stream = fromPackage
             ? new MemoryStream(ReadPackageFile(packagePath!))
-            : File.OpenRead(filePath!);
+            : overlayStream ?? File.OpenRead(filePath!);
 
         var document = new XamlParser().Parse(stream);
         if (_context.ResolveType(document.Root.Type) != typeof(ResourceDictionary))
