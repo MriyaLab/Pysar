@@ -18,7 +18,8 @@ public sealed record ReportLayout(
     float ContentWindowHeight,
     Rect ContentZone,
     LayoutNode? RepeatDetailHeader = null,
-    float RepeatDetailHeaderHeight = 0f);
+    float RepeatDetailHeaderHeight = 0f,
+    LayoutNode? Watermark = null);
 
 public static class ReportLayoutEngine
 {
@@ -90,8 +91,16 @@ public static class ReportLayoutEngine
             repeatHeaderHeight = repeatHeader?.Bounds.Height ?? 0f;
         }
 
+        LayoutNode? watermark = null;
+        if (design.Watermark is not null)
+        {
+            watermark = await LayoutEngine.MeasureAsync(design.Watermark,
+                new MeasureConstraint(new Rect(0, 0, page.Width, page.Height),
+                    WidthOverride: SizeLength.Fill, IgnorePosition: true), ctx, ct);
+        }
+
         return new ReportLayout(header, headerH, footer, footerH, flow, y, windowH, zone,
-            repeatHeader, repeatHeaderHeight);
+            repeatHeader, repeatHeaderHeight, watermark);
     }
 
     private static LayoutNode? FindNode(LayoutNode root, IReportElement target)

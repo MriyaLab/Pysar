@@ -85,6 +85,7 @@ internal sealed class XamlObjectFactory
             {
                 case PageFormat pageFormat: report.PageFormat = pageFormat; break;
                 case Metadata metadata: report.Metadata = metadata; break;
+                case Watermark watermark: report.Watermark = watermark; break;
                 case Band band: report.Bands.Set(band); break;
                 default:
                     throw new XamlException(

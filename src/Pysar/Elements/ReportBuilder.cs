@@ -65,6 +65,14 @@ public class ReportBuilder
     public ReportBuilder WithPageFooter(Action<PageFooterBand> configure) => WithBand(configure);
     public ReportBuilder WithReportFooter(Action<ReportFooterBand> configure) => WithBand(configure);
 
+    public ReportBuilder WithWatermark(Action<Watermark> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _reportDesign.Watermark ??= new Watermark();
+        configure(_reportDesign.Watermark);
+        return this;
+    }
+
     private ReportBuilder WithBand<TBand>(Action<TBand> configure) where TBand : Band, new()
     {
         ArgumentNullException.ThrowIfNull(configure);

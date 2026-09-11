@@ -19,6 +19,7 @@ public class TypeResolutionTests
         Assert.Equal(typeof(Text), resolver.Resolve(Ns, "Text"));
         Assert.Equal(typeof(StackPanel), resolver.Resolve(Ns, "StackPanel"));
         Assert.Equal(typeof(PageHeaderBand), resolver.Resolve(Ns, "PageHeaderBand"));
+        Assert.Equal(typeof(Watermark), resolver.Resolve(Ns, "Watermark"));
     }
 
     [Fact]

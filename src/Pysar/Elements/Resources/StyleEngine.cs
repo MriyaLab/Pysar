@@ -17,6 +17,8 @@ public static class StyleEngine
 
         foreach (var band in report.Bands)
             Walk(band, report.Resources);
+        if (report.Watermark is { } watermark)
+            Walk(watermark, report.Resources);
     }
 
     private static void Walk(IReportElement element, ResourceDictionary resources)

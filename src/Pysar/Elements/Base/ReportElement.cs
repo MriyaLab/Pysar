@@ -25,6 +25,12 @@ public abstract class ReportElement : ReportObject, IReportElement
     public static BindableProperty IsVisibleProperty { get; } =
         BindableProperty.Create(nameof(IsVisible), typeof(bool), typeof(ReportElement), true);
 
+    public static BindableProperty OpacityProperty { get; } =
+        BindableProperty.Create(nameof(Opacity), typeof(float), typeof(ReportElement), 1f);
+
+    public static BindableProperty RotationProperty { get; } =
+        BindableProperty.Create(nameof(Rotation), typeof(float), typeof(ReportElement), 0f);
+
     public static BindableProperty HorizontalAlignmentProperty { get; } =
         BindableProperty.Create(nameof(HorizontalAlignment), typeof(Alignment), typeof(ReportElement), Alignment.Start);
 
@@ -118,6 +124,18 @@ public abstract class ReportElement : ReportObject, IReportElement
         set => SetValue(IsVisibleProperty, value);
     }
 
+    public float Opacity
+    {
+        get => (float)GetValue(OpacityProperty)!;
+        set => SetValue(OpacityProperty, value);
+    }
+
+    public float Rotation
+    {
+        get => (float)GetValue(RotationProperty)!;
+        set => SetValue(RotationProperty, value);
+    }
+
     public Alignment HorizontalAlignment
     {
         get => (Alignment)GetValue(HorizontalAlignmentProperty)!;
@@ -203,6 +221,18 @@ public abstract class ReportElement<T> : ReportElement where T : ReportElement<T
     public T WithVisible(bool visible)
     {
         IsVisible = visible;
+        return (T)this;
+    }
+
+    public T WithOpacity(float opacity)
+    {
+        Opacity = opacity;
+        return (T)this;
+    }
+
+    public T WithRotation(float degrees)
+    {
+        Rotation = degrees;
         return (T)this;
     }
 

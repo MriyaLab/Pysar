@@ -35,4 +35,32 @@ public class ReportRootTests
         Assert.True(result.Names.ContainsKey("header"));
         Assert.IsType<PageHeaderBand>(result.Names["header"]);
     }
+
+    [Fact]
+    public void Report_WatermarkChild_SetsWatermark()
+    {
+        var design = ReportXaml.Load(
+            $"<Report {Root}><Watermark><Text Content=\"DRAFT\"/></Watermark><DetailBand/></Report>");
+        Assert.NotNull(design.Watermark);
+        Assert.IsType<Text>(Assert.Single(design.Watermark!.Children));
+        Assert.DoesNotContain<object>(design.Watermark, design.Bands);
+    }
+
+    [Fact]
+    public void Report_WatermarkXName_Captured()
+    {
+        var result = new XamlLoaderTestAccess().LoadWithNames(
+            $"<Report {Root}><Watermark x:Name=\"stamp\"/></Report>");
+        Assert.True(result.Names.ContainsKey("stamp"));
+        Assert.IsType<Watermark>(result.Names["stamp"]);
+    }
+
+    [Fact]
+    public void Report_TwoWatermarkChildren_LastWins()
+    {
+        var design = ReportXaml.Load(
+            $"<Report {Root}><Watermark Name=\"a\"/><Watermark Name=\"b\"/></Report>");
+        Assert.NotNull(design.Watermark);
+        Assert.Equal("b", design.Watermark!.Name);
+    }
 }

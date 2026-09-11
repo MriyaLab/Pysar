@@ -42,6 +42,19 @@ public class Report : ReportObject, IResourceHost
     public PageFooterBand?   PageFooter   => Bands.GetBand<PageFooterBand>();
     public ReportFooterBand? ReportFooter => Bands.GetBand<ReportFooterBand>();
 
+    private Watermark? _watermark;
+
+    public Watermark? Watermark
+    {
+        get => _watermark;
+        set
+        {
+            _watermark = value;
+            if (_watermark is not null)
+                _watermark.ParentElement = this;
+        }
+    }
+
     /// <summary>
     ///     1-based index of the page being rendered. The renderer rewrites it before each page, so page-band
     ///     markup can print it with <c>{Binding PageNumber, Source={x:Reference Root}}</c>.
@@ -134,11 +147,19 @@ public class Report : ReportObject, IResourceHost
         StyleEngine.Apply(this);
 
         var engine = new Pysar.Binding.BindingEngine();
-        engine.ResolveBindings(Bands, DataContext);
+        engine.ResolveBindings(PipelineRoots(), DataContext);
         RepeaterExpander.Expand(this);
-        engine.ResolveBindings(Bands, DataContext);
-        TriggerEngine.Apply(Bands, DataContext);   // conditional formatting, after per-row contexts/bindings
+        engine.ResolveBindings(PipelineRoots(), DataContext);
+        TriggerEngine.Apply(PipelineRoots(), DataContext);
         return this;
+    }
+
+    private IEnumerable<IReportElement> PipelineRoots()
+    {
+        foreach (var band in Bands)
+            yield return band;
+        if (Watermark is { } watermark)
+            yield return watermark;
     }
 
     private Rect CalculateBounds()

@@ -59,6 +59,8 @@ internal sealed class XamlConstructionEmitter
                 _builder.AppendLine($"            this.PageFormat = {local};");
             else if (fullyQualifiedName.EndsWith(".Metadata", StringComparison.Ordinal))
                 _builder.AppendLine($"            this.Metadata = {local};");
+            else if (fullyQualifiedName.EndsWith(".Watermark", StringComparison.Ordinal))
+                _builder.AppendLine($"            this.Watermark = {local};");
             else
                 _builder.AppendLine($"            this.Bands.Set({local});");
         }
