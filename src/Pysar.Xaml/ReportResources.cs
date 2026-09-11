@@ -8,13 +8,13 @@ public static class ReportResources
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         var fullPath = Path.GetFullPath(path);
-        if (!File.Exists(fullPath))
+        if (!XamlFileOverlay.TryOpen(fullPath, out var overlayStream) && !File.Exists(fullPath))
             throw new XamlException($"ResourceDictionary file not found: {fullPath}");
 
         var directory = Path.GetDirectoryName(fullPath)
                         ?? throw new XamlException($"Cannot resolve directory for '{fullPath}'.");
 
-        using var stream = File.OpenRead(fullPath);
+        using Stream stream = overlayStream ?? File.OpenRead(fullPath);
         return new XamlLoader().LoadDictionary(stream, directory);
     }
 }
