@@ -174,9 +174,10 @@ internal static class RenderHelper
         // pins both — the outer on r + w, the inner on r, which is the very box ToInnerRoundRect
         // clips the content to.
         paint.IsStroke = false;
-        using var ring = new SKPath { FillType = SKPathFillType.EvenOdd };
-        ring.AddRoundRect(ToRoundRect(rect, OuterRadius(radius, border), scale));
-        ring.AddRoundRect(ToInnerRoundRect(rect, radius, border, scale));
+        using var builder = new SKPathBuilder { FillType = SKPathFillType.EvenOdd };
+        builder.AddRoundRect(ToRoundRect(rect, OuterRadius(radius, border), scale));
+        builder.AddRoundRect(ToInnerRoundRect(rect, radius, border, scale));
+        using var ring = builder.Detach();
         canvas.DrawPath(ring, paint);
     }
 
