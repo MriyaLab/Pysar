@@ -26,6 +26,7 @@
     <PackageProjectUrl>https://github.com/MriyaLab/Pysar</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MriyaLab/Pysar</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes Condition="'$(ReleaseNotesFile)' != ''">$([System.IO.File]::ReadAllText('$(ReleaseNotesFile)'))</PackageReleaseNotes>
   </PropertyGroup>
 
   <!-- Source Link: debuggable packages, sources embedded for untracked files. -->
