@@ -29,15 +29,23 @@ Every `.rxaml` file in the project is picked up automatically. To exclude one, u
 Rendering can require platform-specific filesystem and font services:
 
 ```csharp
-ReportPlatformHandler.Create(new MyReportPlatformHandler());
+ReportPlatformHandler.Create(new DefaultReportPlatformHandler());
 ReportPlatformHandler.FontCollection.AddFont(
     "Fonts/Inter-Regular.ttf",
     alias: "Inter");
 ```
 
-Implement `IReportPlatformHandler`, `IFileSystem`, and `IFontCollection` for the host environment. The
-platform packages ship one each - `AvaloniaReportPlatformHandler`, `WpfReportPlatformHandler`,
-`MauiReportPlatformHandler`, `WasmPlatformHandler` - and their tests show what one has to do.
+`DefaultReportPlatformHandler` (`Pysar.Skia`) reads assets from the application's deployment
+directory, which is what the relative paths above resolve against - the handler for console and
+worker applications, server-side rendering, and the design-time preview. Pass a directory to its
+constructor when the assets do not sit next to the binaries.
+
+Applications built on a UI framework install that framework's handler instead, because their assets
+come from the application package: the platform packages ship one each -
+`AvaloniaReportPlatformHandler`, `WpfReportPlatformHandler`, `MauiReportPlatformHandler`,
+`WasmPlatformHandler` - and `UsePysar`/`AddPysar` register it for you. For any other asset source,
+implement `IReportPlatformHandler`, `IFileSystem`, and `IFontCollection`; those handlers and their
+tests show what one has to do.
 
 ## 3. Create a report with the fluent API
 
@@ -302,7 +310,7 @@ public sealed class ReportBootstrap : IReportBootstrap
 {
     public static void Initialize(SkiaReportRenderer renderer)
     {
-        ReportPlatformHandler.Create(new ConsolePlatformHandler());
+        ReportPlatformHandler.Create(new DefaultReportPlatformHandler());
         ReportPlatformHandler.FontCollection.AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu");
         renderer.WithDrawer<QRCode>(new QRCodeDrawer());
     }
