@@ -61,8 +61,9 @@ byte[] pdfBytes = await new SkiaReportRenderer().RenderToPdfBytesAsync(report);
 
 - .NET 10 SDK
 - SkiaSharp native assets for the target platform (the platform packages bring the right ones)
-- A platform implementation of `IReportPlatformHandler` for file and font access — or one of the
-  platform packages, which install one for you
+- A platform implementation of `IReportPlatformHandler` for file and font access —
+  `DefaultReportPlatformHandler` reads assets from the application directory, and the platform
+  packages install one for their own asset source
 
 ## Related packages
 
