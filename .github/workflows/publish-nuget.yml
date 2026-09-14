@@ -73,6 +73,11 @@ jobs:
           name: release-notes
           path: release-notes.txt
 
+  # Pysar.Uno depends on an Uno.WinUI prerelease - see the comment on the Uno.WinUI pin in
+  # Directory.Packages.props for why it has to. Until Uno 7.0 is released, it must only ship under
+  # a prerelease tag: a stable Pysar.Uno would take a nightly Uno build into consumers' graphs, and
+  # a published version cannot be unpublished from nuget.org. The tag shape is already guarded in
+  # the version job above; this note is what says a stable tag means Pysar.Uno should be held back.
   pack:
     needs: version
     runs-on: ubuntu-latest
