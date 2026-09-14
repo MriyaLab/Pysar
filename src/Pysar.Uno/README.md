@@ -1,15 +1,5 @@
 # Pysar.Uno
 
-> ### ⚠️ Preview only
->
-> **This package ships as a prerelease and has no stable version.** Every release is published as
-> `X.Y.Z-preview`, so it is only installable with an explicit prerelease opt-in. It will stay that
-> way until Uno Platform 7.0 is released — see [Why it is a preview](#why-it-is-a-preview) for the
-> reason, which is a version conflict rather than an unfinished package.
->
-> The report view has also not yet been exercised in a running application. Treat this release as
-> something to try, not something to ship on.
-
 Uno Platform integration for [Pysar](https://github.com/MriyaLab/Pysar), a cross-platform report
 engine for .NET: packaged asset access, font registration, a scrollable, zoomable `ReportView` and
 PDF printing. It installs a `UnoReportPlatformHandler` for file and font access.
@@ -17,48 +7,13 @@ PDF printing. It installs a `UnoReportPlatformHandler` for file and font access.
 One `net10.0` target covers every Uno Skia host — Desktop, WebAssembly, Android and iOS. The Windows
 App SDK head is not supported yet.
 
-## Installing
-
-A plain `dotnet add package Pysar.Uno` finds nothing: there is no stable version to resolve. Ask for
-the prerelease explicitly:
-
 ```bash
-dotnet add package Pysar.Uno --prerelease
+dotnet add package Pysar.Uno
 ```
 
-Or pin it in the project file, which is what a build that must stay reproducible should do — a
-floating prerelease moves under you:
-
-```xml
-<PackageReference Include="Pysar.Uno" Version="0.1.0-preview" />
-```
-
-The packages this one depends on — `Pysar`, `Pysar.Xaml`, `Pysar.Viewer` — are ordinary stable
-releases. Only `Pysar.Uno` is a preview, so nothing else in your graph is dragged onto a prerelease.
-
-## Why it is a preview
-
-The reason is a version conflict, not an unfinished package.
-
-Pysar renders through SkiaSharp 4.151.2, and one managed SkiaSharp is resolved for a whole
-application. Uno 6.7's Skia hosts depend on SkiaSharp 3.119, so pairing them would unify Uno's own
-renderer onto a major version it was not compiled against — the renderer would load an assembly it
-was never built for. Uno 7.0 moved to the 4.151.x line, which matches, so this package targets Uno
-7.0. That release is still a nightly build, and a stable package must not carry a nightly dependency
-into your dependency graph.
-
-The `-preview` suffix is therefore applied by the build itself rather than chosen per release, and
-the publish workflow refuses to push a stable `Pysar.Uno`. Both go away when Uno 7.0 ships.
-
-### What this means for you
-
-- **The API may change** before the stable release, without a major-version bump — that is what a
-  prerelease version communicates.
-- **Uno 7.0 itself is a nightly build.** Its own behaviour may change under you.
-- **The report view is unverified in a real host.** Its logic — page geometry, zoom, tile planning —
-  is shared with the Avalonia, WPF, MAUI and Blazor packages and is covered by their tests, but the
-  Uno-specific drawing, scrolling and gesture handling has not yet been run in an application.
-  Reports for bugs found there are especially welcome.
+Built against Uno Platform 6.7. Your application keeps whatever SkiaSharp its Uno host asks for; the
+one Pysar renders through is resolved alongside it, which is the arrangement the Avalonia package has
+always used.
 
 ## Packaging report assets
 

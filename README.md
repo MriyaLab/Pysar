@@ -69,7 +69,7 @@ written in `.rxaml` markup, and one platform package for the target UI framework
 | `Pysar.Avalonia` | [![NuGet](https://img.shields.io/nuget/v/Pysar.Avalonia)](https://www.nuget.org/packages/Pysar.Avalonia) | Avalonia integration: `avares://` assets, font registration and the report view |
 | `Pysar.Blazor` | [![NuGet](https://img.shields.io/nuget/v/Pysar.Blazor)](https://www.nuget.org/packages/Pysar.Blazor) | Blazor integration: the report viewer component, printing through the browser |
 | `Pysar.Wpf` | [![NuGet](https://img.shields.io/nuget/v/Pysar.Wpf)](https://www.nuget.org/packages/Pysar.Wpf) | WPF integration (Windows only): pack/manifest assets, font registration and the report view |
-| `Pysar.Uno` | [![NuGet](https://img.shields.io/nuget/vpre/Pysar.Uno)](https://www.nuget.org/packages/Pysar.Uno) | Uno Platform integration (preview): embedded assets, font registration, the report view and printing |
+| `Pysar.Uno` | [![NuGet](https://img.shields.io/nuget/v/Pysar.Uno)](https://www.nuget.org/packages/Pysar.Uno) | Uno Platform integration: embedded assets, font registration, the report view and printing |
 
 `Pysar.Viewer` is not referenced directly — it arrives transitively with a platform package.
 
@@ -311,20 +311,6 @@ close-up. On macOS and Linux the project still restores and builds as a `net10.0
 solution stays green; the real WPF sources compile only under `net10.0-windows`.
 
 ### Uno Platform
-
-`Pysar.Uno` is a **preview package**, and stays one until Uno Platform 7.0 is released. The reason is
-a version conflict rather than an unfinished package: Pysar renders through SkiaSharp 4.151.2, one
-managed SkiaSharp is resolved per application, and Uno 6.7's Skia hosts depend on SkiaSharp 3.119 —
-so pairing them would unify Uno's own renderer onto a major version it was not compiled against. Uno
-7.0 moved to the 4.151.x line, which matches.
-
-There is therefore no stable version to resolve, and installing it needs an explicit opt-in:
-
-```bash
-dotnet add package Pysar.Uno --prerelease
-```
-
-The packages it depends on stay stable releases; only `Pysar.Uno` is a preview.
 
 A single `net10.0` target covers every Uno Skia host — Desktop, WebAssembly, Android and iOS. The
 Windows App SDK head is not supported yet.
