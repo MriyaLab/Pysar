@@ -59,6 +59,11 @@ nunit-*.xml
 # IDE Rider
 .idea/
 
+# Junie, the JetBrains agent. .junie/mcp/mcp.json declares MCP servers for the IDE - the Uno
+# devserver and Uno's hosted docs endpoint - and it is rewritten per machine, leaving .bak copies
+# behind. Local tooling, in the same category as .idea above and .vscode below.
+.junie/
+
 # Visual Studio
 **/.vs/
 *.user
