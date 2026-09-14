@@ -19,6 +19,12 @@
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
     <!-- MAUI -->
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.100" />
+    <!-- Uno Platform. 7.0 prerelease rather than 6.7 stable: the 6.7 Skia hosts depend on
+         SkiaSharp 3.119, and one managed SkiaSharp is resolved for a whole application - so
+         pairing them with Pysar's 4.151.2 unifies Uno's renderer onto a major version it was
+         not compiled against. Uno 7.0 is on 4.151.1, the same line as Pysar. Until Uno 7.0
+         is released, Pysar.Uno ships as a preview package. -->
+    <PackageVersion Include="Uno.WinUI" Version="7.0.0-dev.703" />
     <!-- Roslyn / Code Analysis -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
     <!-- Dependency Injection & Extensions -->
@@ -53,14 +59,18 @@
     <PackageVersion Include="SkiaSharp.NativeAssets.MacCatalyst" Version="4.151.2" />
     <PackageVersion Include="SkiaSharp.NativeAssets.WebAssembly" Version="4.151.2" />
     <PackageVersion Include="SkiaSharp.QrCode" Version="1.2.0" />
-    <PackageVersion Include="HarfBuzzSharp" Version="14.2.0" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="14.2.0" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.macOS" Version="14.2.0" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.0" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Android" Version="14.2.0" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.iOS" Version="14.2.0" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.MacCatalyst" Version="14.2.0" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="14.2.0" />
+    <!-- 14.2.1.1 rather than 14.2.0 because Uno.WinUI asks for it, and transitive pinning turns a
+         lower central version into a hard NU1109 downgrade error. Bumped as a family: the managed
+         wrapper and the native assets have to stay on one version for the same reason SkiaSharp's
+         do above. -->
+    <PackageVersion Include="HarfBuzzSharp" Version="14.2.1.1" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="14.2.1.1" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.macOS" Version="14.2.1.1" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.1" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Android" Version="14.2.1.1" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.iOS" Version="14.2.1.1" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.MacCatalyst" Version="14.2.1.1" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="14.2.1.1" />
     <PackageVersion Include="Svg.Skia" Version="5.2.3" />
     <!-- JetBrains Rider SDK -->
     <PackageVersion Include="JetBrains.Rider.SDK" Version="2026.1.1" />
