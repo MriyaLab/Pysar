@@ -644,18 +644,22 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
     {
         var stream = new InMemoryRandomAccessStream();
 
-        // A synchronous Stream over the buffer, rather than either of the two shapes that look more
-        // natural here. A DataWriter owns the stream it wraps and closes it on dispose, and the
-        // DetachStream() that would prevent that is one of the WinRT members Uno does not implement
-        // (Uno0001). Blocking on the stream's own WriteAsync would be worse still: this runs on the
-        // user-interface thread inside a layout pass, and on the WebAssembly host there is no second
-        // thread to complete that operation - the wait is a deadlock rather than a stall, which is
-        // the same hazard UnoAssetFileSystem is shaped around.
-        using (var writable = stream.AsStreamForWrite())
-        {
-            writable.Write(encoded, 0, encoded.Length);
-            writable.Flush();
-        }
+        // A synchronous Stream over the buffer, and deliberately not disposed. All three obvious
+        // shapes here are wrong in their own way, and each was reached by hitting it:
+        //
+        //   - a DataWriter owns the stream it wraps and closes it on dispose, and the
+        //     DetachStream() that would prevent that is a WinRT member Uno does not implement
+        //     (Uno0001);
+        //   - blocking on the stream's own WriteAsync deadlocks the WebAssembly host, which has no
+        //     second thread to complete the operation while this one waits inside a layout pass;
+        //   - disposing the wrapper below closes the InMemoryRandomAccessStream with it, so the
+        //     BitmapImage is handed a closed stream and every page throws ObjectDisposedException.
+        //
+        // The wrapper holds nothing of its own to release - the stream it adapts is the only
+        // resource, and the BitmapImage reads from it after this returns.
+        var writable = stream.AsStreamForWrite();
+        writable.Write(encoded, 0, encoded.Length);
+        writable.Flush();
 
         stream.Seek(0);
 

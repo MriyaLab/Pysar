@@ -12,29 +12,6 @@
         <PackageTags>uno;unoplatform;winui;report;pdf;skiasharp;pysar</PackageTags>
     </PropertyGroup>
 
-    <!--
-      This package can only ship as a prerelease, because Uno.WinUI is one - see the comment on that
-      pin in Directory.Packages.props. A stable Pysar.Uno would pull a nightly Uno build into every
-      consumer's graph, and nuget.org does not let a published version be taken back.
-
-      Enforced here rather than left to whoever cuts the release. CI packs every project with one
-      shared -p:PackageVersion, so the release tag alone decides the version, and a stable tag would
-      otherwise produce a stable Pysar.Uno silently. A property set inside a target overrides the
-      global one, which is what makes this possible at all; the same assignment in a PropertyGroup
-      above would be ignored.
-
-      The suffix is added only when the version carries none, so a deliberately prereleased build
-      (v0.2.0-rc.1) keeps its own and does not become "0.2.0-rc.1-preview".
-
-      Drop this target when Uno 7.0 ships as stable: NU5104 below then no longer fires, and the
-      package can follow the same version as the rest.
-    -->
-    <Target Name="EnsurePrereleaseWhileUnoIsPrerelease" BeforeTargets="GenerateNuspec">
-        <PropertyGroup Condition="'$(PackageVersion)' != '' AND !$(PackageVersion.Contains('-'))">
-            <PackageVersion>$(PackageVersion)-preview</PackageVersion>
-        </PropertyGroup>
-    </Target>
-
     <ItemGroup>
         <PackageReference Include="Uno.WinUI" />
     </ItemGroup>
