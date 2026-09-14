@@ -1,17 +1,17 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Pysar.Avalonia;
+namespace Pysar.Core.Platform;
 
 /// <summary>
-///     A trackpad magnify event, reported directly by AppKit rather than through Avalonia's own
-///     input pipeline - see the remarks on <see cref="MacPinchMonitor"/> for why that pipeline
-///     never delivers one on macOS. <see cref="WindowX"/>/<see cref="WindowY"/> are
+///     A trackpad magnify event, reported directly by AppKit rather than through a user-interface
+///     framework's own input pipeline - see the remarks on <see cref="MacPinchMonitor"/> for why no
+///     such pipeline delivers one on macOS. <see cref="WindowX"/>/<see cref="WindowY"/> are
 ///     <c>-[NSEvent locationInWindow]</c> untouched: AppKit's own bottom-left-origin window
-///     coordinates, still needing the flip into Avalonia's top-left space, which is left to the
-///     caller because it needs the control's own <see cref="Avalonia.Controls.TopLevel"/> to do it.
+///     coordinates, still needing the flip into the framework's top-left space. That is left to the
+///     caller, which is the only side that knows its own window and control geometry.
 /// </summary>
-internal readonly record struct MacMagnifyEventArgs(double Magnification, double WindowX, double WindowY, bool Began, bool Ended);
+public readonly record struct MacMagnifyEventArgs(double Magnification, double WindowX, double WindowY, bool Began, bool Ended);
 
 /// <summary>
 ///     Installs an AppKit local event monitor for <c>NSEventTypeMagnify</c> (trackpad pinch) and
@@ -19,12 +19,20 @@ internal readonly record struct MacMagnifyEventArgs(double Magnification, double
 ///     on anything but macOS, since this assembly is shared with Windows and Linux applications.
 /// </summary>
 /// <remarks>
-///     Avalonia never surfaces a trackpad pinch as a gesture on macOS - a real pinch arrives as
-///     plain wheel deltas indistinguishable from a two-finger scroll, per the measurement recorded
-///     on <c>ReportViewInput</c> (1034 wheel events and zero pinch events on 11.3.12; 55 and zero on
-///     12.1.1) - so this goes straight to
-///     <c>+[NSEvent addLocalMonitorForEventsMatchingMask:handler:]</c>, the only place the platform
-///     actually reports a magnify.
+///     No user-interface framework tested here surfaces a trackpad pinch as a gesture on macOS - a
+///     real pinch arrives as plain wheel deltas indistinguishable from a two-finger scroll - so this
+///     goes straight to <c>+[NSEvent addLocalMonitorForEventsMatchingMask:handler:]</c>, the only
+///     place the platform actually reports a magnify. Measured on both hosts that need it:
+///
+///     - Avalonia: 1034 wheel events and zero pinch events on 11.3.12; 55 and zero on 12.1.1.
+///     - Uno 6.7.103 (Skia, macOS): 498 wheel events and zero manipulation events over one pinch,
+///       every wheel event carrying no key modifier. Its macOS host contains no magnify handling at
+///       all - "Magnif", "Manipulation" and "Gesture" appear zero times in both
+///       Uno.UI.Runtime.Skia.MacOS.dll and libUnoNativeMac.dylib, while "scrollWheel" appears.
+///
+///     Shared by both hosts from here rather than duplicated into each: this is plain P/Invoke
+///     against libobjc, with no dependency on any framework - the same reason MacOsPdfPrint lives
+///     in this assembly.
 ///
 ///     The handler is an Objective-C block built by hand, since there is no marshalled-delegate path
 ///     from a block to .NET. It is a <see cref="BlockLiteral"/> allocated with
@@ -44,10 +52,10 @@ internal readonly record struct MacMagnifyEventArgs(double Magnification, double
 ///     <c>NSUInteger</c>) and <c>-[NSEvent locationInWindow]</c> (an <c>NSPoint</c>, two doubles, 16
 ///     bytes) - all small enough to return in registers on both architectures, so plain
 ///     <c>objc_msgSend</c> is correct either way. Turning that point into the control's own
-///     coordinate space, including the y-flip, is left to the caller, which has the control's
-///     <c>TopLevel</c> and can do it in managed code instead of asking AppKit for a window frame.
+///     coordinate space, including the y-flip, is left to the caller, which can do it in managed
+///     code from its own window instead of asking AppKit for a window frame.
 /// </remarks>
-internal sealed class MacPinchMonitor : IDisposable
+public sealed class MacPinchMonitor : IDisposable
 {
     private const string ObjCLib = "/usr/lib/libobjc.dylib";
     private const string SystemLib = "/usr/lib/libSystem.B.dylib";

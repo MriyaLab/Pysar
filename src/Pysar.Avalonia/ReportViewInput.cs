@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Pysar.Core.Platform;
 using Pysar.Viewer;
 using Pysar.Viewer.Geometry;
 using Pysar.Viewer.Zoom;

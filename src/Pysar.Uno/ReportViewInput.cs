@@ -1,5 +1,7 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Pysar.Core.Platform;
 using Pysar.Viewer;
 using Pysar.Viewer.Geometry;
 using Pysar.Viewer.Zoom;
@@ -25,10 +27,12 @@ namespace Pysar.Uno;
 ///     keeps a zoom from also scrolling. The Avalonia host reaches the same point from the other
 ///     direction, by handling the event on the scroll viewer during the tunnel phase.
 ///
-///     Nothing like the Avalonia host's <c>MacPinchMonitor</c> is needed. That type exists because
-///     Avalonia never delivers a trackpad pinch on macOS, so the package has to read AppKit's
-///     magnify events itself; WinUI raises <see cref="UIElement.ManipulationDelta"/> for a trackpad
-///     pinch on every Uno host.
+///     macOS needs <see cref="MacPinchMonitor"/>, exactly as the Avalonia host does. Uno does not
+///     deliver a trackpad pinch there in any form: measured over one pinch, 498
+///     <see cref="UIElement.PointerWheelChanged"/> events and zero manipulation events, every wheel
+///     event carrying no key modifier and so indistinguishable from a two-finger scroll. Its macOS
+///     Skia host contains no magnify handling at all. The manipulation handlers below are kept for
+///     the touch hosts - Android and iOS - where a pinch is a real two-pointer gesture.
 /// </remarks>
 public partial class ReportView
 {
@@ -46,8 +50,107 @@ public partial class ReportView
     /// </summary>
     private readonly PinchSession _pinch;
 
+    /// <summary>
+    ///     The AppKit event monitor that delivers a trackpad pinch on macOS, since nothing in Uno's
+    ///     own input pipeline does. Installed while the control is loaded; <see langword="null"/> on
+    ///     every other platform.
+    /// </summary>
+    private MacPinchMonitor? _macPinchMonitor;
+
+    private void StartMacPinchMonitor()
+    {
+        if (!OperatingSystem.IsMacOS() || _macPinchMonitor is not null)
+            return;
+
+        _macPinchMonitor = new MacPinchMonitor();
+        _macPinchMonitor.Magnify += OnMacMagnify;
+        _macPinchMonitor.Start();
+    }
+
+    private void StopMacPinchMonitor()
+    {
+        if (_macPinchMonitor is not { } monitor)
+            return;
+
+        monitor.Magnify -= OnMacMagnify;
+        monitor.Dispose();
+        _macPinchMonitor = null;
+    }
+
+    /// <summary>
+    ///     Turns a native AppKit magnify into a frame of a pinch: each event's magnification is a
+    ///     step from the frame before it, not a scale against the gesture's start, so the steps are
+    ///     accumulated by <see cref="PinchSession"/>. Frames are shown by scaling what is already
+    ///     drawn, and only the end of the gesture reaches the zoom itself.
+    /// </summary>
+    private void OnMacMagnify(object? sender, MacMagnifyEventArgs e)
+    {
+        if (XamlRoot?.Content is not FrameworkElement root)
+            return;
+
+        // AppKit's locationInWindow is bottom-left-origin window coordinates; XAML's are
+        // top-left-origin, so the flip needs the root element's own height. TransformToVisual then
+        // carries the point into _scroll's space - the one every other handler anchors against -
+        // without asking AppKit for an NSRect (see the remarks on MacPinchMonitor for why).
+        var rootPoint = new Point(e.WindowX, root.ActualHeight - e.WindowY);
+        var point = root.TransformToVisual(_scroll).TransformPoint(rootPoint);
+
+        // A local monitor sees every magnify in the application, so several report views - or none
+        // under the pointer - must not all zoom together.
+        if (point.X < 0 || point.Y < 0 || point.X > _scroll.ActualWidth || point.Y > _scroll.ActualHeight)
+            return;
+
+        // Also when a gesture is somehow already under way: the anchor belongs to one gesture, and
+        // carrying the previous one's in would zoom around a point nobody touched.
+        if (e.Began || !_pinch.Running)
+            _pinch.Begin(new ViewPoint(point.X, point.Y));
+
+        if (e.Ended)
+        {
+            CommitMacPinch();
+            return;
+        }
+
+        ShowPinch(1 + e.Magnification);
+    }
+
+    /// <summary>Shows one frame of the gesture through the canvas transform.</summary>
+    private void ShowPinch(double step)
+    {
+        if (_pinch.MoveByStep(step) is not { } preview)
+            return;
+
+        _canvas.RenderTransformOrigin = new Point(0, 0);
+        _canvas.RenderTransform = new MatrixTransform
+        {
+            Matrix = new Matrix(preview.Scale, 0, 0, preview.Scale, preview.OffsetX, preview.OffsetY)
+        };
+    }
+
+    /// <summary>Ends a magnify gesture through the same path a wheel notch takes.</summary>
+    private void CommitMacPinch()
+    {
+        if (_pinch.End() is not { } commit)
+        {
+            _canvas.RenderTransform = null;
+            return;
+        }
+
+        var before = _presenter.EffectiveZoom;
+
+        _presenter.Gestures.BeginPinch();
+        _presenter.Gestures.PinchByScale(commit.Factor);
+
+        ApplyGestureZoom(before, new Point(commit.Anchor.X, commit.Anchor.Y), commit.Held);
+
+        _canvas.RenderTransform = null;
+    }
+
     private void AddInputHandlers()
     {
+        Loaded += (_, _) => StartMacPinchMonitor();
+        Unloaded += (_, _) => StopMacPinchMonitor();
+
         _canvas.PointerWheelChanged += OnPointerWheelChanged;
         _canvas.DoubleTapped += OnDoubleTapped;
 
@@ -75,7 +178,7 @@ public partial class ReportView
         // started, so beginning and stepping together on every notch is the correct call rather than
         // a shortcut - there is no multi-event gesture here for a start to belong to.
         _presenter.Gestures.BeginPinch();
-        _presenter.Gestures.PinchByStep(WheelZoom.StepFor(point.Properties.MouseWheelDelta));
+        _presenter.Gestures.PinchByStep(WheelZoom.StepForWindowsDelta(point.Properties.MouseWheelDelta));
 
         ApplyGestureZoom(before, point.Position);
 
