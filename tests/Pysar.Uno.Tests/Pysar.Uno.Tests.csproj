@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!--
+    The font UnoAssetFileSystem resolves, packaged the way the package expects a report asset to
+    be packaged: an EmbeddedResource whose LogicalName is the exact path a report asks for. Linked
+    from tests/Assets rather than duplicated, as the Avalonia test project does.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Assets\Fonts\Ubuntu-Regular.ttf" LogicalName="Fonts/Ubuntu-Regular.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pysar.Uno\Pysar.Uno.csproj" />
+    <ProjectReference Include="..\..\src\Pysar\Pysar.csproj" />
+  </ItemGroup>
+</Project>
