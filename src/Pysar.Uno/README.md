@@ -36,7 +36,7 @@ A manifest resource is readable synchronously on every host.
 An application that already ships its assets as `Content` can fetch them once at startup instead:
 
 ```csharp
-await PysarUno.UseAsync(
+await this.UsePysarAsync(
     typeof(App).Assembly,
     ["Fonts/Ubuntu-Regular.ttf", "Images/logo.svg"],
     pysar => pysar.AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu"));
@@ -49,7 +49,7 @@ Every read after that is a dictionary lookup, so the synchronous callers are sat
 ```csharp
 protected override void OnLaunched(LaunchActivatedEventArgs args)
 {
-    PysarUno.Use(typeof(App).Assembly, pysar => pysar
+    this.UsePysar(typeof(App).Assembly, pysar => pysar
         .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
         .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 
@@ -57,10 +57,18 @@ protected override void OnLaunched(LaunchActivatedEventArgs args)
 }
 ```
 
-A static entry point rather than a service registration: an Uno application is a
-`Microsoft.UI.Xaml.Application` and has no service collection of its own unless it also uses
-Uno.Extensions. `Use` returns the handler, for an application that needs it beyond what `ReportView`
-wires up.
+An extension on `Application` rather than on a host builder: an Uno application has no service
+collection of its own unless it also uses Uno.Extensions, and `UnoPlatformHostBuilder` exists only in
+the WebAssembly and Desktop heads — Android, iOS and WinAppSDK start through `Application.Start`.
+`OnLaunched` is the one place every head runs. `PysarUno.PlatformHandler`, `PysarUno.Renderer` and
+`PysarUno.ExportService` reach what registration installed.
+
+On a browser head this also stops the page zooming when Ctrl (or Command) plus wheel — or the
+trackpad pinch the browser delivers as the same event — is meant for the report. The suppression
+covers the Uno canvas and is permanent once installed: Uno draws the whole application into one
+canvas, so the listener cannot tell the report from the toolbar beside it, while a host page's own
+markup around the application keeps the browser's zoom. Pass `suppressBrowserZoom: false` to leave it
+alone.
 
 ## Showing a report
 

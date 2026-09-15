@@ -31,6 +31,8 @@ public sealed class ReportRenderSession
 
     // Resolve mutates live design elements and returns nodes that alias them. Serialize Resolve and
     // freeze each page's bands before caching so DrawPage can run concurrently on stable snapshots.
+    // This also happens to be what keeps the shared MeasureContext single-threaded - it caches probe
+    // sizes in a plain dictionary - so narrowing this gate means giving that its own protection.
     private readonly SemaphoreSlim _resolveGate = new(1, 1);
     private readonly ConcurrentDictionary<int, (LayoutNode? Header, LayoutNode? Footer)> _bands = new();
 

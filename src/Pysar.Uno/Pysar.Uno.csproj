@@ -17,7 +17,16 @@
     </ItemGroup>
 
     <!--
-      Embedded rather than a static web asset: those need the Razor SDK, and PysarUnoBrowser inlines
+      UnoRegistration and BrowserWheelZoom are internal, and the tests reach both only through
+      this - see UnoRegistration's remarks for why the public surface itself cannot be exercised
+      end to end from a test.
+    -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="Pysar.Uno.Tests" />
+    </ItemGroup>
+
+    <!--
+      Embedded rather than a static web asset: those need the Razor SDK, and BrowserWheelZoom inlines
       the script into a data URL anyway, so a browser head needs no file of its own.
     -->
     <ItemGroup>
