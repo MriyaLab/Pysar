@@ -35,4 +35,13 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     </ItemGroup>
 
+    <!--
+      buildTransitive rather than build: the WebAssembly check this carries has to reach consumers
+      that never name Pysar directly, because they referenced Pysar.Uno or Pysar.Blazor instead -
+      and those are exactly the consumers who end up on a browser head.
+    -->
+    <ItemGroup>
+        <None Include="buildTransitive\Pysar.targets" Pack="true" PackagePath="buildTransitive/" />
+    </ItemGroup>
+
 </Project>
