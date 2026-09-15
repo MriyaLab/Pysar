@@ -20,6 +20,15 @@ public sealed class PackageLayoutTests : IClassFixture<PackFixture>
     }
 
     [Fact]
+    public void Pysar_ShipsTheWebAssemblyCheckWhereTransitiveConsumersSeeIt()
+    {
+        // buildTransitive/<PackageId>.targets is auto-imported by consumers that reach Pysar
+        // through Pysar.Uno or Pysar.Blazor; build/ would only reach the ones naming it directly,
+        // and those are the least likely to be building a browser head.
+        Assert.Contains("buildTransitive/Pysar.targets", _pack.EntriesOf("Pysar"));
+    }
+
+    [Fact]
     public void Xaml_ShipsLoaderAndGenerator()
     {
         var entries = _pack.EntriesOf("Pysar.Xaml");

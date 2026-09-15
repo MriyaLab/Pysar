@@ -1,0 +1,47 @@
+<Project>
+  <!--
+    On every other platform a managed/native SkiaSharp split is a startup exception with a clear
+    message of its own ("SkiaSharpVersion.CheckNativeLibraryCompatible"). WebAssembly has no such
+    moment: the native side is a static archive linked into the application at build time, so the
+    split surfaces as a wall of wasm-ld "undefined symbol: sk_*" lines naming entry points nobody
+    wrote - sk_pathbuilder_new, sk_colorfilter_new_overdraw - with nothing pointing at the version
+    that caused them.
+
+    It is easy to land in. An Uno browser head pulls SkiaSharp.NativeAssets.WebAssembly through
+    Uno.WinUI.Runtime.Skia.WebAssembly.Browser, which asks for the 3.119 line, while Pysar renders
+    through 4.151; NuGet resolves one managed SkiaSharp (the higher) and one native archive (the
+    only one requested), and the two no longer agree. The C API moved by roughly fifty entry points
+    between those lines, so the link cannot succeed.
+
+    Raising the native package to match is the consumer's call, not something this package can do
+    for them: SkiaSharp.NativeAssets.WebAssembly is a 67 MB download, and declaring a dependency on
+    it here would charge that to every WPF, console and Uno desktop consumer that will never link a
+    wasm binary. So the check stays a diagnostic, and names the one line that fixes it.
+  -->
+  <Target Name="PysarCheckWebAssemblySkiaVersion"
+          AfterTargets="ResolveReferences"
+          Condition="'$(PysarSkipWebAssemblySkiaVersionCheck)' != 'true'">
+
+    <ItemGroup>
+      <!-- Present only when something actually links a Skia wasm archive; on every other target
+           this stays empty and the check below is skipped. -->
+      <_PysarSkiaWasmNative Include="@(NativeFileReference)"
+                            Condition="$([System.String]::Copy('%(Identity)').Contains('libSkiaSharp.a'))" />
+
+      <_PysarSkiaManagedReference Include="@(ReferencePath)"
+                                  Condition="'%(ReferencePath.NuGetPackageId)' == 'SkiaSharp'" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_PysarSkiaManagedVersion>@(_PysarSkiaManagedReference->'%(NuGetPackageVersion)'->Distinct())</_PysarSkiaManagedVersion>
+      <_PysarSkiaNativePath>@(_PysarSkiaWasmNative->'%(FullPath)'->Distinct())</_PysarSkiaNativePath>
+      <!-- The archive carries no version of its own; the package folder it was restored into is
+           what identifies it. -->
+      <_PysarSkiaNativeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_PysarSkiaNativePath), 'skiasharp\.nativeassets\.webassembly[/\\]([^/\\]+)').Groups[1].Value)</_PysarSkiaNativeVersion>
+    </PropertyGroup>
+
+    <Error Code="PYSAR1001"
+           Condition="'$(_PysarSkiaNativeVersion)' != '' AND '$(_PysarSkiaManagedVersion)' != '' AND '$(_PysarSkiaNativeVersion)' != '$(_PysarSkiaManagedVersion)'"
+           Text="SkiaSharp native binary for WebAssembly is $(_PysarSkiaNativeVersion) but Pysar renders through managed SkiaSharp $(_PysarSkiaManagedVersion). Linking will fail with undefined sk_* symbols. Add to your browser-wasm head: &lt;PackageReference Include=&quot;SkiaSharp.NativeAssets.WebAssembly&quot; Version=&quot;$(_PysarSkiaManagedVersion)&quot; /&gt; - or set PysarSkipWebAssemblySkiaVersionCheck to true to build anyway." />
+  </Target>
+</Project>
