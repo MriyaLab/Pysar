@@ -16,6 +16,14 @@
         <PackageReference Include="Uno.WinUI" />
     </ItemGroup>
 
+    <!--
+      Embedded rather than a static web asset: those need the Razor SDK, and PysarUnoBrowser inlines
+      the script into a data URL anyway, so a browser head needs no file of its own.
+    -->
+    <ItemGroup>
+        <EmbeddedResource Include="Scripts\reportViewZoom.js" />
+    </ItemGroup>
+
     <ItemGroup>
         <ProjectReference Include="..\Pysar.Viewer\Pysar.Viewer.csproj" />
         <ProjectReference Include="..\Pysar\Pysar.csproj" />
