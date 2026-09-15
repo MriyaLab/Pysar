@@ -15,14 +15,65 @@ public static class LayoutEngine
         IReportElement element, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return element switch
+
+        // Bracketed so the context can tell the outermost measure from the recursion below it, which
+        // is what bounds the life of the probe sizes it caches - see MeasureContext.EndMeasure.
+        ctx.BeginMeasure();
+        try
         {
-            Grid grid => await GridLayoutMeasurer.MeasureAsync(grid, constraint, ctx, ct),
-            StackPanel panel => await StackLayoutMeasurer.MeasureAsync(panel, constraint, ctx, ct),
-            Text text => MeasureText(text, constraint, ctx),
-            IReportContainer container => await MeasureContainerAsync(container, constraint, ctx, ct),
-            _ => MeasureBox(element, constraint, ctx)
-        };
+            return element switch
+            {
+                Grid grid => await GridLayoutMeasurer.MeasureAsync(grid, constraint, ctx, ct),
+                StackPanel panel => await StackLayoutMeasurer.MeasureAsync(panel, constraint, ctx, ct),
+                Text text => MeasureText(text, constraint, ctx),
+                IReportContainer container => await MeasureContainerAsync(container, constraint, ctx, ct),
+                _ => MeasureBox(element, constraint, ctx)
+            };
+        }
+        finally
+        {
+            ctx.EndMeasure();
+        }
+    }
+
+    /// <summary>
+    ///     How big <paramref name="element"/> comes out under <paramref name="constraint"/>, for a
+    ///     container sizing its tracks. Repeat questions are answered from the current measure's
+    ///     cache rather than by measuring the subtree again.
+    /// </summary>
+    /// <remarks>
+    ///     This exists because a container asks the same question several times over. A grid probes
+    ///     each child once to size its columns and once more to size its rows, then measures it a
+    ///     third time to place it; every one of those was a full recursive measure of everything
+    ///     below the child, so the cost multiplied by roughly three at each level of nesting - a leaf
+    ///     under four containers was measured eighty-one times, and a four-page report spent seven
+    ///     seconds in layout on a browser head.
+    ///
+    ///     What makes caching sound here is that a probe's constraint does not carry the parent's
+    ///     position: an auto-sized grid sizes its tracks against a fixed sizing box rather than
+    ///     against the rect it was handed, so the same child under the same parent is asked an
+    ///     identical question by each of those passes. Placement is deliberately not routed through
+    ///     this - a placed node's bounds are the cell it landed in, which does differ every time.
+    /// </remarks>
+    internal static async Task<(float Width, float Height)> ProbeSizeAsync(
+        IReportElement element, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
+    {
+        // Before the cache is consulted, not only on a miss. Every probe used to reach
+        // MeasureAsync, whose first statement is this same check, and the grid's track loops lean on
+        // that rather than carrying one of their own - unlike the stack measurer, which checks in
+        // every loop. Answering from the cache without it left a superseded report measuring to the
+        // end, which on a browser head means holding the only thread there is.
+        ct.ThrowIfCancellationRequested();
+
+        if (ctx.TryGetProbeSize(element, constraint, out var cached))
+            return cached;
+
+        var node = await MeasureAsync(element, constraint, ctx, ct);
+        var size = (node.Bounds.Width, node.Bounds.Height);
+
+        ctx.StoreProbeSize(element, constraint, size);
+
+        return size;
     }
 
     internal static SizeLength EffectiveWidth(IReportElement e, MeasureConstraint constraint) => constraint.WidthOverride ?? e.Size.Width;

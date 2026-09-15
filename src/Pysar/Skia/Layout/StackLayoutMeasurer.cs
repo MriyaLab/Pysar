@@ -43,6 +43,11 @@ internal static class StackLayoutMeasurer
         var visible = panel.Children.Where(ch => ch.IsVisible).ToList();
 
         var children = new List<LayoutNode>();
+
+        // What each child was asked in phase 1, so phase 4 can tell whether it is about to ask the
+        // identical question again - see the reuse there.
+        var probeConstraints = new List<MeasureConstraint>(visible.Count);
+
         var y = probeContentTop;
         for (var i = 0; i < visible.Count; i++)
         {
@@ -51,8 +56,9 @@ internal static class StackLayoutMeasurer
 
             // Leave Fill as Fill so child margins expand/inset against the content width.
             var childRect = new Rect(probeContentLeft, y, probeContentLeft + probeContentWidth, available.Bottom);
-            var node = await LayoutEngine.MeasureAsync(child,
-                new MeasureConstraint(childRect, HeightOverride: FillAsAuto(isAutoHeight, child)), ctx, ct);
+            var constraintForChild = new MeasureConstraint(childRect, HeightOverride: FillAsAuto(isAutoHeight, child));
+            var node = await LayoutEngine.MeasureAsync(child, constraintForChild, ctx, ct);
+            probeConstraints.Add(constraintForChild);
             children.Add(node);
             y = node.Bounds.Bottom + child.Margin.Bottom;
             if (i < visible.Count - 1)
@@ -96,8 +102,22 @@ internal static class StackLayoutMeasurer
             var child = visible[i];
 
             var childRect = new Rect(contentLeft, y2, contentLeft + contentWidth, available.Bottom);
-            var node = await LayoutEngine.MeasureAsync(child,
-                new MeasureConstraint(childRect, HeightOverride: FillAsAuto(isAutoHeight, child)), ctx, ct);
+            var constraintForChild = new MeasureConstraint(childRect, HeightOverride: FillAsAuto(isAutoHeight, child));
+
+            // Phase 1 measured this child to find the panel's extents and then threw the node away.
+            // When resolving the panel's own position did not move it - a Fill-width panel at the
+            // top left, which is what a band and every repeater row is - phase 1 asked exactly this
+            // question already, and measuring again returns the same node at the same coordinates.
+            //
+            // Redoing it is not a small waste: each pass re-measures the whole subtree, so a panel
+            // inside a panel cost four measures of its leaves, and one inside that cost eight. A
+            // repeater nests a stack per data level, so an ordinary grouped report reached hundreds
+            // of measures per leaf. Reusing the node is sound precisely because the constraint is
+            // equal by value: the node phase 1 built for it is the node phase 4 would build.
+            var node = constraintForChild == probeConstraints[i]
+                ? children[i]
+                : await LayoutEngine.MeasureAsync(child, constraintForChild, ctx, ct);
+
             repositionedChildren.Add(node);
             y2 = node.Bounds.Bottom + child.Margin.Bottom;
             if (i < visible.Count - 1)
@@ -155,8 +175,8 @@ internal static class StackLayoutMeasurer
             }
 
             var probeRect = new Rect(probeContentLeft, probeContentTop, available.Right, probeContentTop + probeContentHeight);
-            var probe = await LayoutEngine.MeasureAsync(child, new MeasureConstraint(probeRect), ctx, ct);
-            widths[index] = probe.Bounds.Width + child.Margin.Left + child.Margin.Right;
+            var probe = await LayoutEngine.ProbeSizeAsync(child, new MeasureConstraint(probeRect), ctx, ct);
+            widths[index] = probe.Width + child.Margin.Left + child.Margin.Right;
         }
 
         // Pass 2: Fill children split the content width left by Fixed/Auto children and gaps equally.

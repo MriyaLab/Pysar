@@ -23,8 +23,8 @@ public class UnoReportPlatformHandlerTests
         Assert.NotNull(handler.FontCollection);
 
         // One object behind both properties, not two file systems over the same assembly:
-        // PysarUno.UseAsync preloads into Assets while rendering reads through FileSystem, so a
-        // second instance would leave the preloaded content unreachable at render time.
+        // Application.UsePysarAsync preloads into Assets while rendering reads through FileSystem,
+        // so a second instance would leave the preloaded content unreachable at render time.
         Assert.Same(handler.Assets, handler.FileSystem);
     }
 

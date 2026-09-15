@@ -318,17 +318,20 @@ Windows App SDK head is not supported yet.
 Assets are `EmbeddedResource` items whose `LogicalName` is the path the report asks for, rather than
 the `ms-appx:///` URIs an Uno application usually reaches for. The reason is the one Blazor meets
 below: font registration and image loading read synchronously, `StorageFile` is asynchronous, and on
-WebAssembly blocking on it deadlocks the single thread. `PysarUno.UseAsync` fetches `Content`-packaged
+WebAssembly blocking on it deadlocks the single thread. `UsePysarAsync` fetches `Content`-packaged
 assets once at startup for applications that would rather keep them that way.
 
 ```csharp
 protected override void OnLaunched(LaunchActivatedEventArgs args)
 {
-    PysarUno.Use(typeof(App).Assembly, pysar => pysar
+    this.UsePysar(typeof(App).Assembly, pysar => pysar
         .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
         .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 }
 ```
+
+On the WebAssembly head this registration also takes Ctrl+wheel (and trackpad pinch) zoom over the
+report away from the page; pass `suppressBrowserZoom: false` to leave the browser's own zoom alone.
 
 ```xml
 <pysar:ReportView Report="{Binding Report}"

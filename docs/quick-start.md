@@ -44,9 +44,10 @@ Applications built on a UI framework install that framework's handler instead, b
 come from the application package: the platform packages ship one each -
 `AvaloniaReportPlatformHandler`, `WpfReportPlatformHandler`, `MauiReportPlatformHandler`,
 `UnoReportPlatformHandler`, `WasmPlatformHandler` - and `UsePysar`/`AddPysar` register it for you.
-Uno is the exception to that last part: an Uno application has no service collection of its own
-unless it also uses Uno.Extensions, so registration is the static `PysarUno.Use(typeof(App).Assembly,
-...)` called from `OnLaunched`. Its assets are `EmbeddedResource` items whose `LogicalName` is the
+Uno registers the same way: `this.UsePysar(typeof(App).Assembly, ...)` called from `OnLaunched`, the
+one place every Uno head runs, for the same reason `Pysar.Wpf` extends `Application` rather than
+registering through a service collection - an Uno application has no service collection of its own
+unless it also uses Uno.Extensions. Its assets are `EmbeddedResource` items whose `LogicalName` is the
 path the report asks for, rather than `ms-appx:///` URIs, because asset reads have to be synchronous
 and blocking on `StorageFile` deadlocks the WebAssembly host - see the `Pysar.Uno` README.
 
@@ -175,7 +176,7 @@ await printer.PrintAsync(builtReport);
 - MAUI: registered by `UsePysar` as `IReportPrinter` (`MauiReportPrinter`)
 - Avalonia: `new AvaloniaReportPrinter(renderer)` after `UsePysar` (or `PysarAvalonia.Renderer`)
 - WPF (Windows only): `new WpfReportPrinter(renderer)` after `UsePysar` (or `PysarWpf.Renderer`)
-- Uno (desktop only): `new UnoReportPrinter(PysarUno.Renderer)` after `PysarUno.Use`. Android, iOS
+- Uno (desktop only): `new UnoReportPrinter(PysarUno.Renderer)` after `UsePysar`. Android, iOS
   and WebAssembly throw `PlatformNotSupportedException` - produce the bytes through
   `PysarUno.ExportService` and share or download them from the application
 - Blazor: `BlazorReportPrinter` + `reportPrint.js` (browser print dialog)

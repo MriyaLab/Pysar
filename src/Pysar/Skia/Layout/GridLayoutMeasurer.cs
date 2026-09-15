@@ -207,10 +207,10 @@ internal static class GridLayoutMeasurer
                 continue;
 
             // A Fill child reports its content width when measured as Auto.
-            var probe = await LayoutEngine.MeasureAsync(child,
+            var probe = await LayoutEngine.ProbeSizeAsync(child,
                 new MeasureConstraint(measureRect, WidthOverride: child.Size.Width.IsFill ? SizeLength.Auto : null),
                 ctx, ct);
-            maxWidth = Math.Max(maxWidth, probe.Bounds.Width);
+            maxWidth = Math.Max(maxWidth, probe.Width);
         }
 
         return maxWidth;
@@ -313,12 +313,12 @@ internal static class GridLayoutMeasurer
 
             // Fill height → Auto (report content height); Fill width → pin to the column width
             // so text wraps against the actual cell width.
-            var probe = await LayoutEngine.MeasureAsync(child,
+            var probe = await LayoutEngine.ProbeSizeAsync(child,
                 new MeasureConstraint(measureRect,
                     WidthOverride: child.Size.Width.IsFill ? SizeLength.Fixed(childWidth) : null,
                     HeightOverride: child.Size.Height.IsFill ? SizeLength.Auto : null),
                 ctx, ct);
-            maxHeight = Math.Max(maxHeight, probe.Bounds.Height);
+            maxHeight = Math.Max(maxHeight, probe.Height);
         }
 
         return maxHeight;
