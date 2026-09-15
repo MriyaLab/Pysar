@@ -43,9 +43,15 @@ constructor when the assets do not sit next to the binaries.
 Applications built on a UI framework install that framework's handler instead, because their assets
 come from the application package: the platform packages ship one each -
 `AvaloniaReportPlatformHandler`, `WpfReportPlatformHandler`, `MauiReportPlatformHandler`,
-`WasmPlatformHandler` - and `UsePysar`/`AddPysar` register it for you. For any other asset source,
-implement `IReportPlatformHandler`, `IFileSystem`, and `IFontCollection`; those handlers and their
-tests show what one has to do.
+`UnoReportPlatformHandler`, `WasmPlatformHandler` - and `UsePysar`/`AddPysar` register it for you.
+Uno is the exception to that last part: an Uno application has no service collection of its own
+unless it also uses Uno.Extensions, so registration is the static `PysarUno.Use(typeof(App).Assembly,
+...)` called from `OnLaunched`. Its assets are `EmbeddedResource` items whose `LogicalName` is the
+path the report asks for, rather than `ms-appx:///` URIs, because asset reads have to be synchronous
+and blocking on `StorageFile` deadlocks the WebAssembly host - see the `Pysar.Uno` README.
+
+For any other asset source, implement `IReportPlatformHandler`, `IFileSystem`, and `IFontCollection`;
+those handlers and their tests show what one has to do.
 
 ## 3. Create a report with the fluent API
 
@@ -169,6 +175,9 @@ await printer.PrintAsync(builtReport);
 - MAUI: registered by `UsePysar` as `IReportPrinter` (`MauiReportPrinter`)
 - Avalonia: `new AvaloniaReportPrinter(renderer)` after `UsePysar` (or `PysarAvalonia.Renderer`)
 - WPF (Windows only): `new WpfReportPrinter(renderer)` after `UsePysar` (or `PysarWpf.Renderer`)
+- Uno (desktop only): `new UnoReportPrinter(PysarUno.Renderer)` after `PysarUno.Use`. Android, iOS
+  and WebAssembly throw `PlatformNotSupportedException` - produce the bytes through
+  `PysarUno.ExportService` and share or download them from the application
 - Blazor: `BlazorReportPrinter` + `reportPrint.js` (browser print dialog)
 - Console sample: `--print` opens OS print/preview for generated PDFs
 
