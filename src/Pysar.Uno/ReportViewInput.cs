@@ -51,6 +51,19 @@ public partial class ReportView
     private readonly PinchSession _pinch;
 
     /// <summary>
+    ///     Contacts currently down on a touch host, in the scroll viewer's space. One finger is
+    ///     left unhandled for the <see cref="ScrollViewer"/>; two contacts are a pinch.
+    /// </summary>
+    private readonly Dictionary<uint, Point> _touchContacts = [];
+    private readonly Dictionary<uint, Pointer> _touchPointers = [];
+
+    /// <summary>Distance between the two contacts when the pinch began, or 0 when none is running.</summary>
+    private double _touchPinchStartDistance;
+
+    /// <summary>True after this control has captured the pointers for a pinch.</summary>
+    private bool _pinchOwnsPointers;
+
+    /// <summary>
     ///     The AppKit event monitor that delivers a trackpad pinch on macOS, since nothing in Uno's
     ///     own input pipeline does. Installed while the control is loaded; <see langword="null"/> on
     ///     every other platform.
@@ -154,12 +167,26 @@ public partial class ReportView
         _canvas.PointerWheelChanged += OnPointerWheelChanged;
         _canvas.DoubleTapped += OnDoubleTapped;
 
-        // Scale only: panning stays the ScrollViewer's, which is what moves the page and cell views
-        // without the application repainting them.
-        _canvas.ManipulationMode = ManipulationModes.Scale;
-        _canvas.ManipulationStarted += OnManipulationStarted;
-        _canvas.ManipulationDelta += OnManipulationDelta;
-        _canvas.ManipulationCompleted += OnManipulationCompleted;
+        // System, not None: Uno Skia DirectManipulation lives on the ScrollViewer parent, and
+        // None on the hit-tested canvas means nobody in the chain takes the pan. Scale-only
+        // still captures one-finger pans on those hosts. Two pointers are a pinch; one finger
+        // is left unhandled so the ScrollViewer can scroll. Desktop keeps Scale.
+        if (OperatingSystem.IsIOS() || OperatingSystem.IsAndroid())
+        {
+            _canvas.ManipulationMode = ManipulationModes.System;
+            _scroll.PointerPressed += OnTouchPointerPressed;
+            _scroll.PointerMoved += OnTouchPointerMoved;
+            _scroll.PointerReleased += OnTouchPointerReleased;
+            _scroll.PointerCanceled += OnTouchPointerReleased;
+            _scroll.PointerCaptureLost += OnTouchPointerCaptureLost;
+        }
+        else
+        {
+            _canvas.ManipulationMode = ManipulationModes.Scale;
+            _canvas.ManipulationStarted += OnManipulationStarted;
+            _canvas.ManipulationDelta += OnManipulationDelta;
+            _canvas.ManipulationCompleted += OnManipulationCompleted;
+        }
     }
 
     /// <summary>
@@ -205,6 +232,132 @@ public partial class ReportView
         e.Handled = true;
     }
 
+    private void OnTouchPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        PruneDeadTouches();
+        _touchContacts[e.Pointer.PointerId] = e.GetCurrentPoint(_scroll).Position;
+        _touchPointers[e.Pointer.PointerId] = e.Pointer;
+
+        if (_touchContacts.Count != 2)
+            return;
+
+        var pair = ContactsPair();
+        var startDistance = Distance(pair[0], pair[1]);
+        if (startDistance < 1)
+            return;
+
+        // ScrollViewer's DirectManipulation already owns the first finger; without cancelling it
+        // the second never becomes a pinch and the page keeps panning.
+        _scroll.CancelDirectManipulations();
+        foreach (var pointer in _touchPointers.Values)
+            _scroll.CapturePointer(pointer);
+
+        _pinchOwnsPointers = true;
+        _touchPinchStartDistance = startDistance;
+        _pinch.Begin(new ViewPoint((pair[0].X + pair[1].X) / 2, (pair[0].Y + pair[1].Y) / 2));
+        e.Handled = true;
+    }
+
+    private void OnTouchPointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_touchContacts.ContainsKey(e.Pointer.PointerId))
+            return;
+
+        _touchContacts[e.Pointer.PointerId] = e.GetCurrentPoint(_scroll).Position;
+
+        if (_touchContacts.Count != 2 || !_pinch.Running || _touchPinchStartDistance < 1)
+            return;
+
+        var pair = ContactsPair();
+        var scale = Distance(pair[0], pair[1]) / _touchPinchStartDistance;
+        if (_pinch.MoveByScale(scale) is { } preview)
+        {
+            _canvas.RenderTransformOrigin = new Point(0, 0);
+            _canvas.RenderTransform = new MatrixTransform
+            {
+                Matrix = new Matrix(preview.Scale, 0, 0, preview.Scale, preview.OffsetX, preview.OffsetY)
+            };
+        }
+
+        e.Handled = true;
+    }
+
+    private void OnTouchPointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        _touchContacts.Remove(e.Pointer.PointerId);
+        _touchPointers.Remove(e.Pointer.PointerId);
+
+        if (_pinchOwnsPointers && _pinch.Running && _touchContacts.Count < 2)
+            EndTouchPinch();
+    }
+
+    private void OnTouchPointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        // ScrollViewer taking capture for a one-finger pan is not a lift. Pinch ending
+        // releases capture itself and must not re-enter through this handler.
+        if (!_pinchOwnsPointers)
+            return;
+
+        OnTouchPointerReleased(sender, e);
+    }
+
+    private void EndTouchPinch()
+    {
+        var captured = _touchPointers.Values.ToArray();
+        _pinchOwnsPointers = false;
+        _touchPinchStartDistance = 0;
+        _touchContacts.Clear();
+        _touchPointers.Clear();
+
+        foreach (var pointer in captured)
+            _scroll.ReleasePointerCapture(pointer);
+
+        CommitMacPinch();
+    }
+
+    private void PruneDeadTouches()
+    {
+        List<uint>? dead = null;
+        foreach (var (id, pointer) in _touchPointers)
+        {
+            if (pointer.IsInContact)
+                continue;
+
+            dead ??= [];
+            dead.Add(id);
+        }
+
+        if (dead is null)
+            return;
+
+        foreach (var id in dead)
+        {
+            _touchPointers.Remove(id);
+            _touchContacts.Remove(id);
+        }
+    }
+
+    private Point[] ContactsPair()
+    {
+        var pair = new Point[2];
+        var index = 0;
+        foreach (var point in _touchContacts.Values)
+        {
+            pair[index++] = point;
+            if (index == 2)
+                break;
+        }
+
+        return pair;
+    }
+
+    private static double Distance(Point left, Point right)
+    {
+        var dx = left.X - right.X;
+        var dy = left.Y - right.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
     private void OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
     {
         // The anchor belongs to one gesture, so it is taken once here: carrying a previous
@@ -214,8 +367,6 @@ public partial class ReportView
         var origin = _canvas.TransformToVisual(_scroll).TransformPoint(e.Position);
 
         _pinch.Begin(new ViewPoint(origin.X, origin.Y));
-
-        e.Handled = true;
     }
 
     /// <summary>
@@ -225,6 +376,11 @@ public partial class ReportView
     /// </summary>
     private void OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
     {
+        // A Scale-only mode still delivers pan frames with Scale == 1 on some hosts. Handling
+        // those would steal the ScrollViewer's pan, so only a real scale step is claimed.
+        if (Math.Abs(e.Delta.Scale - 1) < 0.001)
+            return;
+
         e.Handled = true;
 
         // Delta.Scale is the increment for this event, not a cumulative scale against the gesture's
@@ -245,13 +401,16 @@ public partial class ReportView
     /// </summary>
     private void OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
     {
-        e.Handled = true;
+        if (!_pinch.Running)
+            return;
 
         if (_pinch.End() is not { } commit)
         {
             _canvas.RenderTransform = null;
             return;
         }
+
+        e.Handled = true;
 
         var before = _presenter.EffectiveZoom;
 
