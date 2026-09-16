@@ -111,4 +111,22 @@ public class UnoAssetFileSystemTests
     [Fact]
     public void Preload_RejectsNull()
         => Assert.Throws<ArgumentNullException>(() => CreateFileSystem().Preload(null!));
+
+    [Fact]
+    public void PackageUri_PutsTheReportPathUnderAssets()
+        => Assert.Equal(
+            "ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf",
+            UnoAssetFileSystem.ToPackageUri("Fonts/Ubuntu-Regular.ttf"));
+
+    [Fact]
+    public void PackageUri_WhenAlreadyUnderAssets_DoesNotDoublePrefix()
+        => Assert.Equal(
+            "ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf",
+            UnoAssetFileSystem.ToPackageUri("Assets/Fonts/Ubuntu-Regular.ttf"));
+
+    [Fact]
+    public void ReadFile_TreatsAnAssetsPrefixedPathAsTheReportPath()
+        => Assert.Equal(
+            CreateFileSystem().ReadFile(FontPath),
+            CreateFileSystem().ReadFile("Assets/Fonts/Ubuntu-Regular.ttf"));
 }

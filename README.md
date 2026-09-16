@@ -315,11 +315,17 @@ solution stays green; the real WPF sources compile only under `net10.0-windows`.
 A single `net10.0` target covers every Uno Skia host — Desktop, WebAssembly, Android and iOS. The
 Windows App SDK head is not supported yet.
 
-Assets are `EmbeddedResource` items whose `LogicalName` is the path the report asks for, rather than
-the `ms-appx:///` URIs an Uno application usually reaches for. The reason is the one Blazor meets
-below: font registration and image loading read synchronously, `StorageFile` is asynchronous, and on
-WebAssembly blocking on it deadlocks the single thread. `UsePysarAsync` fetches `Content`-packaged
-assets once at startup for applications that would rather keep them that way.
+Keep fonts, images and styles in `Assets/` (Uno's package root). They are `EmbeddedResource` items
+whose `LogicalName` is the path the report asks for (`Fonts/...`, not `Assets/Fonts/...`), rather
+than the `ms-appx:///` URIs an Uno application usually reaches for. The reason is the one Blazor
+meets below: font registration and image loading read synchronously, `StorageFile` is asynchronous,
+and on WebAssembly blocking on it deadlocks the single thread. `UsePysarAsync` fetches `Content`
+under `Assets/` once at startup for applications that would rather keep them that way.
+
+```xml
+<EmbeddedResource Include="Assets\Fonts\**" LogicalName="Fonts/%(Filename)%(Extension)" />
+<EmbeddedResource Include="Assets\Images\**" LogicalName="Images/%(Filename)%(Extension)" />
+```
 
 ```csharp
 protected override void OnLaunched(LaunchActivatedEventArgs args)
@@ -336,7 +342,9 @@ report away from the page; pass `suppressBrowserZoom: false` to leave the browse
 ```xml
 <pysar:ReportView Report="{Binding Report}"
                     ZoomMode="FitWidth"
-                    CurrentPage="{Binding CurrentPage}"
+                    Zoom="{Binding Zoom, Mode=TwoWay}"
+                    EffectiveZoom="{Binding EffectiveZoom, Mode=OneWayToSource}"
+                    CurrentPage="{Binding CurrentPage, Mode=TwoWay}"
                     PageSpacing="24" />
 ```
 
@@ -347,7 +355,8 @@ every Uno host.
 
 Printing is desktop only — macOS through the PDFKit Print panel, Windows through the shell print
 verb, Linux by opening the PDF. Android, iOS and WebAssembly throw `PlatformNotSupportedException`;
-produce the bytes through `PysarUno.ExportService` and share or download them from the application.
+produce the bytes through `PysarUno.ExportService` and hand them to `PysarUno.Sharer` (a download
+on WebAssembly, a share/open sheet on Android and iOS).
 
 ### Blazor
 

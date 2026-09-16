@@ -43,11 +43,12 @@ public sealed class UnoReportPrinter : IReportPrinter
                 + "PysarUno.ExportService and share or download the PDF bytes from the application.");
         }
 
-        // Captured here, before the first await, because this is the last moment we are still on
-        // the caller's thread - which for a print command is the UI thread. PDFKit's runOperation
-        // must run on the AppKit main thread, and a DispatcherQueue is the only handle on it this
-        // package can get: Uno has no equivalent of Avalonia's static Dispatcher.UIThread.
-        var dispatcher = OperatingSystem.IsMacOS() ? DispatcherQueue.GetForCurrentThread() : null;
+        // Prefer the queue registration captured on OnLaunched: PrintAsync is often awaited off the
+        // UI thread after PDF rendering, and GetForCurrentThread() is then null. Fall back to the
+        // caller's queue when registration ran without one (tests). Uno has no static UI dispatcher.
+        var dispatcher = OperatingSystem.IsMacOS()
+            ? UnoRegistration.UiDispatcher ?? UnoRegistration.TryGetCurrentDispatcher()
+            : null;
 
         var pdfBytes = await _renderer.RenderToPdfBytesAsync(report, cancellationToken)
             .ConfigureAwait(false);

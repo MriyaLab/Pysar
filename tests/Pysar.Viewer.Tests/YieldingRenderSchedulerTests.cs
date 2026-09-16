@@ -1,7 +1,7 @@
-using Pysar.Blazor;
+using Pysar.Viewer.Tiles;
 using Xunit;
 
-namespace Pysar.Blazor.Tests;
+namespace Pysar.Viewer.Tests;
 
 public class YieldingRenderSchedulerTests
 {

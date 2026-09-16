@@ -67,13 +67,14 @@ public static class ApplicationExtensions
     }
 
     /// <summary>
-    ///     Registers Pysar and preloads assets from the application package first, for applications
-    ///     that ship them as <c>Content</c> rather than <c>EmbeddedResource</c>.
+    ///     Registers Pysar and preloads assets from <c>Assets/</c> in the application package first,
+    ///     for applications that ship them as <c>Content</c> rather than <c>EmbeddedResource</c>.
     /// </summary>
     /// <example>
     ///     <code>
     ///     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     ///     {
+    ///         // File on disk: Assets/Fonts/Ubuntu-Regular.ttf
     ///         await this.UsePysarAsync(
     ///             typeof(App).Assembly,
     ///             ["Fonts/Ubuntu-Regular.ttf"],
@@ -89,10 +90,10 @@ public static class ApplicationExtensions
     ///     preload path should be treated as a startup bug to fix, not a runtime condition to catch.
     /// </example>
     /// <remarks>
-    ///     Asynchronous because <c>StorageFile</c> is: on the WebAssembly host an <c>ms-appx:///</c>
-    ///     read is an HTTP fetch, and blocking on it deadlocks the single thread. The preload has to
-    ///     finish before <paramref name="configure"/> runs, because <c>AddFont</c> reads
-    ///     synchronously - which is why the two are one call and not two.
+    ///     Asynchronous because <c>StorageFile</c> is: on the WebAssembly host an
+    ///     <c>ms-appx:///Assets/...</c> read is an HTTP fetch, and blocking on it deadlocks the
+    ///     single thread. The preload has to finish before <paramref name="configure"/> runs, because
+    ///     <c>AddFont</c> reads synchronously - which is why the two are one call and not two.
     ///
     ///     Returns <see cref="Task{Application}"/> for symmetry with <see cref="UsePysar"/> rather
     ///     than because anything needs the awaited value: called from <c>async void OnLaunched</c> as
@@ -102,7 +103,10 @@ public static class ApplicationExtensions
     ///     The assembly report assets are embedded in, for paths not covered by
     ///     <paramref name="preloadPaths"/>. See <see cref="UsePysar"/>.
     /// </param>
-    /// <param name="preloadPaths">The <c>ms-appx:///</c> relative paths to fetch once at startup.</param>
+    /// <param name="preloadPaths">
+    ///     Report paths to fetch once at startup (<c>Fonts/...</c>, not <c>Assets/Fonts/...</c>).
+    ///     They are read from <c>ms-appx:///Assets/...</c>.
+    /// </param>
     /// <param name="suppressBrowserZoom">See <see cref="UsePysar"/>.</param>
     public static async Task<Application> UsePysarAsync(
         this Application application,

@@ -27,6 +27,12 @@ public static class PysarUno
     public static IReportExportService ExportService
         => _exportService ??= SkiaReportExport.CreateExportService(Renderer);
 
+    /// <summary>
+    ///     Offers exported bytes to the host: a download on WebAssembly, a share/open sheet on
+    ///     Android and iOS, and the default application on desktop.
+    /// </summary>
+    public static IReportSharer Sharer { get; } = new UnoReportSharer();
+
     /// <summary>The handler the last registration installed.</summary>
     /// <remarks>
     ///     An Uno application has no service collection to resolve this from - see the remarks on

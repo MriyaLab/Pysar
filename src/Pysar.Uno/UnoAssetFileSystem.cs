@@ -55,8 +55,9 @@ public sealed class UnoAssetFileSystem : IFileSystem, ISyncFileSystem
     }
 
     /// <summary>
-    ///     Fetches each path from the application package over <c>ms-appx:///</c> and holds it, for
-    ///     applications that ship assets as <c>Content</c> rather than <c>EmbeddedResource</c>.
+    ///     Fetches each path from the application package over <c>ms-appx:///Assets/...</c> and
+    ///     holds it, for applications that ship assets as <c>Content</c> under <c>Assets/</c>
+    ///     rather than <c>EmbeddedResource</c>.
     /// </summary>
     /// <remarks>
     ///     Awaited once during startup, before any report is built. Every read afterwards is
@@ -78,7 +79,7 @@ public sealed class UnoAssetFileSystem : IFileSystem, ISyncFileSystem
             try
             {
                 var file = await StorageFile
-                    .GetFileFromApplicationUriAsync(new Uri($"ms-appx:///{normalized}"));
+                    .GetFileFromApplicationUriAsync(new Uri(ToPackageUri(normalized)));
 
                 var buffer = await FileIO.ReadBufferAsync(file);
 
@@ -152,6 +153,25 @@ public sealed class UnoAssetFileSystem : IFileSystem, ISyncFileSystem
         => _assembly.GetManifestResourceNames()
             .FirstOrDefault(name => string.Equals(name, normalizedPath, StringComparison.Ordinal));
 
+    /// <summary>
+    ///     The ms-appx URI for a report path. Uno packages content under <c>Assets/</c>, while the
+    ///     report still asks for <c>Fonts/...</c> — the same path Maui, WPF and Avalonia use.
+    /// </summary>
+    internal static string ToPackageUri(string path)
+    {
+        var reportPath = ToReportPath(path);
+        return "ms-appx:///Assets/" + reportPath;
+    }
+
     /// <summary>Report paths are always forward-slashed and relative, whatever the report wrote.</summary>
-    private static string Normalize(string filePath) => filePath.Replace('\\', '/').TrimStart('/');
+    private static string ToReportPath(string filePath)
+    {
+        var normalized = filePath.Replace('\\', '/').TrimStart('/');
+        const string assetsPrefix = "Assets/";
+        return normalized.StartsWith(assetsPrefix, StringComparison.OrdinalIgnoreCase)
+            ? normalized[assetsPrefix.Length..]
+            : normalized;
+    }
+
+    private static string Normalize(string filePath) => ToReportPath(filePath);
 }

@@ -66,6 +66,7 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
 
     private readonly Dictionary<int, Border> _pageViews = [];
     private readonly Dictionary<TileKey, TileView> _tileViews = [];
+    private readonly RecycledViewPool<Image> _spareTileImages = new();
 
     private readonly ReportViewPresenter _presenter;
 
@@ -95,7 +96,8 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
         _pinch = new PinchSession(_presenter);
         _zoomPublisher = new ZoomPublisher(new Sink(this));
 
-        _reportSession = new ReportViewSession(_presenter, this, new TaskRunScheduler(), TilePixels.Bgra);
+        _reportSession = new ReportViewSession(
+            _presenter, this, CreateRenderScheduler(OperatingSystem.IsBrowser()), TilePixels.Bgra);
         _reportSession.Invalidated += RefreshVisuals;
         _reportSession.Failed += exception => RenderFailed?.Invoke(this, exception);
         _reportSession.Cleared += () =>
@@ -289,6 +291,13 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
 
     /// <summary>Raised when the report could not be prepared or a page could not be drawn.</summary>
     public event EventHandler<Exception>? RenderFailed;
+
+    /// <summary>
+    ///     The browser has no background thread for cells, so it yields to the UI loop instead of
+    ///     <see cref="TaskRunScheduler"/>.
+    /// </summary>
+    internal static IRenderScheduler CreateRenderScheduler(bool isBrowser)
+        => isBrowser ? new YieldingRenderScheduler() : new TaskRunScheduler();
 
     // -- Reactions -----------------------------------------------------------------------------
 
@@ -503,6 +512,10 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
         _canvas.Children.Clear();
         _pageViews.Clear();
         _tileViews.Clear();
+
+        // The pool holds views that were in the children just cleared; keeping them would hand the
+        // next report views that belong to no layout.
+        _spareTileImages.Clear();
     }
 
     // -- IReportViewHost -----------------------------------------------------------------------
@@ -596,12 +609,8 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
     {
         if (!_tileViews.TryGetValue(tile.Key, out var placed))
         {
-            var image = new Image { Stretch = Stretch.Fill };
-
-            placed = new TileView(image);
-
+            placed = new TileView(TakeTileImage());
             _tileViews[tile.Key] = placed;
-            _canvas.Children.Add(image);
         }
 
         placed.Show(tile.Bytes, tile.PixelWidth, tile.PixelHeight);
@@ -614,11 +623,35 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
 
     void IReportViewHost.RemoveTile(TileKey key)
     {
-        if (!_tileViews.TryGetValue(key, out var placed))
+        if (!_tileViews.Remove(key, out var placed))
             return;
 
-        _canvas.Children.Remove(placed.Image);
-        _tileViews.Remove(key);
+        ReleaseTileImage(placed.Image);
+    }
+
+    /// <summary>An image view for a cell: a view a previous cell has finished with, or a new one.</summary>
+    private Image TakeTileImage()
+    {
+        var image = _spareTileImages.Take(() =>
+        {
+            var created = new Image { Stretch = Stretch.Fill };
+            _canvas.Children.Add(created);
+            return created;
+        });
+
+        image.Visibility = Visibility.Visible;
+
+        return image;
+    }
+
+    /// <summary>
+    ///     Hands an image view back, hidden and holding nothing, but still in the canvas.
+    /// </summary>
+    private void ReleaseTileImage(Image image)
+    {
+        image.Visibility = Visibility.Collapsed;
+        image.Source = null;
+        _spareTileImages.Release(image);
     }
 
     /// <summary>

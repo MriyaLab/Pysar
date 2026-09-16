@@ -2,7 +2,7 @@
 
 Uno Platform integration for [Pysar](https://github.com/MriyaLab/Pysar), a cross-platform report
 engine for .NET: packaged asset access, font registration, a scrollable, zoomable `ReportView` and
-PDF printing. It installs a `UnoReportPlatformHandler` for file and font access.
+PDF printing and sharing. It installs a `UnoReportPlatformHandler` for file and font access.
 
 One `net10.0` target covers every Uno Skia host — Desktop, WebAssembly, Android and iOS. The Windows
 App SDK head is not supported yet.
@@ -17,13 +17,22 @@ always used.
 
 ## Packaging report assets
 
-Assets are `EmbeddedResource` items whose `LogicalName` is the exact path the report asks for:
+Keep fonts, images and styles in `Assets/` — Uno's package root:
+
+```
+Assets/Fonts/Ubuntu-Regular.ttf
+Assets/Images/logo.svg
+Assets/Styles/report.rxaml
+```
+
+Declare them as `EmbeddedResource`. `LogicalName` is the path the report asks for (`Fonts/...`), the
+same contract Maui, WPF and Avalonia use — do not put `Assets/` in that name:
 
 ```xml
 <ItemGroup>
-  <EmbeddedResource Include="Fonts\**" LogicalName="Fonts/%(Filename)%(Extension)" />
-  <EmbeddedResource Include="Images\**" LogicalName="Images/%(Filename)%(Extension)" />
-  <EmbeddedResource Include="Styles\**" LogicalName="Styles/%(Filename)%(Extension)" />
+  <EmbeddedResource Include="Assets\Fonts\**" LogicalName="Fonts/%(Filename)%(Extension)" />
+  <EmbeddedResource Include="Assets\Images\**" LogicalName="Images/%(Filename)%(Extension)" />
+  <EmbeddedResource Include="Assets\Styles\**" LogicalName="Styles/%(Filename)%(Extension)" />
 </ItemGroup>
 ```
 
@@ -33,7 +42,8 @@ asset reads here have to be synchronous. `SkiaFontCollection.AddFont`, a `Resour
 and on the WebAssembly host blocking on it is a deadlock on the single thread rather than a stall.
 A manifest resource is readable synchronously on every host.
 
-An application that already ships its assets as `Content` can fetch them once at startup instead:
+An application that already ships those files as `Content` can fetch them once at startup instead.
+Pass the report path; it is read from `ms-appx:///Assets/...`:
 
 ```csharp
 await this.UsePysarAsync(
@@ -77,9 +87,9 @@ xmlns:pysar="using:Pysar.Uno"
 
 <pysar:ReportView Report="{Binding Report}"
                   ZoomMode="FitWidth"
-                  Zoom="{Binding Zoom}"
-                  EffectiveZoom="{Binding EffectiveZoom}"
-                  CurrentPage="{Binding CurrentPage}"
+                  Zoom="{Binding Zoom, Mode=TwoWay}"
+                  EffectiveZoom="{Binding EffectiveZoom, Mode=OneWayToSource}"
+                  CurrentPage="{Binding CurrentPage, Mode=TwoWay}"
                   PageSpacing="24" />
 ```
 
@@ -89,9 +99,9 @@ The report must already have `Build()` called.
 | --- | --- |
 | `Report` | The built report to show |
 | `ZoomMode` | `FitWidth`, `FitPage` or `Custom` |
-| `Zoom` | The factor used when `ZoomMode` is `Custom`; 1 is 100% |
-| `EffectiveZoom` | What the current mode actually resolved to — read this to display a percentage, since `Zoom` holds what was asked for |
-| `CurrentPage` | The page at the top of the viewport, one-based; two-way |
+| `Zoom` | The factor used when `ZoomMode` is `Custom`; 1 is 100%. Bind `Mode=TwoWay` so a gesture writes back — WinUI defaults to OneWay |
+| `EffectiveZoom` | What the current mode actually resolved to — bind `Mode=OneWayToSource` to display a percentage, since `Zoom` holds what was asked for |
+| `CurrentPage` | The page at the top of the viewport, one-based; bind `Mode=TwoWay` |
 | `PageCount` | Pages in the built report |
 | `PageSpacing` | The gap between two pages |
 | `PageBorderColor`, `PageBorderThickness` | The line framing each page; thickness 0 leaves it unframed |
@@ -124,7 +134,11 @@ bytes yourself on those hosts and share or download them:
 
 ```csharp
 var pdf = await PysarUno.ExportService.ExportAsync(builtReport, ExportFormat.Pdf);
+await PysarUno.Sharer.ShareAsync(pdf, "report.pdf");
 ```
+
+`UnoReportSharer` writes the bytes to a temp file and asks the host to open them — a download in the
+browser, a share/open sheet on Android and iOS, and the default application on desktop.
 
 ## Documentation
 
