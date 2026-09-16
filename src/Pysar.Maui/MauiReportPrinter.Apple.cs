@@ -2,6 +2,7 @@
 using CoreGraphics;
 using Foundation;
 using Pysar.Export;
+using Pysar.Viewer.Platform;
 using UIKit;
 
 namespace Pysar.Maui;

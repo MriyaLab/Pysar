@@ -8,8 +8,8 @@ namespace Pysar.Binding;
 
 public class BindingEngine
 {
-    private static readonly ConcurrentDictionary<(Type Type, string Name), PropertyInfo?> PublicProperties = new();
-    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> NestedStoreProperties = new();
+    private static readonly ConcurrentDictionary<(Type Type, string Name), PropertyInfo?> _publicProperties = new();
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _nestedStoreProperties = new();
 
     public object? GetValue(BindingInfo bindingInfo, object? dataContext)
         => GetValue(bindingInfo, dataContext, typeof(string));
@@ -149,7 +149,7 @@ public class BindingEngine
     /// already assignable (e.g. <see cref="Color"/>, <see cref="Size"/>), enums, primitives via
     /// <see cref="System.Convert.ChangeType(object, Type)"/>, and hex strings bound to <see cref="Color"/>.
     /// </summary>
-    private static object? ConvertValue(object value, Type targetType)
+    private static object ConvertValue(object value, Type targetType)
     {
         var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
         var valueType = value.GetType();
@@ -166,18 +166,18 @@ public class BindingEngine
             return Color.FromHex(hex);
 
         if (value is IConvertible)
-            return System.Convert.ChangeType(value, underlying, CultureInfo.InvariantCulture);
+            return Convert.ChangeType(value, underlying, CultureInfo.InvariantCulture);
 
         return value;
     }
 
     private static PropertyInfo? PublicProperty(Type type, string name)
-        => PublicProperties.GetOrAdd(
+        => _publicProperties.GetOrAdd(
             (type, name),
             static key => key.Type.GetProperty(key.Name, BindingFlags.Public | BindingFlags.Instance));
 
     private static PropertyInfo[] NestedStoresOn(Type type)
-        => NestedStoreProperties.GetOrAdd(type, static t =>
+        => _nestedStoreProperties.GetOrAdd(type, static t =>
             t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(property =>
                     property.CanRead

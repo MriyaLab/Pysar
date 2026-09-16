@@ -1,6 +1,6 @@
 namespace Pysar.Binding.Converters;
 
-public class DateTimeFormatConverter : Pysar.Binding.IValueConverter
+public class DateTimeFormatConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter)
     {

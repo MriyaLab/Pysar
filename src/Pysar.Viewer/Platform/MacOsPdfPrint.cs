@@ -1,7 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Pysar.Export;
 
-namespace Pysar.Export;
+namespace Pysar.Viewer.Platform;
 
 /// <summary>
 ///     Shows the macOS / Mac Catalyst system print panel for a PDF via PDFKit

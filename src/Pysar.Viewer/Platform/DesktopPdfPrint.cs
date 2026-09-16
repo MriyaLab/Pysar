@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Pysar.Export;
 
-namespace Pysar.Export;
+namespace Pysar.Viewer.Platform;
 
 /// <summary>
 ///     Hands a rendered PDF to the desktop print UI: PDFKit on macOS, the shell print verb on

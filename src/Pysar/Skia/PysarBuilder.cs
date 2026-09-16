@@ -37,6 +37,12 @@ public sealed class PysarBuilder
         return this;
     }
 
+    public PysarBuilder AddFonts(Action<IFontCollection> action)
+    {
+        action(Fonts);
+        return this;
+    }
+
     /// <summary>Registers the drawer for a custom element type.</summary>
     public PysarBuilder AddDrawer<TElement>(IElementDrawer drawer) where TElement : IReportElement
     {

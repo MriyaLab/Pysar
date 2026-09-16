@@ -45,6 +45,11 @@ public static class AppBuilderExtensions
         // here - before any report can be built - and not when the renderer is first resolved.
         ReportPlatformHandler.Create(platformHandler);
 
+        // An export service pins the renderer it was created with, so one cached across a later
+        // registration would keep exporting through the previous renderer and silently miss the
+        // drawers and fonts that registration added.
+        PysarAvalonia.ResetExportService();
+
         var renderer = new SkiaReportRenderer();
 
         // The control measures reports with the same renderer, so custom drawers reach the viewer.
