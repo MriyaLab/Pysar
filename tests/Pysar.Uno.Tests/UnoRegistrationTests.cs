@@ -72,6 +72,23 @@ public class UnoRegistrationTests
     }
 
     /// <summary>
+    ///     macOS print has to hop onto the AppKit thread. Uno has no static UI dispatcher, so
+    ///     registration captures the caller's queue - <c>OnLaunched</c> is that thread - and the
+    ///     printer uses it even when PrintAsync is awaited off the UI thread.
+    /// </summary>
+    [Fact]
+    public void Install_CapturesTheCurrentDispatcherQueue()
+    {
+        UnoRegistration.Install(Assets, configure: null, suppressBrowserZoom: false);
+
+        Assert.Equal(UnoRegistration.TryGetCurrentDispatcher(), UnoRegistration.UiDispatcher);
+    }
+
+    [Fact]
+    public void TryGetCurrentDispatcher_OnTheReferenceAssembly_ReturnsNull()
+        => Assert.Null(UnoRegistration.TryGetCurrentDispatcher());
+
+    /// <summary>
     ///     The contract the property exists for: what an application configures through the builder is
     ///     what the report view and an outside caller render with. Asserted by rendering rather than by
     ///     comparing references, because the renderer keeps its drawers private - and rendering is what

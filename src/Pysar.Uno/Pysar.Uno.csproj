@@ -8,7 +8,7 @@
 
         <IsPackable>true</IsPackable>
         <PackageId>Pysar.Uno</PackageId>
-        <Description>Uno Platform integration for Pysar: application asset access, font registration, a scrollable, zoomable report view and PDF printing.</Description>
+        <Description>Uno Platform integration for Pysar: application asset access, font registration, a scrollable, zoomable report view, PDF printing and sharing.</Description>
         <PackageTags>uno;unoplatform;winui;report;pdf;skiasharp;pysar</PackageTags>
     </PropertyGroup>
 

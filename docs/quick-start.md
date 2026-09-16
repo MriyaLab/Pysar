@@ -47,9 +47,10 @@ come from the application package: the platform packages ship one each -
 Uno registers the same way: `this.UsePysar(typeof(App).Assembly, ...)` called from `OnLaunched`, the
 one place every Uno head runs, for the same reason `Pysar.Wpf` extends `Application` rather than
 registering through a service collection - an Uno application has no service collection of its own
-unless it also uses Uno.Extensions. Its assets are `EmbeddedResource` items whose `LogicalName` is the
-path the report asks for, rather than `ms-appx:///` URIs, because asset reads have to be synchronous
-and blocking on `StorageFile` deadlocks the WebAssembly host - see the `Pysar.Uno` README.
+unless it also uses Uno.Extensions. Its assets live under `Assets/` and are `EmbeddedResource` items
+whose `LogicalName` is the path the report asks for (`Fonts/...`), rather than `ms-appx:///` URIs,
+because asset reads have to be synchronous and blocking on `StorageFile` deadlocks the WebAssembly
+host - see the `Pysar.Uno` README.
 
 For any other asset source, implement `IReportPlatformHandler`, `IFileSystem`, and `IFontCollection`;
 those handlers and their tests show what one has to do.

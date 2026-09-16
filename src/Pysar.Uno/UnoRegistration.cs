@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.UI.Dispatching;
 using Pysar.Core;
 using Pysar.Skia;
 
@@ -23,6 +24,14 @@ internal static class UnoRegistration
     internal static UnoReportPlatformHandler? Current { get; private set; }
 
     /// <summary>
+    ///     The dispatcher of the thread that called <see cref="Install"/> / <see cref="InstallAsync"/>.
+    ///     <c>OnLaunched</c> is the UI thread, so this is the queue macOS print has to hop onto when
+    ///     <c>PrintAsync</c> is later awaited off that thread. Null when registration ran somewhere
+    ///     that has no queue - tests, or a worker - and the printer then falls back to the caller's.
+    /// </summary>
+    internal static DispatcherQueue? UiDispatcher { get; private set; }
+
+    /// <summary>
     ///     Registers Pysar and, when asked, suppresses the page's own wheel zoom on a browser head.
     /// </summary>
     /// <param name="suppressBrowserZoom">
@@ -36,6 +45,7 @@ internal static class UnoRegistration
         ArgumentNullException.ThrowIfNull(assetAssembly);
 
         var platformHandler = new UnoReportPlatformHandler(assetAssembly);
+        UiDispatcher = TryGetCurrentDispatcher();
         InstallAmbientState(platformHandler, configure);
 
         if (suppressBrowserZoom)
@@ -74,6 +84,7 @@ internal static class UnoRegistration
         ArgumentNullException.ThrowIfNull(preloadPaths);
 
         var platformHandler = new UnoReportPlatformHandler(assetAssembly);
+        UiDispatcher = TryGetCurrentDispatcher();
 
         // Before InstallAmbientState's configure call: a font registered by the callback may be one
         // of the preloaded paths, and AddFont reads it synchronously.
@@ -94,6 +105,24 @@ internal static class UnoRegistration
     ///     through <c>ReportViewRenderer.Instance</c>, and widening
     ///     <see cref="UnoReportPlatformHandler"/> to carry it would duplicate that.
     /// </summary>
+    /// <summary>
+    ///     The caller's dispatcher, or null when there isn't one. The net10.0 Uno reference
+    ///     assembly throws <see cref="NotSupportedException"/> from
+    ///     <c>DispatcherQueue.GetForCurrentThread</c> rather than returning null, which is what
+    ///     tests hit; a missing queue is the same outcome either way.
+    /// </summary>
+    internal static DispatcherQueue? TryGetCurrentDispatcher()
+    {
+        try
+        {
+            return DispatcherQueue.GetForCurrentThread();
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+    }
+
     private static void InstallAmbientState(
         UnoReportPlatformHandler platformHandler, Action<PysarBuilder>? configure)
     {

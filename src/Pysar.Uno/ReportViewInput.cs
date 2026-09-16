@@ -1,3 +1,4 @@
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
@@ -195,6 +196,9 @@ public partial class ReportView
     /// </summary>
     private void OnPointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
+        if (!WheelZooms(OperatingSystem.IsIOS(), OperatingSystem.IsAndroid()))
+            return;
+
         if ((e.KeyModifiers & (VirtualKeyModifiers.Control | VirtualKeyModifiers.Windows)) == 0)
             return;
 
@@ -234,6 +238,9 @@ public partial class ReportView
 
     private void OnTouchPointerPressed(object sender, PointerRoutedEventArgs e)
     {
+        if (!CountsTowardTouchPinch(e.Pointer.PointerDeviceType))
+            return;
+
         PruneDeadTouches();
         _touchContacts[e.Pointer.PointerId] = e.GetCurrentPoint(_scroll).Position;
         _touchPointers[e.Pointer.PointerId] = e.Pointer;
@@ -350,6 +357,20 @@ public partial class ReportView
 
         return pair;
     }
+
+    /// <summary>
+    ///     Uno's iOS/Android hosts raise a Mouse pointer alongside each Touch. Counting both makes
+    ///     one finger look like a pinch: the mouse stays at the press while the touch follows the
+    ///     pan, so the distance changes and the report zooms.
+    /// </summary>
+    internal static bool CountsTowardTouchPinch(PointerDeviceType deviceType)
+        => deviceType is PointerDeviceType.Touch or PointerDeviceType.Pen;
+
+    /// <summary>
+    ///     Wheel zoom is a desktop modifier+wheel gesture. On iOS a one-finger pan can surface as
+    ///     wheel events, sometimes with Control set, which would zoom instead of scroll.
+    /// </summary>
+    internal static bool WheelZooms(bool isIos, bool isAndroid) => !isIos && !isAndroid;
 
     private static double Distance(Point left, Point right)
     {
