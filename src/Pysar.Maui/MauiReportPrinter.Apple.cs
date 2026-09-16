@@ -11,7 +11,7 @@ public sealed partial class MauiReportPrinter
     private partial async Task PrintPdfAsync(byte[] pdfBytes, string jobName, PrintPaper paper)
     {
 #if __MACCATALYST__
-        if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper))
+        if (!DesktopPdfPrint.TryShowMacPrintPanel(pdfBytes, jobName, paper))
             throw new InvalidOperationException("macOS print panel could not be shown for this PDF.");
         await Task.CompletedTask;
         return;

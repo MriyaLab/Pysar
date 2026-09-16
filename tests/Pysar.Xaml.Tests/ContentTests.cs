@@ -33,8 +33,6 @@ public class ContentTests
         var frame = grid.Children[0];
         Assert.Equal(1, GridAttached.GetRow(frame));
         Assert.Equal(2, GridAttached.GetColumn(frame));
-        Assert.Equal(1, Grid.GetRow(frame));
-        Assert.Equal(2, Grid.GetColumn(frame));
     }
 
     [Fact]

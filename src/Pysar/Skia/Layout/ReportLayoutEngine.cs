@@ -24,7 +24,7 @@ public sealed record ReportLayout(
 public static class ReportLayoutEngine
 {
     /// <summary>Measures the report into its template and flow ribbons.</summary>
-    public static async Task<ReportLayout> MeasureAsync(
+    public static ReportLayout Measure(
         Report design, MeasureContext ctx, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(design);
@@ -40,11 +40,11 @@ public static class ReportLayoutEngine
 
         // 1. Template ribbon first: bands measured in local (0,0) coordinates, position ignored.
         var header = design.PageHeader is null ? null
-            : await LayoutEngine.MeasureAsync(design.PageHeader,
+            : LayoutEngine.Measure(design.PageHeader,
                 new MeasureConstraint(new Rect(0, 0, zone.Width, zone.Height),
                     WidthOverride: SizeLength.Fill, IgnorePosition: true), ctx, ct);
         var footer = design.PageFooter is null ? null
-            : await LayoutEngine.MeasureAsync(design.PageFooter,
+            : LayoutEngine.Measure(design.PageFooter,
                 new MeasureConstraint(new Rect(0, 0, zone.Width, zone.Height),
                     WidthOverride: SizeLength.Fill, IgnorePosition: true), ctx, ct);
 
@@ -73,7 +73,7 @@ public static class ReportLayoutEngine
             // pages, so a Fill height (stretch to the window) would inflate every band to a full page
             // and force spurious page breaks. Fixed/Auto heights are honored as-is.
             var heightOverride = band.Size.Height.IsFill ? (SizeLength?)SizeLength.Auto : null;
-            var node = await LayoutEngine.MeasureAsync(band,
+            var node = LayoutEngine.Measure(band,
                 new MeasureConstraint(new Rect(0, y, zone.Width, y + windowH),
                     WidthOverride: SizeLength.Fill, HeightOverride: heightOverride, IgnorePosition: true), ctx, ct);
             flow.Add(node);
@@ -94,7 +94,7 @@ public static class ReportLayoutEngine
         LayoutNode? watermark = null;
         if (design.Watermark is not null)
         {
-            watermark = await LayoutEngine.MeasureAsync(design.Watermark,
+            watermark = LayoutEngine.Measure(design.Watermark,
                 new MeasureConstraint(new Rect(0, 0, page.Width, page.Height),
                     WidthOverride: SizeLength.Fill, IgnorePosition: true), ctx, ct);
         }

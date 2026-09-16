@@ -69,26 +69,6 @@ public static class Extensions
         return container.AddElement(group);
     }
 
-
-    public static Frame AddFrame(this Frame frame, Action<Frame> func)
-    {
-        var childFrame = new Frame();
-        func(childFrame);
-        frame.AddElement(childFrame);
-        return frame;
-    }
-
-    public static Frame AddImage(this Frame frame, ImageSource source, Action<Image> func)
-    {
-        var image = new Image()
-        {
-            Source = source ?? throw new ArgumentNullException(nameof(source))
-        };
-        func(image);
-        frame.AddElement(image);
-        return frame;
-    }
-
     public static Frame AddText(this Frame frame, string content, Action<Text> func)
     {
         var text = new Text()

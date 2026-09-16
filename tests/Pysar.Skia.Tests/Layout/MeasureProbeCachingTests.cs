@@ -66,7 +66,7 @@ public class MeasureProbeCachingTests
 
         var badge = new Badge { Size = new Size(SizeLength.Auto, SizeLength.Auto) };
 
-        await LayoutEngine.MeasureAsync(
+        LayoutEngine.Measure(
             NestGrids(depth, badge),
             new MeasureConstraint(new Rect(0, 0, 500, 500)),
             new MeasureContext(1f) { Measurers = measurers },
@@ -129,7 +129,7 @@ public class MeasureProbeCachingTests
 
         var badge = new Badge { Size = new Size(SizeLength.Auto, SizeLength.Auto) };
 
-        await LayoutEngine.MeasureAsync(
+        LayoutEngine.Measure(
             NestVerticalStacks(depth, badge),
             new MeasureConstraint(new Rect(0, 0, 500, 500)),
             new MeasureContext(1f) { Measurers = measurers },
@@ -220,10 +220,10 @@ public class MeasureProbeCachingTests
         var context = new MeasureContext(1f) { Measurers = measurers };
         var constraint = new MeasureConstraint(new Rect(0, 0, 500, 500));
 
-        await LayoutEngine.MeasureAsync(tree, constraint, context, CancellationToken.None);
+        LayoutEngine.Measure(tree, constraint, context, CancellationToken.None);
         var afterFirst = counter.Calls;
 
-        await LayoutEngine.MeasureAsync(tree, constraint, context, CancellationToken.None);
+        LayoutEngine.Measure(tree, constraint, context, CancellationToken.None);
 
         Assert.True(
             counter.Calls > afterFirst,

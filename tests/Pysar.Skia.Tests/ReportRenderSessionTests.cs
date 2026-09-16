@@ -219,6 +219,14 @@ public class ReportRenderSessionTests
     }
 
     [Fact]
+    public async Task Dispose_MayBeCalledTwice()
+    {
+        var session = await ReportRenderSession.CreateAsync(BuildReport("One"));
+        session.Dispose();
+        session.Dispose();
+    }
+
+    [Fact]
     public async Task SessionFromRenderer_UsesTheRegisteredDrawers()
     {
         var renderer = new SkiaReportRenderer();

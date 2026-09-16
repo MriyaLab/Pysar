@@ -7,10 +7,8 @@ namespace Pysar.Skia;
 ///     of their own: console and worker applications, server-side rendering, and the design-time preview.
 /// </summary>
 /// <remarks>
-///     Applications built on a UI framework install that framework's handler instead
-///     (<c>AvaloniaReportPlatformHandler</c>, <c>WpfReportPlatformHandler</c>,
-///     <c>MauiReportPlatformHandler</c>, <c>WasmPlatformHandler</c>), because their assets are served
-///     from the application package rather than from the file system.
+    ///     Applications built on a UI framework pass that framework's <see cref="IFileSystem"/>
+    ///     (package assets, avares, pack URIs) instead of reading from disk.
 /// </remarks>
 public sealed class DefaultReportPlatformHandler : IReportPlatformHandler
 {
@@ -20,8 +18,10 @@ public sealed class DefaultReportPlatformHandler : IReportPlatformHandler
     /// <summary>Reads assets from <paramref name="rootDirectory"/>.</summary>
     public DefaultReportPlatformHandler(string rootDirectory) : this(new LocalFileSystem(rootDirectory)) { }
 
-    private DefaultReportPlatformHandler(LocalFileSystem fileSystem)
+    /// <summary>Reads assets through <paramref name="fileSystem"/>.</summary>
+    public DefaultReportPlatformHandler(IFileSystem fileSystem)
     {
+        ArgumentNullException.ThrowIfNull(fileSystem);
         FileSystem = fileSystem;
         FontCollection = new SkiaFontCollection(fileSystem);
     }

@@ -27,6 +27,11 @@ public sealed class RenderContext(SKCanvas canvas, float scale, float? measureSc
     /// </summary>
     public SKRect? CullBoundsPt { get; set; }
 
+    /// <summary>
+    ///     Session-scoped image bytes and decoded bitmaps. Null only in tests that never draw images.
+    /// </summary>
+    internal ImageRenderCache? Images { get; set; }
+
     public float ToPixels(float pt) => pt * Scale;
 
     /// <summary>Converts to the pixel space the layout was measured in.</summary>

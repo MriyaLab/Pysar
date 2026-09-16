@@ -93,4 +93,20 @@ public static class ReportXaml
 /// <summary>The outcome of a load: the root object and the map of x:Name'd elements.</summary>
 public sealed record XamlLoadResult(object Root, IReadOnlyDictionary<string, IReportObject> Names);
 
-public sealed class XamlException(string message) : Exception(message);
+public sealed class XamlException : Exception
+{
+    public XamlException(string message) : this(message, line: 0, column: 0)
+    {
+    }
+
+    public XamlException(string message, int line, int column)
+        : base(line > 0 ? $"{line},{column}: {message}" : message)
+    {
+        Line = line;
+        Column = column;
+    }
+
+    public int Line { get; }
+
+    public int Column { get; }
+}

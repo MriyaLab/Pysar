@@ -2,7 +2,7 @@
 
 WPF integration for [Pysar](https://github.com/MriyaLab/Pysar), a cross-platform report engine for
 .NET: pack URI and assembly manifest asset access, font registration, a scrollable, zoomable
-`ReportView`, and printing. It installs a `WpfReportPlatformHandler` for file and font access.
+`ReportView`, and printing. It installs a `DefaultReportPlatformHandler` over `WpfAssetFileSystem` for file and font access.
 
 **Windows only.** On macOS and Linux the package is not produced; the real WPF sources compile only
 under `net10.0-windows`.
@@ -42,7 +42,7 @@ between pages and does not scale with the zoom. Bind `EffectiveZoom` to show the
 Printing uses the same vector PDF pipeline as export:
 
 ```csharp
-var printer = new WpfReportPrinter(PysarWpf.Renderer);
+var printer = new WpfReportPrinter(ReportViewRenderer.Instance);
 await printer.PrintAsync(builtReport);
 ```
 

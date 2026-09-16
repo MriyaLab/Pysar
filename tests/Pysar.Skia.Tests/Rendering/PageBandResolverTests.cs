@@ -35,7 +35,7 @@ public class PageBandResolverTests
     private static async Task<(PageBandResolver Resolver, ReportLayout Layout)> CreateAsync(Report design)
     {
         var measure = new MeasureContext(1f);
-        var layout = await ReportLayoutEngine.MeasureAsync(design, measure, CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, measure, CancellationToken.None);
 
         return (new PageBandResolver(design, layout, measure), layout);
     }

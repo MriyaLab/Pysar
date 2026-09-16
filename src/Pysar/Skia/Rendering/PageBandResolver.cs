@@ -45,20 +45,20 @@ internal sealed class PageBandResolver(Report design, ReportLayout layout, Measu
         // After the bindings, so a hand-written value is not overwritten; before the measure, so it is.
         await design.RaisePageChangedAsync(pageNumber, ct);
 
-        return (await MeasureBandAsync(design.PageHeader, ct),
-                await MeasureBandAsync(design.PageFooter, ct));
+        return (MeasureBand(design.PageHeader, ct),
+                MeasureBand(design.PageFooter, ct));
     }
 
     /// <summary>
     ///     Re-measures one page band with the same constraint <see cref="ReportLayoutEngine"/> used, so
     ///     the node's geometry stays comparable to the reserved one.
     /// </summary>
-    private async Task<LayoutNode?> MeasureBandAsync(Band? band, CancellationToken ct)
+    private LayoutNode? MeasureBand(Band? band, CancellationToken ct)
     {
         if (band is null) return null;
 
         var zone = layout.ContentZone;
-        return await LayoutEngine.MeasureAsync(band,
+        return LayoutEngine.Measure(band,
             new MeasureConstraint(new Rect(0, 0, zone.Width, zone.Height),
                 WidthOverride: SizeLength.Fill, IgnorePosition: true), measure, ct);
     }

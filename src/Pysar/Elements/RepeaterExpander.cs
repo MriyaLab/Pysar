@@ -91,23 +91,33 @@ internal static class RepeaterExpander
     ///     against <paramref name="context"/>. A <see cref="Repeater"/> is replaced by its expanded
     ///     <c>[header?, rows, footer?]</c> stack (its own rows produced against the collection the
     ///     repeater resolves from the context). Other containers have their children expanded in place
-    ///     via <see cref="IContainerMutator"/>. Grid is skipped — nested repeaters inside grid cells are
-    ///     out of scope for v1.
-    /// </summary>
-    private static IReportElement ExpandInTree(IReportElement node, object? context)
-    {
-        if (node is Repeater repeater)
-        {
-            return BuildRows(ResolveItems(repeater, context), repeater);
-        }
+     ///     via <see cref="IContainerMutator"/>. A repeater that sat in a grid cell keeps that cell
+     ///     (row/column/span) on the stack that replaces it.
+     /// </summary>
+     private static IReportElement ExpandInTree(IReportElement node, object? context)
+     {
+         if (node is Repeater repeater)
+         {
+             var expanded = BuildRows(ResolveItems(repeater, context), repeater);
+             CopyGridPlacement(node, expanded);
+             return expanded;
+         }
 
-        if (node is IReportContainer container && node is not Grid && container.Children.Count > 0)
-        {
-            var expanded = container.Children.Select(c => ExpandInTree(c, context)).ToList();
-            ((IContainerMutator)container).ReplaceChildren(expanded);
-        }
-        return node;
-    }
+         if (node is IReportContainer container && container.Children.Count > 0)
+         {
+             var expanded = container.Children.Select(c => ExpandInTree(c, context)).ToList();
+             ((IContainerMutator)container).ReplaceChildren(expanded);
+         }
+         return node;
+     }
+
+     private static void CopyGridPlacement(IReportElement from, IReportElement to)
+     {
+         GridAttached.SetRow(to, GridAttached.GetRow(from));
+         GridAttached.SetColumn(to, GridAttached.GetColumn(from));
+         GridAttached.SetRowSpan(to, GridAttached.GetRowSpan(from));
+         GridAttached.SetColumnSpan(to, GridAttached.GetColumnSpan(from));
+     }
 
     /// <summary>
     ///     Resolves a repeater's data at expansion time against <paramref name="context"/> (the enclosing

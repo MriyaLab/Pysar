@@ -15,7 +15,7 @@ public class ElementDrawerTests
         using var bitmap = new SKBitmap(200, 200);
         using var canvas = new SKCanvas(bitmap);
         var frame = new Frame { Size = new Size(SizeLength.Fixed(100), SizeLength.Fixed(100)), BackgroundColor = Colors.Red };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(20, 20, 200, 200)), new MeasureContext(1f), CancellationToken.None);
 
         ElementDrawer.Draw(node, new RenderContext(canvas, 1f));
@@ -33,7 +33,7 @@ public class ElementDrawerTests
         var child = new Frame { Size = new Size(SizeLength.Fixed(40), SizeLength.Fixed(40)), BackgroundColor = Colors.Blue };
         var frame = new Frame { Size = new Size(SizeLength.Fixed(100), SizeLength.Fixed(100)) };
         frame.AddElement(child);
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 200, 200)), new MeasureContext(1f), CancellationToken.None);
 
         ElementDrawer.Draw(node, new RenderContext(canvas, 1f));
@@ -50,7 +50,7 @@ public class ElementDrawerTests
         var child = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill), BackgroundColor = Colors.Red };
         var parent = new Frame { Size = new Size(SizeLength.Fixed(100), SizeLength.Fixed(100)), Margin = new Thickness(0, 0, 0, 30) };
         parent.AddElement(child);
-        var node = await LayoutEngine.MeasureAsync(parent,
+        var node = LayoutEngine.Measure(parent,
             new MeasureConstraint(new Rect(0, 0, 200, 200)), new MeasureContext(1f), CancellationToken.None);
 
         ElementDrawer.Draw(node, new RenderContext(canvas, 1f));
@@ -89,7 +89,7 @@ public class ElementDrawerTests
             BackgroundColor = Colors.Red,
             Opacity = 0.5f
         };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 100, 100)), new MeasureContext(1f), CancellationToken.None);
 
         ElementDrawer.Draw(node, new RenderContext(canvas, 1f));
@@ -134,8 +134,8 @@ public class ElementDrawerTests
 
         var constraint = new MeasureConstraint(new Rect(0, 0, 100, 100));
         var ctx = new MeasureContext(1f);
-        var halfNode = await LayoutEngine.MeasureAsync(half, constraint, ctx, CancellationToken.None);
-        var nestedNode = await LayoutEngine.MeasureAsync(parent, constraint, ctx, CancellationToken.None);
+        var halfNode = LayoutEngine.Measure(half, constraint, ctx, CancellationToken.None);
+        var nestedNode = LayoutEngine.Measure(parent, constraint, ctx, CancellationToken.None);
 
         ElementDrawer.Draw(halfNode, new RenderContext(halfCanvas, 1f));
         ElementDrawer.Draw(nestedNode, new RenderContext(nestedCanvas, 1f));
@@ -157,7 +157,7 @@ public class ElementDrawerTests
             Size = new Size(SizeLength.Fixed(100), SizeLength.Fixed(40)),
             Opacity = 0f
         };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 200, 200)), new MeasureContext(1f), CancellationToken.None);
 
         Assert.Equal(100f, node.Bounds.Width);
@@ -176,7 +176,7 @@ public class ElementDrawerTests
             BackgroundColor = Colors.Red,
             Opacity = 2f
         };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 100, 100)), new MeasureContext(1f), CancellationToken.None);
 
         ElementDrawer.Draw(node, new RenderContext(canvas, 1f));
@@ -197,7 +197,7 @@ public class ElementDrawerTests
             BackgroundColor = Colors.Red,
             Rotation = 90f
         };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(20, 40, 200, 200)), new MeasureContext(1f), CancellationToken.None);
 
         ElementDrawer.Draw(node, new RenderContext(canvas, 1f));
@@ -221,7 +221,7 @@ public class ElementDrawerTests
             BackgroundColor = Colors.Red,
             Rotation = 90f
         };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(20, 40, 200, 200)), new MeasureContext(1f), CancellationToken.None);
         var ctx = new RenderContext(canvas, 1f)
         {

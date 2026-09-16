@@ -2,7 +2,7 @@
 
 .NET MAUI integration for [Pysar](https://github.com/MriyaLab/Pysar), a cross-platform report engine
 for .NET: application-package asset access, font registration, PDF export, sharing and a scrollable,
-zoomable `ReportView`. It installs a `MauiReportPlatformHandler` for file and font access, and brings
+zoomable `ReportView`. It installs a `DefaultReportPlatformHandler` over `AppPackageFileSystem` for file and font access, and brings
 the right SkiaSharp native assets for each target platform.
 
 Android, iOS and Mac Catalyst are the platforms the package is built for; the Windows target only

@@ -70,7 +70,7 @@ internal sealed class XamlMemberAssigner(XamlLoadContext context)
                 AssignBinding(instance, property, binding);
                 return;
             case XamlUnknownMarkupExtensionNode unknown:
-                throw new XamlException($"Unsupported markup extension: {unknown.Text}");
+                throw new XamlException($"Unsupported markup extension: {unknown.Text}", unknown.Span.Line, unknown.Span.Column);
             case XamlLiteralNode literal:
                 property.SetValue(instance, XamlValueConverter.Convert(literal.Text, property.PropertyType));
                 return;

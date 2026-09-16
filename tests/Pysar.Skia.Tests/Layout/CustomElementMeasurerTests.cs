@@ -28,8 +28,8 @@ public class CustomElementMeasurerTests
 
     private static readonly Rect Available = new(0, 0, 120, 400);
 
-    private static async Task<LayoutNode> MeasureAsync(IReportElement element, MeasurerRegistry? measurers = null)
-        => await LayoutEngine.MeasureAsync(
+    private static LayoutNode Measure(IReportElement element, MeasurerRegistry? measurers = null)
+        => LayoutEngine.Measure(
             element,
             new MeasureConstraint(Available),
             new MeasureContext(1f) { Measurers = measurers ?? new MeasurerRegistry() },
@@ -40,7 +40,7 @@ public class CustomElementMeasurerTests
     {
         var badge = new Badge { Size = new Size(SizeLength.Fill, SizeLength.Auto) };
 
-        var node = await MeasureAsync(badge);
+        var node = Measure(badge);
 
         // Unchanged behaviour for an element that registered nothing: there is no content size to
         // ask about, so the leaf-box rule still applies.
@@ -54,7 +54,7 @@ public class CustomElementMeasurerTests
         var measurers = new MeasurerRegistry();
         measurers.Register<Badge>(new SquareMeasurer());
 
-        var node = await MeasureAsync(badge, measurers);
+        var node = Measure(badge, measurers);
 
         Assert.Equal(120, node.Bounds.Width);
         Assert.Equal(120, node.Bounds.Height);
@@ -67,7 +67,7 @@ public class CustomElementMeasurerTests
         var measurers = new MeasurerRegistry();
         measurers.Register<Badge>(new SquareMeasurer());
 
-        var node = await MeasureAsync(badge, measurers);
+        var node = Measure(badge, measurers);
 
         // An explicit size is the author's instruction; only Auto asks the element what it needs.
         Assert.Equal(50, node.Bounds.Width);
@@ -99,7 +99,7 @@ public class CustomElementMeasurerTests
         var measurers = new MeasurerRegistry();
         measurers.Register<Frame>(new SquareMeasurer());
 
-        var node = await MeasureAsync(badge, measurers);
+        var node = Measure(badge, measurers);
 
         Assert.Equal(0, node.Bounds.Height);
     }

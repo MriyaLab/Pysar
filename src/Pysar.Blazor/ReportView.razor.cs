@@ -10,7 +10,7 @@ using Pysar.Viewer.Zoom;
 
 namespace Pysar.Blazor;
 
-public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
+public sealed partial class ReportView : IReportViewHost, IReportViewSurface, IAsyncDisposable
 {
     /// <summary>The report to show. It must already have been built.</summary>
     [Parameter] public Report? Report { get; set; }
@@ -78,8 +78,14 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
     private readonly string _instance = Guid.NewGuid().ToString("N");
 
     private ReportViewPresenter _presenter = null!;
-    private ReportViewTiles? _tileCache;
-    private CancellationTokenSource? _session;
+    private ReportViewSession _reportSession = null!;
+    private ReportViewController _controller = null!;
+
+    /// <summary>
+    ///     Pinch commit must re-queue every placed cell so Blazor paints them before dropping the
+    ///     CSS preview. Set just before <see cref="ReportViewController.AfterPresenterUpdate"/>.
+    /// </summary>
+    private bool _repaintAllOnRefresh;
 
     /// <summary>
     ///     Used when the host registered no renderer of its own. Held rather than made per load so
@@ -180,7 +186,7 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
         if (_baseLayerUrls.TryGetValue(pageIndex, out var url))
             return url;
 
-        if (_tileCache?.BaseLayer(pageIndex) is not { } png)
+        if (_reportSession.Tiles?.BaseLayer(pageIndex) is not { } png)
             return null;
 
         url = "data:image/png;base64," + Convert.ToBase64String(png);
@@ -248,9 +254,27 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
     protected override void OnInitialized()
     {
         _presenter = new ReportViewPresenter(this);
-        _presenter.StateChanged += OnPresenterStateChanged;
         _pinch = new PinchSession(_presenter);
         _zoomPublisher = new ZoomPublisher(new Sink(this));
+
+        _reportSession = new ReportViewSession(
+            _presenter, this, new YieldingRenderScheduler(), TilePixels.Rgba, maxDegreeOfParallelism: 1);
+        _reportSession.Invalidated += OnTilesInvalidated;
+        _reportSession.Failed += exception => _ = InvokeAsync(() => RenderFailed.InvokeAsync(exception));
+        _reportSession.Cleared += () =>
+        {
+            _ = PageCountChanged.InvokeAsync(0);
+            ClearVisuals();
+        };
+        _reportSession.Loaded += () =>
+        {
+            _ = PageCountChanged.InvokeAsync(_presenter.PageCount);
+            _presenter.ViewportChanged();
+            AfterPresenterUpdate();
+        };
+
+        _controller = new ReportViewController(_presenter, _reportSession, this);
+        _controller.Failed += exception => _ = InvokeAsync(() => RenderFailed.InvokeAsync(exception));
     }
 
     protected override async Task OnParametersSetAsync()
@@ -493,63 +517,13 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
         => Services.GetService(typeof(SkiaReportRenderer)) as SkiaReportRenderer
             ?? (_ownRenderer ??= new SkiaReportRenderer());
 
-    private async Task LoadReportAsync()
+    private Task LoadReportAsync()
     {
-        _session?.Cancel();
-        _session?.Dispose();
-        _session = null;
-
-        _tileCache?.Dispose();
-        _tileCache = null;
-
-        _pages.Clear();
-        _tiles.Clear();
-        _unpainted.Clear();
-        _baseLayerUrls.Clear();
-
-        _presenter.SetTiles(null);
-
         // A report starts at its beginning. Left where the previous one was read to, the position
         // would be measured against the new document as soon as its pages are placed, and the page
         // it lands on reported as the current one - which the toolbar has just set to the first.
         ((IReportViewHost)this).ScrollTo(0, 0);
-
-        if (Report is null)
-            return;
-
-        var cts = new CancellationTokenSource();
-        _session = cts;
-
-        try
-        {
-            var session = await Renderer.CreateSessionAsync(Report);
-
-            if (cts.IsCancellationRequested)
-                return;
-
-            var tiles = new ReportViewTiles(
-                session, new YieldingRenderScheduler(), TilePixels.Rgba, maxDegreeOfParallelism: 1);
-
-            tiles.Invalidated += () => _ = InvokeAsync(OnTilesInvalidated);
-            tiles.Failed += exception => _ = InvokeAsync(() => RenderFailed.InvokeAsync(exception));
-
-            _tileCache = tiles;
-
-            _presenter.SetTiles(tiles);
-            _presenter.ViewportChanged();
-
-            _ = tiles.LoadBaseLayersAsync(cts.Token);
-
-            RequestTiles();
-        }
-        catch (OperationCanceledException)
-        {
-            // Superseded by a newer report.
-        }
-        catch (Exception exception)
-        {
-            await RenderFailed.InvokeAsync(exception);
-        }
+        return _reportSession.LoadAsync(Report, Renderer);
     }
 
     private void OnTilesInvalidated()
@@ -570,8 +544,11 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
     /// </summary>
     private void RefreshVisuals(bool repaintAll = false)
     {
-        if (_tileCache is null)
+        if (_reportSession.Tiles is not { PageCount: > 0 })
+        {
+            ClearVisuals();
             return;
+        }
 
         _presenter.PlaceTiles(_tiles.Keys.ToList());
         _lastRenderScale = _presenter.ViewportRenderScaleForPerf();
@@ -585,14 +562,51 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
         }
     }
 
+    private void ClearVisuals()
+    {
+        _pages.Clear();
+        _tiles.Clear();
+        _unpainted.Clear();
+        _baseLayerUrls.Clear();
+    }
+
     /// <summary>
     ///     Same split Avalonia uses after <c>SetZoom</c>: place what is already drawn under the new
     ///     layout, then ask for missing cells. Skipping the place step is what made pinch-release flash.
     /// </summary>
-    private void AfterPresenterUpdate(bool repaintAll = false)
+    private void AfterPresenterUpdate(bool immediate = false, bool repaintAll = false)
     {
+        if (repaintAll)
+            _repaintAllOnRefresh = true;
+        _controller.AfterPresenterUpdate(immediate);
+    }
+
+    void IReportViewSurface.RefreshVisuals()
+    {
+        var repaintAll = _repaintAllOnRefresh;
+        _repaintAllOnRefresh = false;
         RefreshVisuals(repaintAll);
-        RequestTiles();
+    }
+
+    void IReportViewSurface.ClearVisuals() => ClearVisuals();
+
+    void IReportViewSurface.InvalidateSurface() => StateHasChanged();
+
+    bool IReportViewSurface.SuppressesViewportReaction => _pinch.Running;
+
+    (double VerticalOverdraw, double RenderBudget) IReportViewSurface.TilePolicy
+        => (VerticalOverdraw, RenderBudget);
+
+    void IReportViewSurface.ReportState(int currentPage, double effectiveZoom)
+    {
+        if (CurrentPage != currentPage)
+        {
+            _appliedCurrentPage = currentPage;
+            _ = CurrentPageChanged.InvokeAsync(currentPage);
+        }
+
+        _ = PageCountChanged.InvokeAsync(_presenter.PageCount);
+        _ = EffectiveZoomChanged.InvokeAsync(effectiveZoom);
     }
 
 #if DEBUG
@@ -674,39 +688,9 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
     /// <summary>The point a zoom nobody gestured for is held around.</summary>
     private ViewPoint CenterAnchor() => new(_viewportWidth / 2, _viewportHeight / 2);
 
-    private void RequestTiles()
-    {
-        if (_tileCache is null)
-            return;
-
-        _lastRenderScale = _presenter.ViewportRenderScaleForPerf();
-
-        if (_presenter.PlanTiles() is { } plan)
-            _tileCache.RequestTiles(plan.Requests);
-    }
-
-    private void OnPresenterStateChanged()
-    {
-        if (CurrentPage != _presenter.CurrentPage)
-        {
-            // Where the scroll landed, reported so a binding sees it. Recorded as applied first:
-            // coming back as a parameter, it must not be mistaken for a request to go there.
-            _appliedCurrentPage = _presenter.CurrentPage;
-
-            _ = CurrentPageChanged.InvokeAsync(_presenter.CurrentPage);
-        }
-
-        _ = PageCountChanged.InvokeAsync(_presenter.PageCount);
-        _ = EffectiveZoomChanged.InvokeAsync(_presenter.EffectiveZoom);
-    }
-
     public async ValueTask DisposeAsync()
     {
-        _session?.Cancel();
-        _session?.Dispose();
-        _session = null;
-
-        _tileCache?.Dispose();
+        _reportSession.Dispose();
         _self?.Dispose();
 
         if (_module is not null)
@@ -734,9 +718,7 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
         _viewportHeight = height;
         _density = density;
 
-        _presenter.ViewportChanged();
-
-        AfterPresenterUpdate();
+        _controller.ViewportChanged();
         StateHasChanged();
     }
 
@@ -747,16 +729,7 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
         _scrollX = x;
         _scrollY = y;
 
-        // A pinch is shown through the document's CSS transform, and the pages stay where the zoom
-        // the gesture started at put them. Reacting to a scroll while that is on screen would relay
-        // them out mid-gesture, which is the one thing the transform exists to avoid.
-        if (_pinch.Running)
-            return;
-
-        _presenter.Scrolled();
-
-        // Scroll does not move tile bounds in document space; only the plan may change.
-        RequestTiles();
+        _controller.Scrolled();
         StateHasChanged();
     }
 
@@ -873,7 +846,7 @@ public sealed partial class ReportView : IReportViewHost, IAsyncDisposable
         BeginZoomPerf();
 #endif
         // Place bridge tiles at the new geometry and re-paint them before clearPreviewTransform.
-        AfterPresenterUpdate(repaintAll: true);
+        AfterPresenterUpdate(immediate: true, repaintAll: true);
         StateHasChanged();
     }
 

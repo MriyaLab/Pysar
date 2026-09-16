@@ -81,19 +81,7 @@ public abstract class BindableObject : IBindableObject, IBindingStore
         return GetValueInternal(property) ?? property.DefaultValue;
     }
 
-    public T GetValue<T>(BindableProperty property)
-    {
-        var value = GetValueInternal(property) ?? property.DefaultValue;
-        if (value != null)
-            return (T)value;
-        
-        if (typeof(T).IsValueType)
-            return default!;
-            
-        return default!;
-    }
-
-    public object? GetValueInternal(BindableProperty property)
+    protected object? GetValueInternal(BindableProperty property)
     {
         return _values.TryGetValue(property, out var value) ? value : null;
     }
@@ -114,10 +102,6 @@ public abstract class BindableObject : IBindableObject, IBindingStore
         _values.Remove(property);
         _memberPrecedence.Remove(property.Name);
         property.OnPropertyChanged(this, oldValue, property.DefaultValue);
-    }
-
-    public void CoerceValue(BindableProperty property)
-    {
     }
 
     // IBindableObject implementation:

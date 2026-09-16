@@ -37,16 +37,6 @@ public sealed class PysarBuilder
         return this;
     }
 
-    /// <summary>Registers several fonts at once, for hosts that keep their font list elsewhere.</summary>
-    public PysarBuilder RegisterFonts(Action<IFontCollection> register)
-    {
-        ArgumentNullException.ThrowIfNull(register);
-
-        register(Fonts);
-
-        return this;
-    }
-
     /// <summary>Registers the drawer for a custom element type.</summary>
     public PysarBuilder AddDrawer<TElement>(IElementDrawer drawer) where TElement : IReportElement
     {

@@ -10,14 +10,14 @@ public class MarginMeasurementTests
 {
     private static readonly MeasureContext Ctx = new(scale: 1f);
 
-    private static Task<LayoutNode> Measure(Frame frame, Rect available) =>
-        LayoutEngine.MeasureAsync(frame, new MeasureConstraint(available), Ctx, CancellationToken.None);
+    private static LayoutNode Measure(Frame frame, Rect available) =>
+        LayoutEngine.Measure(frame, new MeasureConstraint(available), Ctx, CancellationToken.None);
 
     [Fact]
     public async Task Container_PositiveMargin_InsetsBox()
     {
         var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill), Margin = new Thickness(10) };
-        var node = await Measure(frame, new Rect(0, 0, 100, 100));
+        var node = Measure(frame, new Rect(0, 0, 100, 100));
         Assert.Equal(new Rect(10, 10, 90, 90), node.Bounds);
     }
 
@@ -25,7 +25,7 @@ public class MarginMeasurementTests
     public async Task Container_NegativeMargin_ExpandsBoxOutward()
     {
         var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill), Margin = new Thickness(-10) };
-        var node = await Measure(frame, new Rect(0, 0, 100, 100));
+        var node = Measure(frame, new Rect(0, 0, 100, 100));
         Assert.Equal(new Rect(-10, -10, 110, 110), node.Bounds);
     }
 
@@ -34,7 +34,7 @@ public class MarginMeasurementTests
     {
         // Margin(-30, 0) → left/right = -30, top/bottom = 0 (the full-bleed banner case).
         var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)), Margin = new Thickness(-30, 0) };
-        var node = await Measure(frame, new Rect(30, 0, 565, 400)); // content zone with 30pt side margins
+        var node = Measure(frame, new Rect(30, 0, 565, 400)); // content zone with 30pt side margins
         Assert.Equal(0, node.Bounds.Left);      // 30 + (-30)
         Assert.Equal(595, node.Bounds.Right);   // 565 - (-30)
         Assert.Equal(0, node.Bounds.Top);
@@ -51,7 +51,7 @@ public class MarginMeasurementTests
             Margin = new Thickness(10)
         };
 
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 200, 100)), Ctx, CancellationToken.None);
 
         Assert.Equal(new Rect(10, 10, 190, 30), node.Bounds);
@@ -68,7 +68,7 @@ public class MarginMeasurementTests
             Font = new Font { Size = 14 }
         };
 
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 200, 200)), Ctx, CancellationToken.None);
 
         Assert.Equal(40, node.Bounds.Top);
@@ -87,7 +87,7 @@ public class MarginMeasurementTests
             Margin = new Thickness(0, 10, 0, 0)
         });
 
-        var node = await Measure(frame, new Rect(0, 0, 200, 500));
+        var node = Measure(frame, new Rect(0, 0, 200, 500));
 
         Assert.Equal(0, node.Bounds.Top);
         Assert.Equal(40, node.Bounds.Bottom);   // 10 top margin + 30 child
@@ -105,7 +105,7 @@ public class MarginMeasurementTests
             Margin = new Thickness(0, 0, 0, 12)
         });
 
-        var node = await Measure(frame, new Rect(0, 0, 200, 500));
+        var node = Measure(frame, new Rect(0, 0, 200, 500));
 
         Assert.Equal(0, node.Bounds.Top);
         Assert.Equal(42, node.Bounds.Bottom);   // 30 child + 12 bottom margin
@@ -121,7 +121,7 @@ public class MarginMeasurementTests
             Margin = new Thickness(15, 0, 0, 0)
         });
 
-        var node = await Measure(frame, new Rect(0, 0, 200, 500));
+        var node = Measure(frame, new Rect(0, 0, 200, 500));
 
         Assert.Equal(0, node.Bounds.Left);
         Assert.Equal(65, node.Bounds.Right);    // 15 left margin + 50 child
@@ -145,7 +145,7 @@ public class MarginMeasurementTests
             BackgroundColor = Colors.Blue
         });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 500)), Ctx, CancellationToken.None);
 
         Assert.Equal(0, node.Children[0].Bounds.Top);

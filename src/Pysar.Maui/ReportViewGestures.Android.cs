@@ -123,28 +123,11 @@ public partial class ReportView
 
         var root = _scroll.Handler?.PlatformView as AView ?? origin;
 
-        if (FindHorizontalScrollTouchTarget(root) is not { } horizontal)
+        if (FindHorizontalScrollView(root) is not { } horizontal)
             return;
 
         _horizontalScrollTouch = horizontal;
         horizontal.Touch += OnPlatformTouch;
-    }
-
-    private static HorizontalScrollView? FindHorizontalScrollTouchTarget(AView parent)
-    {
-        if (parent is HorizontalScrollView found)
-            return found;
-
-        if (parent is not ViewGroup group)
-            return null;
-
-        for (var i = 0; i < group.ChildCount; i++)
-        {
-            if (group.GetChildAt(i) is { } child && FindHorizontalScrollTouchTarget(child) is { } match)
-                return match;
-        }
-
-        return null;
     }
 
     private sealed class PinchListener(ReportView view) : ScaleGestureDetector.SimpleOnScaleGestureListener

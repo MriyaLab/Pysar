@@ -18,7 +18,7 @@ public class ReportLayoutEngineTests
             .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         // Top margin -30 shifts the 200pt header box up, so its bottom sits at 170 relative to the content
         // zone top. The flow reserves that bottom (170) and follows right after — no gap, not the full 200.
@@ -34,7 +34,7 @@ public class ReportLayoutEngineTests
             .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         // Bottom margin -30 pushes the 30pt footer fully into the bottom page margin → its margin-box
         // reserves 0 within the content zone (Bounds.Bottom 30 + marginBottom -30), so the flow keeps
@@ -51,7 +51,7 @@ public class ReportLayoutEngineTests
             .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(50)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         // ReportHeader box is [0,100]; its bottom margin (20) must push the Detail down to flow y=120.
         Assert.Equal(120, layout.Flow[1].Bounds.Top);
@@ -67,7 +67,7 @@ public class ReportLayoutEngineTests
             .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         var contentH = design.PageFormat.GetPageSizePt().Height - 60;   // minus top+bottom margins
         Assert.Equal(40, layout.PageHeaderHeight);
@@ -108,7 +108,7 @@ public class ReportLayoutEngineTests
             .WithDetail(d => d.WithSize(SizeLength.Fill, SizeLength.Fixed(20)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
         var header = layout.Flow[0];
 
         Assert.True(header.Bounds.Height < layout.ContentWindowHeight / 2,
@@ -134,7 +134,7 @@ public class ReportLayoutEngineTests
             .WithDetail(d => d.WithSize(SizeLength.Fill, SizeLength.Fixed(10)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         Assert.Equal(80, layout.Flow[0].Bounds.Height);
         Assert.Equal(80, layout.Flow[1].Bounds.Top);
@@ -149,8 +149,8 @@ public class ReportLayoutEngineTests
             .WithPageFooter(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(500)))
             .Build();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None));
+        Assert.Throws<InvalidOperationException>(
+            () => ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None));
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public class ReportLayoutEngineTests
                 .AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill) }))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         var contentH = design.PageFormat.GetPageSizePt().Height - 100;
         Assert.Equal(contentH, layout.PageHeaderHeight);
@@ -180,8 +180,8 @@ public class ReportLayoutEngineTests
             .WithDetail(b => b.AddElement(new Text { Content = "row" }))
             .Build();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None));
+        Assert.Throws<InvalidOperationException>(
+            () => ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None));
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class ReportLayoutEngineTests
             .WithReportFooter(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(50)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         Assert.Equal(0, layout.Flow[0].Bounds.Top);      // ReportHeader
         Assert.Equal(100, layout.Flow[1].Bounds.Top);    // Detail immediately after
@@ -213,7 +213,7 @@ public class ReportLayoutEngineTests
         footerText.SetBinding(Text.ContentProperty, new BindingInfo("PageNumber", source: design));
         design.PageNumber = 7;
 
-        await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         // Reserved header/footer heights must be measured from resolved content, not placeholders.
         Assert.Equal("7", footerText.Content);
@@ -234,7 +234,7 @@ public class ReportLayoutEngineTests
             .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
             .Build();
 
-        await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         Assert.Equal("Northwind", footerText.Content);
     }
@@ -257,8 +257,8 @@ public class ReportLayoutEngineTests
             .WithWatermark(w => w.WithBackgroundColor(Colors.Red))
             .Build();
 
-        var layoutWithout = await ReportLayoutEngine.MeasureAsync(without, new MeasureContext(1f), CancellationToken.None);
-        var layoutWith = await ReportLayoutEngine.MeasureAsync(with, new MeasureContext(1f), CancellationToken.None);
+        var layoutWithout = ReportLayoutEngine.Measure(without, new MeasureContext(1f), CancellationToken.None);
+        var layoutWith = ReportLayoutEngine.Measure(with, new MeasureContext(1f), CancellationToken.None);
 
         Assert.Equal(layoutWithout.ContentWindowHeight, layoutWith.ContentWindowHeight);
         Assert.NotNull(layoutWith.Watermark);
@@ -274,7 +274,7 @@ public class ReportLayoutEngineTests
             .WithDetail(b => b.WithSize(SizeLength.Fill, SizeLength.Fixed(100)))
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
         Assert.Null(layout.Watermark);
     }
 }

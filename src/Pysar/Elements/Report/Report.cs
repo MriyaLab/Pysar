@@ -125,8 +125,6 @@ public class Report : ReportObject, IResourceHost
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
             ?.DeclaringType != typeof(Report);
 
-    public Dictionary<string, object> Variables { get; set; } = new();
-
     public Rect Bounds => CalculateBounds();
 
     /// <summary>

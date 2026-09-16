@@ -20,4 +20,7 @@
     <ProjectReference Include="..\..\src\Pysar.Xaml.SourceGen\Pysar.Xaml.SourceGen.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="SalesReport.rxaml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -26,7 +26,7 @@ public static class MauiAppBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        var platformHandler = new MauiReportPlatformHandler();
+        var platformHandler = new DefaultReportPlatformHandler(new AppPackageFileSystem());
 
         // Rendering reads the handler from this ambient state rather than from DI, so it is installed
         // here - before any report can be built - and not when the renderer is first resolved.

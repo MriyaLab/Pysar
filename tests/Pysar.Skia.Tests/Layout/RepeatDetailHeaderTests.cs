@@ -24,7 +24,7 @@ public class RepeatDetailHeaderTests
             })
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         Assert.NotNull(layout.RepeatDetailHeader);
         Assert.Equal(30, layout.RepeatDetailHeaderHeight);
@@ -43,7 +43,7 @@ public class RepeatDetailHeaderTests
             })
             .Build();
 
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
 
         Assert.Null(layout.RepeatDetailHeader);
         Assert.Equal(0, layout.RepeatDetailHeaderHeight);

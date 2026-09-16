@@ -18,12 +18,13 @@ namespace Pysar.Skia.Rendering;
 ///     user zooms - text metrics round differently at different scales, which can move a line break
 ///     and with it a page break.
 /// </remarks>
-public sealed class ReportRenderSession
+public sealed class ReportRenderSession : IDisposable
 {
     private readonly ReportLayout _layout;
     private readonly IReadOnlyList<PageSlice> _slices;
     private readonly PageBandResolver _resolver;
     private readonly DrawerRegistry? _drawers;
+    private readonly ImageRenderCache _images;
     private readonly Color _pageBackgroundColor;
     private readonly Color _pageBorderColor;
     private readonly Thickness _pageBorderThickness;
@@ -35,6 +36,7 @@ public sealed class ReportRenderSession
     // sizes in a plain dictionary - so narrowing this gate means giving that its own protection.
     private readonly SemaphoreSlim _resolveGate = new(1, 1);
     private readonly ConcurrentDictionary<int, (LayoutNode? Header, LayoutNode? Footer)> _bands = new();
+    private bool _disposed;
 
     /// <summary>The scale the layout was measured at, shared with the PDF path.</summary>
     private const float MeasureScale = 1f;
@@ -44,6 +46,7 @@ public sealed class ReportRenderSession
         IReadOnlyList<PageSlice> slices,
         PageBandResolver resolver,
         DrawerRegistry? drawers,
+        ImageRenderCache images,
         (float Width, float Height) pageSizePt,
         Color pageBackgroundColor,
         Color pageBorderColor,
@@ -54,6 +57,7 @@ public sealed class ReportRenderSession
         _slices = slices;
         _resolver = resolver;
         _drawers = drawers;
+        _images = images;
         PageSizePt = pageSizePt;
         _pageBackgroundColor = pageBackgroundColor;
         _pageBorderColor = pageBorderColor;
@@ -74,13 +78,14 @@ public sealed class ReportRenderSession
     {
         ArgumentNullException.ThrowIfNull(report);
 
-        var (layout, slices, resolver) = await PageRenderer.PrepareAsync(report, MeasureScale, ct, measurers);
+        var (layout, slices, resolver, images) = await PageRenderer.PrepareAsync(report, MeasureScale, ct, measurers);
 
         return new ReportRenderSession(
             layout,
             slices,
             resolver,
             drawers,
+            images,
             report.PageFormat.GetPageSizePt(),
             report.BackgroundColor,
             report.BorderColor,
@@ -122,7 +127,7 @@ public sealed class ReportRenderSession
         // visibleRegionPt lets DrawPage skip bands/elements outside this tile (cost ∝ cell, not page).
         PageRenderer.DrawPage(
             canvas, _layout, _slices[pageIndex], scale, _drawers, PageSizePt.Width, header, footer,
-            measureScale: MeasureScale, visibleRegionPt: regionPt);
+            measureScale: MeasureScale, visibleRegionPt: regionPt, images: _images);
 
         PageRenderer.PaintPageBorder(canvas, chrome, PageSizePt.Width, PageSizePt.Height, scale);
 
@@ -186,5 +191,15 @@ public sealed class ReportRenderSession
             : node.Children.Select(static child => Freeze(child)!).ToArray();
 
         return new LayoutNode(element, node.Bounds, children, node.CutHints);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _resolveGate.Dispose();
+        _images.Dispose();
     }
 }

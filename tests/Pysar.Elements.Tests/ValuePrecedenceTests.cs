@@ -239,24 +239,6 @@ public class ValuePrecedenceTests
         Assert.Equal("TriggerFont", text.FontFamily);
     }
 
-    // ---------------------------------------------------------------- WithStyle extension
-
-    [Fact]
-    public void WithStyle_DoesNotOverwrite_LocalValueSetBeforehand()
-    {
-        var resources = new ResourceDictionary
-        {
-            [typeof(Text)] = ImplicitTextStyle(),
-            ["FieldValue"] = FieldValueStyle()
-        };
-
-        var text = new Text { FontFamily = "LibreBarcode128", FontSize = 55f };
-        text.WithStyle(resources, "FieldValue");
-
-        Assert.Equal("LibreBarcode128", text.FontFamily);
-        Assert.Equal(55f, text.FontSize);
-    }
-
     // ---------------------------------------------------------------- repeated rows
 
     [Fact]

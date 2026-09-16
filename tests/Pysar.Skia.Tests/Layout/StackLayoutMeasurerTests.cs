@@ -17,7 +17,7 @@ public class StackLayoutMeasurerTests
         for (int i = 0; i < 3; i++)
             stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(0, node.Children[0].Bounds.Top);
@@ -38,7 +38,7 @@ public class StackLayoutMeasurerTests
         for (int i = 0; i < 3; i++)
             stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(0, node.Children[0].Bounds.Top);
@@ -61,7 +61,7 @@ public class StackLayoutMeasurerTests
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(50)) });
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(50)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         // gaps: 2*20 = 40; remaining for two fills: 400 - 100 - 40 = 260 → 130 each
@@ -82,7 +82,7 @@ public class StackLayoutMeasurerTests
         };
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(50)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 200)), Ctx, CancellationToken.None);
 
         Assert.Equal(new Rect(10, 10, 190, 110), node.Bounds);
@@ -99,7 +99,7 @@ public class StackLayoutMeasurerTests
             Margin = new Thickness(-20, 0)
         });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 500)), Ctx, CancellationToken.None);
 
         Assert.Equal(new Rect(-20, 0, 220, 40), node.Children[0].Bounds);
@@ -115,7 +115,7 @@ public class StackLayoutMeasurerTests
             Margin = new Thickness(10)
         });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 500)), Ctx, CancellationToken.None);
 
         Assert.Equal(new Rect(10, 10, 190, 50), node.Children[0].Bounds);
@@ -135,7 +135,7 @@ public class StackLayoutMeasurerTests
             Margin = new Thickness(0, -10)
         });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 500)), Ctx, CancellationToken.None);
 
         Assert.Equal(new Rect(0, -10, 200, 90), node.Children[0].Bounds);
@@ -152,7 +152,7 @@ public class StackLayoutMeasurerTests
         for (int i = 0; i < 3; i++)
             stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(0, node.Children[0].Bounds.Left);
@@ -177,7 +177,7 @@ public class StackLayoutMeasurerTests
         for (int i = 0; i < 3; i++)
             stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(150, node.Bounds.Width);                    // Auto width = sum of children
@@ -196,7 +196,7 @@ public class StackLayoutMeasurerTests
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(100)), IsVisible = false });
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(2, node.Children.Count);
@@ -215,7 +215,7 @@ public class StackLayoutMeasurerTests
         };
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(10, node.Children[0].Bounds.Left);
@@ -236,7 +236,7 @@ public class StackLayoutMeasurerTests
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(50)) });
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(80)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(100, node.Bounds.Height);          // max child bottom, not the last child's
@@ -255,7 +255,7 @@ public class StackLayoutMeasurerTests
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         // (400 - 100 fixed) / 2 fills = 150 each.
@@ -275,7 +275,7 @@ public class StackLayoutMeasurerTests
         };
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fill) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         Assert.Equal(0, node.Children[0].Bounds.Top);
@@ -299,7 +299,7 @@ public class StackLayoutMeasurerTests
 
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         // Auto child reports its content width (60); the Fill child takes the rest: 400 - 100 - 60 = 240.
@@ -321,7 +321,7 @@ public class StackLayoutMeasurerTests
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(200), SizeLength.Fixed(100)) });
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         // 300 + 200 = 500 > 400 → Fill share clamps to 0.
@@ -339,7 +339,7 @@ public class StackLayoutMeasurerTests
         };
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(60), SizeLength.Fixed(50)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 1000)), Ctx, CancellationToken.None);
 
         // Auto width = 60 (child width). Center alignment in 400px space: origin at (400-60)/2 = 170
@@ -358,7 +358,7 @@ public class StackLayoutMeasurerTests
         };
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(50)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 200)), Ctx, CancellationToken.None);
 
         // End alignment in 200px space: top = 200 - 50 = 150
@@ -377,7 +377,7 @@ public class StackLayoutMeasurerTests
         };
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(60)) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 400, 200)), Ctx, CancellationToken.None);
 
         // Auto height = 60 (child height). Center alignment in 200px space: top = (200-60)/2 = 70
@@ -399,7 +399,7 @@ public class StackLayoutMeasurerTests
             stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fixed(100)) });
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill) });
 
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 200, 150)), Ctx, CancellationToken.None);
 
         Assert.Equal(300, node.Children[^1].Bounds.Top);    // the Fill child follows the three rows
@@ -418,7 +418,7 @@ public class StackLayoutMeasurerTests
             MinWidth = 100
         };
         stack.AddElement(new Frame { Size = new Size(SizeLength.Fixed(20), SizeLength.Fixed(20)) });
-        var node = await LayoutEngine.MeasureAsync(stack,
+        var node = LayoutEngine.Measure(stack,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), new MeasureContext(1f), CancellationToken.None);
         Assert.Equal(100, node.Bounds.Width);
     }

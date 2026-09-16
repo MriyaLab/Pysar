@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -75,17 +74,6 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
     /// </summary>
     private readonly ReportViewController _controller;
 
-#if DEBUG
-    /// <summary>Pinch-commit stopwatch; null when no sample is running.</summary>
-    private Stopwatch? _pinchCommitPerf;
-
-    /// <summary>Plan keys at commit (centre-first). Null until the first post-commit request.</summary>
-    private TileKey[]? _pinchCommitWanted;
-
-    private bool _pinchCommitFirstLogged;
-    private bool _pinchCommitFullLogged;
-#endif
-
     public ReportView()
     {
         _presenter = new ReportViewPresenter(this) { UnitsPerPoint = ReportViewDefaults.UnitsPerPoint };
@@ -109,11 +97,6 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
 
         _controller = new ReportViewController(_presenter, _reportSession, this);
         _controller.Failed += exception => RenderFailed?.Invoke(this, exception);
-        _controller.TilesRequested += plan =>
-        {
-            CapturePinchCommitPlan(plan.Requests);
-            SamplePinchCommitPerf();
-        };
 
         // The canvas paints the surface behind the pages itself, rather than leaving it to whatever
         // ancestor happens to have a background. Without its own brush a Canvas draws nothing at all,
@@ -430,78 +413,6 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
         => new(padding.Left, padding.Top, padding.Right, padding.Bottom);
 
     /// <summary>
-    ///     Starts a DEBUG-only sample for pinch release → first centre tile → full viewport plan.
-    ///     Call from <see cref="CommitPinch"/> before the relayout that requests tiles.
-    /// </summary>
-    private void BeginPinchCommitPerf()
-    {
-#if DEBUG
-        _pinchCommitPerf = Stopwatch.StartNew();
-        _pinchCommitWanted = null;
-        _pinchCommitFirstLogged = false;
-        _pinchCommitFullLogged = false;
-        Debug.WriteLine("[Pysar.Perf] t_commit");
-#endif
-    }
-
-    private void CapturePinchCommitPlan(IReadOnlyList<TileRequest> requests)
-    {
-#if DEBUG
-        if (_pinchCommitPerf is null || _pinchCommitWanted is not null)
-            return;
-
-        _pinchCommitWanted = new TileKey[requests.Count];
-        for (var i = 0; i < requests.Count; i++)
-            _pinchCommitWanted[i] = requests[i].Key;
-
-        if (_pinchCommitWanted.Length == 0)
-        {
-            Debug.WriteLine("[Pysar.Perf] t_viewport_full 0 ms (empty plan)");
-            _pinchCommitFullLogged = true;
-            _pinchCommitPerf = null;
-        }
-#endif
-    }
-
-    /// <summary>
-    ///     Logs t_first_centre_tile and t_viewport_full once each while a pinch-commit sample runs.
-    ///     Centre = first key of the centre-ordered plan; full = every plan key present in tile views.
-    /// </summary>
-    private void SamplePinchCommitPerf()
-    {
-#if DEBUG
-        if (_pinchCommitPerf is null || _pinchCommitWanted is null || _pinchCommitFullLogged)
-            return;
-
-        if (!_pinchCommitFirstLogged && _pinchCommitWanted.Length > 0
-            && _tileViews.ContainsKey(_pinchCommitWanted[0]))
-        {
-            _pinchCommitFirstLogged = true;
-            Debug.WriteLine(
-                $"[Pysar.Perf] t_first_centre_tile {_pinchCommitPerf.ElapsedMilliseconds} ms");
-        }
-
-        var full = true;
-        foreach (var key in _pinchCommitWanted)
-        {
-            if (_tileViews.ContainsKey(key))
-                continue;
-
-            full = false;
-            break;
-        }
-
-        if (!full)
-            return;
-
-        _pinchCommitFullLogged = true;
-        Debug.WriteLine(
-            $"[Pysar.Perf] t_viewport_full {_pinchCommitPerf.ElapsedMilliseconds} ms (n={_pinchCommitWanted.Length})");
-        _pinchCommitPerf = null;
-#endif
-    }
-
-    /// <summary>
     ///     Brings the views in the scroll content in line with the cells the cache has drawn now.
     /// </summary>
     /// <remarks>
@@ -520,7 +431,6 @@ public partial class ReportView : UserControl, IReportViewHost, IReportViewSurfa
         }
 
         _presenter.PlaceTiles(_tileViews.Keys.ToList());
-        SamplePinchCommitPerf();
     }
 
     private void ApplyPageBorder(Border page)

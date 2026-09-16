@@ -1,4 +1,5 @@
 using Pysar.Binding;
+using Pysar.Core;
 
 namespace Pysar.Elements;
 
@@ -25,16 +26,9 @@ public class ResourceImageSource : ImageSource
 
     public override Task<byte[]?> LoadAsync(CancellationToken ct = default)
     {
-        if (string.IsNullOrEmpty(ResourceName))
+        if (string.IsNullOrEmpty(ResourceName) || !ReportPlatformHandler.FileSystem.Exists(ResourceName))
             return Task.FromResult<byte[]?>(null);
 
-        var assembly = System.Reflection.Assembly.GetEntryAssembly();
-        using var stream = assembly?.GetManifestResourceStream(ResourceName);
-        if (stream == null)
-            return Task.FromResult<byte[]?>(null);
-
-        using var ms = new MemoryStream();
-        stream.CopyTo(ms);
-        return Task.FromResult<byte[]?>(ms.ToArray());
+        return ReportPlatformHandler.FileSystem.ReadFileAsync(ResourceName);
     }
 }

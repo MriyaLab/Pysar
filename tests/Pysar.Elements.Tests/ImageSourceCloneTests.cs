@@ -1,4 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using Pysar.Binding;
+using Pysar.Core;
+using Pysar.Core.Abstractions;
+using Pysar.Core.Enums;
 using Xunit;
 
 namespace Pysar.Elements.Tests;
@@ -97,6 +101,53 @@ public class ImageSourceCloneTests
 
         Assert.Equal("a", source.ResourceName);
         Assert.Equal("b", clone.ResourceName);
+    }
+
+    [Fact]
+    public async Task ResourceImageSource_LoadAsync_ReadsThroughThePlatformFileSystem()
+    {
+        var bytes = new byte[] { 1, 2, 3 };
+        ReportPlatformHandler.Create(new ResourceFileHandler(("App.logo.png", bytes)));
+
+        var loaded = await new ResourceImageSource("App.logo.png").LoadAsync();
+
+        Assert.Equal(bytes, loaded);
+    }
+
+    [Fact]
+    public async Task ResourceImageSource_LoadAsync_MissingName_ReturnsNull()
+    {
+        ReportPlatformHandler.Create(new ResourceFileHandler());
+        Assert.Null(await new ResourceImageSource().LoadAsync());
+    }
+
+    private sealed class ResourceFileHandler : IReportPlatformHandler
+    {
+        public ResourceFileHandler(params (string Path, byte[] Content)[] files)
+            => FileSystem = new MapFileSystem(files);
+
+        public IFileSystem FileSystem { get; }
+        public IFontCollection FontCollection { get; } = new EmptyFonts();
+    }
+
+    private sealed class MapFileSystem : IFileSystem
+    {
+        private readonly Dictionary<string, byte[]> _files;
+
+        public MapFileSystem(params (string Path, byte[] Content)[] files)
+            => _files = files.ToDictionary(f => f.Path, f => f.Content);
+
+        public Task<byte[]?> ReadFileAsync(string filePath)
+            => Task.FromResult(_files.GetValueOrDefault(filePath));
+
+        public bool Exists([NotNullWhen(true)] string? filePath)
+            => filePath is not null && _files.ContainsKey(filePath);
+    }
+
+    private sealed class EmptyFonts : Dictionary<string, object>, IFontCollection
+    {
+        public IFontCollection AddFont(string filename, string? alias = null, FontStyle fontStyle = FontStyle.Normal)
+            => this;
     }
 
     [Fact]

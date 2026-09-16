@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Pysar.Xaml.Model;
 
 namespace Pysar.Xaml.SourceGen;
@@ -103,7 +104,7 @@ internal sealed class XamlConstructionEmitter
                  && !string.IsNullOrWhiteSpace(node.TextContent))
         {
             _builder.AppendLine(
-                $"            {local}.{contentProperty} = \"{Escape(node.TextContent!)}\";");
+                $"            {local}.{contentProperty} = {StringLiteral(node.TextContent)};");
         }
 
         foreach (var member in node.Members.Where(member =>
@@ -136,20 +137,20 @@ internal sealed class XamlConstructionEmitter
                         // Deferred: the named source may be declared later in the document, and the
                         // root's own field is assigned at the very start of construction.
                         _deferredBindings.Add(
-                            $"            {local}.SetBinding({bindableProperty}, new global::Pysar.Binding.BindingInfo(\"{Escape(binding.Path)}\", stringFormat: {StringLiteral(binding.StringFormat)}, source: this.{binding.SourceName}));");
+                            $"            {local}.SetBinding({bindableProperty}, new global::Pysar.Binding.BindingInfo({StringLiteral(binding.Path)}, stringFormat: {StringLiteral(binding.StringFormat)}, source: this.{binding.SourceName}));");
                         break;
                     }
 
                     _builder.AppendLine(binding.StringFormat is null
-                        ? $"            {local}.SetBinding({bindableProperty}, \"{Escape(binding.Path)}\");"
-                        : $"            {local}.SetBinding({bindableProperty}, \"{Escape(binding.Path)}\", \"{Escape(binding.StringFormat)}\");");
+                        ? $"            {local}.SetBinding({bindableProperty}, {StringLiteral(binding.Path)});"
+                        : $"            {local}.SetBinding({bindableProperty}, {StringLiteral(binding.Path)}, {StringLiteral(binding.StringFormat)});");
                     break;
                 case XamlLiteralNode literal:
                     var propertyType = PropertyTypeFqn(symbol, name)
                                        ?? throw new XamlGenException(
                                            $"No property '{name}' on {fullyQualifiedName}.");
                     _builder.AppendLine(
-                        $"            {local}.{name} = ({propertyType}){Converter}.Convert(\"{Escape(literal.Text)}\", typeof({propertyType}))!;");
+                         $"            {local}.{name} = ({propertyType}){Converter}.Convert({StringLiteral(literal.Text)}, typeof({propertyType}))!;");
                     break;
                 default:
                     throw new XamlGenException(
@@ -295,10 +296,7 @@ internal sealed class XamlConstructionEmitter
 
     /// <summary>Renders a nullable string as a C# literal, or <c>null</c>.</summary>
     private static string StringLiteral(string? value)
-        => value is null ? "null" : $"\"{Escape(value)}\"";
-
-    private static string Escape(string value)
-        => value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        => value is null ? "null" : SymbolDisplay.FormatLiteral(value, quote: true);
 }
 
 internal sealed class XamlGenException : Exception

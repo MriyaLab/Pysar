@@ -269,4 +269,31 @@ public class RepeaterExpanderTests
         var headerText = (Text)((Frame)nestedOuter.Children[0]).Children[0];
         Assert.Equal("Fruit", headerText.Content);   // resolved against the master Category
     }
+
+    [Fact]
+    public void Build_RepeaterInsideGridCell_ExpandsAndKeepsCell()
+    {
+        var people = new[] { new Person("Ada"), new Person("Bob") };
+
+        var design = ReportBuilder.Create("t")
+            .WithDetail(d =>
+            {
+                var repeater = new Repeater { DataSource = people };
+                repeater.AddElement(new Text().Also(t => t.SetBinding(Text.ContentProperty, nameof(Person.Name))));
+                var grid = new Grid();
+                grid.AddElement(repeater, row: 0, column: 1);
+                d.AddElement(grid);
+            })
+            .Build();
+
+        var grid = Assert.IsType<Grid>(design.Detail.Children[0]);
+        var expanded = Assert.Single(grid.Children);
+        Assert.Equal(0, GridAttached.GetRow(expanded));
+        Assert.Equal(1, GridAttached.GetColumn(expanded));
+
+        var rows = (StackPanel)((StackPanel)expanded).Children[0];
+        Assert.Equal(2, rows.Children.Count);
+        Assert.Equal("Ada", ((Text)((Frame)rows.Children[0]).Children[0]).Content);
+        Assert.Equal("Bob", ((Text)((Frame)rows.Children[1]).Children[0]).Content);
+    }
 }

@@ -505,5 +505,7 @@ public sealed class ReportViewTiles(
             _baseLayers.Clear();
             _tiles.Clear();
         }
+
+        session.Dispose();
     }
 }

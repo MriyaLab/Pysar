@@ -74,7 +74,7 @@ public class AddPysarTests
 
     [Fact]
     public void TheWasmHandler_RejectsAMissingFileSystem()
-        => Assert.Throws<ArgumentNullException>(() => new WasmPlatformHandler(null!));
+        => Assert.Throws<ArgumentNullException>(() => WasmPlatformHandler.Install(null!));
 
     private static ServiceProvider BuildProvider(Action<SkiaReportRenderer>? configure = null)
     {

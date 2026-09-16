@@ -6,6 +6,10 @@
         <Nullable>enable</Nullable>
         <RootNamespace>Pysar.Viewer</RootNamespace>
 
+        <!-- MacPinchMonitor builds an Objective-C block by hand, using function-pointer syntax
+             (delegate*) to hand AppKit a raw UnmanagedCallersOnly entry point. -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
         <IsPackable>true</IsPackable>
         <PackageId>Pysar.Viewer</PackageId>
         <Description>Framework-neutral logic for a paginated report viewer: page geometry, zoom, tile planning and the tile cache.</Description>

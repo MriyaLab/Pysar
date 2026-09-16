@@ -11,10 +11,10 @@ public class BindingEngineTests
     public void GetValue_SimplePath_ReturnsValue()
     {
         var engine = new BindingEngine();
-        var expression = new BindingExpression { Path = "Name" };
+        var binding = new BindingInfo("Name");
         var data = new { Name = "John" };
 
-        var result = engine.GetValue(expression, data);
+        var result = engine.GetValue(binding, data);
 
         Assert.Equal("John", result);
     }
@@ -23,10 +23,10 @@ public class BindingEngineTests
     public void GetValue_NestedPath_ReturnsValue()
     {
         var engine = new BindingEngine();
-        var expression = new BindingExpression { Path = "Customer.Name" };
+        var binding = new BindingInfo("Customer.Name");
         var data = new { Customer = new { Name = "John" } };
 
-        var result = engine.GetValue(expression, data);
+        var result = engine.GetValue(binding, data);
 
         Assert.Equal("John", result);
     }
@@ -35,9 +35,9 @@ public class BindingEngineTests
     public void GetValue_NullDataContext_ReturnsNull()
     {
         var engine = new BindingEngine();
-        var expression = new BindingExpression { Path = "Name" };
+        var binding = new BindingInfo("Name");
 
-        var result = engine.GetValue(expression, null);
+        var result = engine.GetValue(binding, null);
 
         Assert.Null(result);
     }
@@ -46,10 +46,10 @@ public class BindingEngineTests
     public void GetValue_EmptyPath_ReturnsNull()
     {
         var engine = new BindingEngine();
-        var expression = new BindingExpression { Path = "" };
+        var binding = new BindingInfo("");
         var data = new { Name = "John" };
 
-        var result = engine.GetValue(expression, data);
+        var result = engine.GetValue(binding, data);
 
         Assert.Null(result);
     }
@@ -58,10 +58,10 @@ public class BindingEngineTests
     public void GetValue_StringFormat_FormatsValue()
     {
         var engine = new BindingEngine();
-        var expression = new BindingExpression { Path = "Name", StringFormat = "Hello {0}" };
+        var binding = new BindingInfo("Name", stringFormat: "Hello {0}");
         var data = new { Name = "World" };
 
-        var result = engine.GetValue(expression, data);
+        var result = engine.GetValue(binding, data);
 
         Assert.Equal("Hello World", result);
     }
@@ -71,15 +71,10 @@ public class BindingEngineTests
     {
         var engine = new BindingEngine();
         var converter = new DateTimeFormatConverter();
-        var expression = new BindingExpression
-        {
-            Path = "Date",
-            Converter = converter,
-            ConverterParameter = "dd.MM.yyyy"
-        };
+        var binding = new BindingInfo("Date", converter: converter, converterParameter: "dd.MM.yyyy");
         var data = new { Date = new DateTime(2024, 12, 25) };
 
-        var result = engine.GetValue(expression, data);
+        var result = engine.GetValue(binding, data);
 
         Assert.Equal("25.12.2024", result);
     }
@@ -88,10 +83,10 @@ public class BindingEngineTests
     public void GetValue_InvalidPath_ReturnsNull()
     {
         var engine = new BindingEngine();
-        var expression = new BindingExpression { Path = "NonExistent" };
+        var binding = new BindingInfo("NonExistent");
         var data = new { Name = "John" };
 
-        var result = engine.GetValue(expression, data);
+        var result = engine.GetValue(binding, data);
 
         Assert.Null(result);
     }
@@ -106,7 +101,7 @@ public class TextBindingTests
 
         public string Value
         {
-            get => GetValue<string>(ValueProperty);
+            get => (string)GetValue(ValueProperty)!;
             set => SetValue(ValueProperty, value);
         }
     }

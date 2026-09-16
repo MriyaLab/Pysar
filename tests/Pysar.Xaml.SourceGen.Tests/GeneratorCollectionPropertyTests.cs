@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Xunit;
 
 namespace Pysar.Xaml.SourceGen.Tests;
@@ -31,11 +32,7 @@ public class GeneratorCollectionPropertyTests
             + "</Grid.ColumnDefinitions>"
             + "</Grid></DetailBand></Report>");
 
-        // Either the emitter builds the collection itself, or it hands the document to the runtime
-        // loader. What it must not do is assign an empty collection and drop the children.
-        if (source.Contains("ReportXaml.LoadInto(this,"))
-            return;
-
+        Assert.DoesNotContain("ReportXaml.LoadInto(this,", source);
         Assert.Equal(3, CountOccurrences(source, "new global::Pysar.Elements.ColumnDefinition()"));
     }
 
@@ -47,9 +44,7 @@ public class GeneratorCollectionPropertyTests
             + "<Grid.ColumnDefinitions><ColumnDefinition Width=\"Auto\" /></Grid.ColumnDefinitions>"
             + "</Grid></DetailBand></Report>");
 
-        if (source.Contains("ReportXaml.LoadInto(this,"))
-            return;
-
+        Assert.DoesNotContain("ReportXaml.LoadInto(this,", source);
         Assert.Equal(1, CountOccurrences(source, "new global::Pysar.Elements.ColumnDefinition()"));
     }
 
@@ -66,6 +61,8 @@ public class GeneratorCollectionPropertyTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Id == "CS8785");
         Assert.NotNull(result.GeneratedSource);
         Assert.Contains("ReportXaml.LoadInto(this,", result.GeneratedSource);
+        var fallback = Assert.Single(result.Diagnostics, d => d.Id == "PQX013");
+        Assert.Equal(DiagnosticSeverity.Warning, fallback.Severity);
     }
 
     private static int CountOccurrences(string haystack, string needle)

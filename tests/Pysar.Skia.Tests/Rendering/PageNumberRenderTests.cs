@@ -95,7 +95,6 @@ public class PageNumberRenderTests
         var footerText = new Text
         {
             Size = new Size(SizeLength.Fixed(40), SizeLength.Auto),
-            AutoHeight = true,
             TextTrimming = TextTrimming.WordWrap
         };
         if (bindingPath is null)
@@ -181,6 +180,6 @@ public class PageNumberRenderTests
     }
 
     private static async Task<float> ReservedFooterHeightAsync(Report design)
-        => (await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None))
+        => (ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None))
             .PageFooterHeight;
 }

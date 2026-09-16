@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
 using Avalonia.Platform;
 using IFileSystem = Pysar.Core.Abstractions.IFileSystem;
@@ -104,7 +105,8 @@ public sealed class AvaloniaAssetFileSystem(string assemblyName) : IFileSystem, 
         {
             return Assembly.Load(new AssemblyName(assemblyName));
         }
-        catch (Exception)
+        catch (Exception exception) when (exception is FileNotFoundException
+            or FileLoadException or BadImageFormatException)
         {
             return null;
         }

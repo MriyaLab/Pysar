@@ -1,3 +1,4 @@
+using Pysar.Core.Abstractions;
 using Xunit;
 
 namespace Pysar.Skia.Tests;
@@ -31,4 +32,19 @@ public class DefaultReportPlatformHandlerTests
 
         Assert.False(handler.FileSystem.Exists(FontPath));
     }
+
+    [Fact]
+    public void FileSystem_WithAnExplicitFileSystem_IsTheOneTheHandlerExposes()
+    {
+        IFileSystem files = new LocalFileSystem(Path.GetTempPath());
+
+        var handler = new DefaultReportPlatformHandler(files);
+
+        Assert.Same(files, handler.FileSystem);
+        Assert.IsType<SkiaFontCollection>(handler.FontCollection);
+    }
+
+    [Fact]
+    public void RejectsAMissingFileSystem()
+        => Assert.Throws<ArgumentNullException>(() => new DefaultReportPlatformHandler((IFileSystem)null!));
 }
