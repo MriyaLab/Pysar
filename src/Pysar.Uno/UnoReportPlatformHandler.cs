@@ -13,13 +13,16 @@ public sealed class UnoReportPlatformHandler : IReportPlatformHandler
         ArgumentNullException.ThrowIfNull(assetAssembly);
 
         Assets = new UnoAssetFileSystem(assetAssembly);
-        FontCollection = new DefaultReportPlatformHandler(Assets).FontCollection;
+
+        // The application's own assets first, then those embedded by referenced report libraries.
+        FileSystem = new FallbackFileSystem(Assets, new EmbeddedAssetFileSystem());
+        FontCollection = new DefaultReportPlatformHandler(FileSystem).FontCollection;
     }
 
-    /// <summary>The same object as <see cref="FileSystem"/>, typed so preloading is reachable.</summary>
+    /// <summary>The application's own assets, typed so preloading is reachable.</summary>
     public UnoAssetFileSystem Assets { get; }
 
-    public IFileSystem FileSystem => Assets;
+    public IFileSystem FileSystem { get; }
 
     public IFontCollection FontCollection { get; }
 }

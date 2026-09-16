@@ -6,7 +6,8 @@ for .NET: `avares://` application asset access, font registration and a scrollab
 
 ## Setup
 
-Assets are `AvaloniaResource` items read through `avares://`:
+Assets are declared with `ReportAsset`; Pysar packages them as `AvaloniaResource` items read through
+`avares://`:
 
 ```csharp
 AppBuilder.Configure<App>()

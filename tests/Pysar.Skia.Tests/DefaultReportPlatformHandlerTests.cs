@@ -28,9 +28,29 @@ public class DefaultReportPlatformHandlerTests
     [Fact]
     public void FileSystem_WithAnExplicitRootDirectory_ResolvesAssetsAgainstThatDirectory()
     {
-        var handler = new DefaultReportPlatformHandler(Path.GetTempPath());
+        // Absence used to be the proxy for "the root argument took effect", back when the
+        // disk-backed constructors read from disk alone. They now also fall back to embedded
+        // report assets (see DefaultReportPlatformHandlerAssetChainTests), and this test project's
+        // own assembly embeds "Fonts/Ubuntu-Regular.ttf" - so asserting Exists == false for that
+        // path no longer isolates the root directory's effect, it just happens to also be true
+        // before the embedded member is even consulted. Assert positively instead: a file actually
+        // written under the given root is found there, and a name that is genuinely nowhere - not
+        // on disk, not embedded - is genuinely missing.
+        var dir = Directory.CreateTempSubdirectory("pysar-root-dir-");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(dir.FullName, "Fonts"));
+            File.WriteAllBytes(Path.Combine(dir.FullName, "Fonts", "Ubuntu-Regular.ttf"), [1, 2, 3]);
 
-        Assert.False(handler.FileSystem.Exists(FontPath));
+            var handler = new DefaultReportPlatformHandler(dir.FullName);
+
+            Assert.True(handler.FileSystem.Exists(FontPath));
+            Assert.False(handler.FileSystem.Exists("Fonts/Nowhere.ttf"));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
     }
 
     [Fact]

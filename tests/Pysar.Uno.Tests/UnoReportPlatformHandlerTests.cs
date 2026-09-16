@@ -19,13 +19,18 @@ public class UnoReportPlatformHandlerTests
     {
         var handler = CreateHandler();
 
-        Assert.IsType<UnoAssetFileSystem>(handler.FileSystem);
-        Assert.NotNull(handler.FontCollection);
+        // FileSystem is the fallback chain - the application's own packaged assets first, then
+        // whatever a referenced report library embedded - not Assets alone, so an embedded asset
+        // stays reachable at render time. Proving that behaviourally: a path Assets already
+        // resolves must come back identical through the chain, not merely asserting the chain's
+        // type. Assets itself stays the concrete UnoAssetFileSystem, which is a real API claim (not
+        // an identity proxy) - Application.UsePysarAsync preloads into it by that exact type.
+        var expected = handler.Assets.ReadFile("Fonts/Ubuntu-Regular.ttf");
 
-        // One object behind both properties, not two file systems over the same assembly:
-        // Application.UsePysarAsync preloads into Assets while rendering reads through FileSystem,
-        // so a second instance would leave the preloaded content unreachable at render time.
-        Assert.Same(handler.Assets, handler.FileSystem);
+        Assert.NotNull(expected);
+        Assert.Equal(expected, ((ISyncFileSystem)handler.FileSystem).ReadFile("Fonts/Ubuntu-Regular.ttf"));
+        Assert.IsType<UnoAssetFileSystem>(handler.Assets);
+        Assert.NotNull(handler.FontCollection);
     }
 
     [Fact]

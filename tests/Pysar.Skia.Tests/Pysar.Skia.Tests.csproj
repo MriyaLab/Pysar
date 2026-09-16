@@ -15,6 +15,7 @@
     </PackageReference>
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +31,24 @@
     <Content Include="..\Assets\Fonts\Ubuntu-Regular.ttf"
              Link="Fonts\Ubuntu-Regular.ttf"
              CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    Two fixtures for EmbeddedAssetFileSystem. The first shares its path with the Content copy above,
+    so the chain test can prove disk wins over embedded; the second exists only as a manifest
+    resource, which is the embedded-only hit. The attribute is what the .targets emit for a real
+    consumer - declared by hand here because this project does not use ReportAsset.
+
+    The second entry is rooted through $(MSBuildThisFileDirectory) rather than written the same way
+    as the first: CheckForDuplicateItems compares the literal Include text of every EmbeddedResource,
+    not the file it resolves to, so two entries with an identical relative path collide with NETSDK1022
+    even though their LogicalName differs. Rooting one of them is the least surprising way to give the
+    same physical file two distinct manifest resource entries.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Assets\Fonts\Ubuntu-Regular.ttf" LogicalName="Fonts/Ubuntu-Regular.ttf" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)..\Assets\Fonts\Ubuntu-Regular.ttf" LogicalName="Fonts/Embedded-Ubuntu.ttf" />
+    <AssemblyAttribute Include="Pysar.Core.Abstractions.PysarAssetSourceAttribute" />
   </ItemGroup>
 
   <ItemGroup>

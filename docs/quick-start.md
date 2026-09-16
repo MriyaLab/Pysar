@@ -48,13 +48,60 @@ and rendering share one `UnoAssetFileSystem`.
 Uno registers the same way: `this.UsePysar(typeof(App).Assembly, ...)` called from `OnLaunched`, the
 one place every Uno head runs, for the same reason `Pysar.Wpf` extends `Application` rather than
 registering through a service collection - an Uno application has no service collection of its own
-unless it also uses Uno.Extensions. Its assets live under `Assets/` and are `EmbeddedResource` items
-whose `LogicalName` is the path the report asks for (`Fonts/...`), rather than `ms-appx:///` URIs,
-because asset reads have to be synchronous and blocking on `StorageFile` deadlocks the WebAssembly
-host - see the `Pysar.Uno` README.
+unless it also uses Uno.Extensions. Its assets live under `Assets/` and, declared with `ReportAsset`,
+are packaged as `EmbeddedResource` items whose `LogicalName` is the path the report asks for
+(`Fonts/...`), rather than `ms-appx:///` URIs, because asset reads have to be synchronous and
+blocking on `StorageFile` deadlocks the WebAssembly host - see the `Pysar.Uno` README.
 
 For any other asset source, implement `IReportPlatformHandler`, `IFileSystem`, and `IFontCollection`;
 those handlers and their tests show what one has to do.
+
+### Declaring report assets
+
+Fonts, images and style dictionaries are declared once, with `ReportAsset`:
+
+```xml
+<ItemGroup>
+  <ReportAsset Include="Fonts\**;Images\**;Styles\**" />
+</ItemGroup>
+```
+
+Unlike `.rxaml`, assets are not picked up automatically - a folder glob would collide with
+`MauiImage`, `MauiFont` and `AvaloniaResource`, which already claim `Resources/` and `Assets/`.
+
+The path a report asks for is the item's project-relative path. For a file outside the project,
+give it a `Link`:
+
+```xml
+<ReportAsset Include="..\Shared\Fonts\**" Link="Fonts\%(Filename)%(Extension)" />
+```
+
+Pysar packages the item the way the declaring project's host requires: `MauiAsset` under
+`Resources/Raw` in a MAUI project, `AvaloniaResource` in an Avalonia one, and an embedded resource
+everywhere else - WPF, Uno, Blazor, class libraries and console applications. Set
+`<PysarAssetPackaging>` to `Maui`, `Avalonia` or `Embed` to override the detection, and
+`<PysarAssetCopyToOutput>true</PysarAssetCopyToOutput>` to additionally copy the files next to the
+binary.
+
+Assets embedded by a referenced library are found without any declaration in the head: every
+platform file system falls back to the report assets embedded in referenced assemblies, after its
+own. That fallback comes from `UsePysar`/`AddPysar` and from `DefaultReportPlatformHandler`'s
+directory-based constructors. An `IFileSystem` you pass in yourself is used exactly as given and is
+*not* widened - which is the point of passing one, but it also means a handler built that way sees
+no `ReportAsset` from any library. Chain it yourself if you want both:
+`new DefaultReportPlatformHandler(new FallbackFileSystem(mine, new EmbeddedAssetFileSystem()))`.
+
+`ReportAsset` covers what *reports* read, through `IFileSystem`. An asset the host framework itself
+also renders does not go through that: an Avalonia `FontFamily` pointing at
+`avares://MyApp/Fonts#...`, a MAUI `ConfigureFonts` registration, or a WPF pack URI in XAML is
+resolved by that framework's own loader, which knows nothing about Pysar. Such a file has to be
+reachable as a resource of the head itself - declare it as `ReportAsset` in that project, where it
+becomes the framework's own item type, rather than relying on a copy embedded in a library.
+
+One consequence is worth knowing: an asset declared in a plain `net10.0` library and used from
+a MAUI application lives inside that library's assembly, not in `Resources/Raw`. A library that
+needs `Resources/Raw` placement multi-targets with `UseMaui=true`, and its assets become
+`MauiAsset` on those frameworks.
 
 ## 3. Create a report with the fluent API
 

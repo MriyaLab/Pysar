@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using Pysar.Core;
+using Pysar.Core.Abstractions;
 using Pysar.Elements;
 using Pysar.Export;
 using Pysar.Skia;
@@ -67,8 +68,15 @@ public class AddPysarTests
 
         var handler = WasmPlatformHandler.Install(files);
 
-        Assert.Same(files, handler.FileSystem);
-        Assert.Same(files, ReportPlatformHandler.FileSystem);
+        // Install now wraps the preloaded file system in a fallback chain (Images/logo.svg falls
+        // back to EmbeddedAssetFileSystem), so the preloaded set is no longer the whole of
+        // handler.FileSystem and Assert.Same against it no longer holds. What the test's name
+        // claims - that a preloaded asset is actually reachable through the ambient file system,
+        // and that the returned handler is the one installed - still has to hold, so assert that
+        // directly instead of the object identity that used to stand in for it.
+        Assert.True(ReportPlatformHandler.FileSystem.Exists("Images/logo.svg"));
+        Assert.Equal([1, 2, 3], ((ISyncFileSystem)ReportPlatformHandler.FileSystem).ReadFile("Images/logo.svg"));
+        Assert.Same(handler.FileSystem, ReportPlatformHandler.FileSystem);
         Assert.Same(handler.FontCollection, ReportPlatformHandler.FontCollection);
     }
 

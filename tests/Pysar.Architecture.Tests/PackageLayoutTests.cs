@@ -29,6 +29,17 @@ public sealed class PackageLayoutTests : IClassFixture<PackFixture>
     }
 
     [Fact]
+    public void Pysar_ShipsTheAssetTranslationWhereTransitiveConsumersSeeIt()
+    {
+        // Chained from Pysar.targets, which is the only file NuGet auto-imports; shipping one
+        // without the other is a package that silently ignores every ReportAsset.
+        var entries = _pack.EntriesOf("Pysar");
+
+        Assert.Contains("buildTransitive/Pysar.targets", entries);
+        Assert.Contains("buildTransitive/Pysar.Assets.targets", entries);
+    }
+
+    [Fact]
     public void Xaml_ShipsLoaderAndGenerator()
     {
         var entries = _pack.EntriesOf("Pysar.Xaml");

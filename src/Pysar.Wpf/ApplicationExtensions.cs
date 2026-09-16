@@ -45,7 +45,10 @@ public static class ApplicationExtensions
             ?? throw new InvalidOperationException(
                 "Could not determine the entry assembly's name; pass assemblyName explicitly.");
 
-        var platformHandler = new DefaultReportPlatformHandler(new WpfAssetFileSystem(assemblyName));
+        // The application's own resources first, then the assets embedded by referenced report
+        // libraries - a packaged asset must win over one a library shipped.
+        var platformHandler = new DefaultReportPlatformHandler(
+            new FallbackFileSystem(new WpfAssetFileSystem(assemblyName), new EmbeddedAssetFileSystem()));
 
         // Rendering reads the handler from this ambient state rather than from DI, so it is installed
         // here - before any report can be built - and not when the renderer is first resolved.

@@ -9,7 +9,12 @@ public static class WasmPlatformHandler
 {
     public static DefaultReportPlatformHandler Install(IFileSystem fileSystem)
     {
-        var handler = new DefaultReportPlatformHandler(fileSystem);
+        ArgumentNullException.ThrowIfNull(fileSystem);
+
+        // The preloaded assets first, then whatever referenced report libraries embedded.
+        var handler = new DefaultReportPlatformHandler(
+            new FallbackFileSystem(fileSystem, new EmbeddedAssetFileSystem()));
+
         ReportPlatformHandler.Create(handler);
         return handler;
     }

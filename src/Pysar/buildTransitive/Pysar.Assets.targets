@@ -1,0 +1,111 @@
+<Project>
+  <!--
+    A report asks for its assets by the path its author wrote - "Fonts/Ubuntu-Regular.ttf" - and
+    every UI framework packages a file under a different item type with a different way of spelling
+    that path. ReportAsset is the one type an author declares; this file is where it becomes the
+    host's own.
+
+    A .targets rather than a .props: the host SDK's properties and the project's own
+    PackageReference items are only known after the project body has been evaluated, and the
+    detection below reads both. buildTransitive rather than build, for the reason Pysar.targets
+    already documents: it has to reach consumers that only named Pysar.Maui or Pysar.Avalonia.
+
+    Translation happens in top-level ItemGroups rather than inside a target, because the SDK targets
+    that consume MauiAsset / AvaloniaResource / EmbeddedResource read them during evaluation.
+  -->
+
+  <!--
+    The asset's identity is its project-relative, forward-slashed path: Link when the file lives
+    outside the project, the item's own identity otherwise. Everything below derives from this, so
+    no rule further down has path logic of its own.
+
+    The metadata references are unqualified on purpose. Inside an item element, %(ReportAsset.Link)
+    resolves to nothing at evaluation time - with no error - so the qualified form would leave every
+    asset with an empty path.
+  -->
+  <ItemGroup>
+    <_PysarAsset Include="@(ReportAsset)">
+      <PysarPath Condition="'%(Link)' != ''">$([System.String]::Copy('%(Link)').Replace('\','/'))</PysarPath>
+      <PysarPath Condition="'%(Link)' == ''">$([System.String]::Copy('%(Identity)').Replace('\','/'))</PysarPath>
+    </_PysarAsset>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Set by the project to override detection; anything unrecognised is an error, not a silent
+         skip - see PysarValidateReportAssets. -->
+    <PysarAssetPackaging Condition="'$(PysarAssetPackaging)' == '' AND '$(UseMaui)' == 'true'">Maui</PysarAssetPackaging>
+
+    <PysarAssetCopyToOutput Condition="'$(PysarAssetCopyToOutput)' == ''">false</PysarAssetCopyToOutput>
+  </PropertyGroup>
+
+  <!--
+    The resolved mode is an item, not a property, because a property evaluated outside a target
+    cannot read items: MSBuild evaluates every property before the first item exists, and leaves
+    an @(...) reference in a property standing as literal text. Detecting Avalonia means reading
+    the project's references, so the answer has to live where items do.
+  -->
+  <ItemGroup>
+    <_PysarPackaging Include="$(PysarAssetPackaging)" Condition="'$(PysarAssetPackaging)' != ''" />
+    <_PysarPackaging Include="Avalonia"
+                     Condition="'@(_PysarPackaging)' == '' AND ('@(PackageReference->WithMetadataValue('Identity', 'Pysar.Avalonia'))' != '' OR '@(ProjectReference->WithMetadataValue('Filename', 'Pysar.Avalonia'))' != '')" />
+    <!-- WPF, Uno, Blazor, class libraries and console applications all read assets out of an
+         assembly, so they share one rule rather than each getting a detection clause. -->
+    <_PysarPackaging Include="Embed" Condition="'@(_PysarPackaging)' == ''" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'@(_PysarPackaging)' == 'Maui'">
+    <!-- Link only decides where the files appear in the IDE; LogicalName is what the report asks
+         for and what AppPackageFileSystem reads. Forward slashes throughout: a backslash is a
+         filename character, not a separator, on the macOS and Linux machines that build iOS and
+         Android heads. -->
+    <MauiAsset Include="@(_PysarAsset)"
+               LogicalName="%(PysarPath)"
+               Link="Resources/Raw/%(PysarPath)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'@(_PysarPackaging)' == 'Avalonia'">
+    <!-- Unlike MauiAsset, AvaloniaResource has no LogicalName: its avares:// path is the Link. -->
+    <AvaloniaResource Include="@(_PysarAsset)" Link="%(PysarPath)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'@(_PysarPackaging)' == 'Embed'">
+    <EmbeddedResource Include="@(_PysarAsset)" LogicalName="%(PysarPath)" />
+  </ItemGroup>
+
+  <!--
+    The marker EmbeddedAssetFileSystem indexes by. Only in Embed mode: assets packaged the host's
+    own way are found by the host's own file system, and an index over assemblies that hold nothing
+    is work for no result.
+  -->
+  <ItemGroup Condition="'@(_PysarPackaging)' == 'Embed' AND '@(_PysarAsset)' != ''">
+    <AssemblyAttribute Include="Pysar.Core.Abstractions.PysarAssetSourceAttribute" />
+  </ItemGroup>
+
+  <!-- Opt-in loose copies next to the binary, for external tooling or for replacing an asset
+       without a rebuild. Off by default: the runtime reads assets out of the assembly. -->
+  <ItemGroup Condition="'$(PysarAssetCopyToOutput)' == 'true'">
+    <Content Include="@(_PysarAsset)"
+             Link="%(PysarPath)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="PysarValidateReportAssets" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <!-- Inside a target the resolved mode can finally be a property, which is what the
+           conditions below need. -->
+      <_PysarPackagingMode>@(_PysarPackaging)</_PysarPackagingMode>
+    </PropertyGroup>
+
+    <Error Code="PYSAR1002"
+           Condition="'$(_PysarPackagingMode)' != 'Maui' AND '$(_PysarPackagingMode)' != 'Avalonia' AND '$(_PysarPackagingMode)' != 'Embed'"
+           Text="PysarAssetPackaging is '$(PysarAssetPackaging)'. Expected Maui, Avalonia or Embed - or leave it unset and let Pysar detect the host." />
+
+    <!--
+      An asset outside the project directory with no Link would be embedded under '../Shared/...',
+      a path no report would ever ask for. Caught here rather than becoming a missing image.
+    -->
+    <Error Code="PYSAR1003"
+           Condition="$([System.String]::Copy('%(_PysarAsset.PysarPath)').StartsWith('..')) OR $([System.IO.Path]::IsPathRooted('%(_PysarAsset.PysarPath)'))"
+           Text="Report asset '%(_PysarAsset.Identity)' resolves to '%(_PysarAsset.PysarPath)', which is outside the project directory. Add Link metadata giving the path the report asks for: Link=&quot;Fonts\%(_PysarAsset.Filename)%(_PysarAsset.Extension)&quot;." />
+  </Target>
+</Project>
