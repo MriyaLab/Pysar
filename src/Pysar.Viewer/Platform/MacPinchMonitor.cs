@@ -1,7 +1,6 @@
-using System;
 using System.Runtime.InteropServices;
 
-namespace Pysar.Core.Platform;
+namespace Pysar.Viewer.Platform;
 
 /// <summary>
 ///     A trackpad magnify event, reported directly by AppKit rather than through a user-interface

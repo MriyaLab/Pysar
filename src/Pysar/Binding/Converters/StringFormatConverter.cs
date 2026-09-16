@@ -1,6 +1,6 @@
 namespace Pysar.Binding.Converters;
 
-public class StringFormatConverter : Pysar.Binding.IValueConverter
+public class StringFormatConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter)
     {

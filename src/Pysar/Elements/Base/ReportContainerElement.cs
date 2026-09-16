@@ -20,17 +20,33 @@ public abstract class ReportContainer<T> : ReportElement<T>, IReportContainer, I
     }
 
     public IReadOnlyList<IReportElement> Children => _children.AsReadOnly();
-    
+
     public virtual T AddElement(IReportElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
-        
+
         element.ParentElement = this;
         _children.Add(element);
-        
+
         return (T)this;
     }
-    
+
+    public T AddElements(IEnumerable<IReportElement> elements)
+    {
+        ArgumentNullException.ThrowIfNull(elements);
+
+        foreach (var element in elements)
+            AddElement(element);
+
+        return (T)this;
+    }
+
+    public T AddElements(Func<IEnumerable<IReportElement>> elementsFunc)
+    {
+        ArgumentNullException.ThrowIfNull(elementsFunc);
+        return AddElements(elementsFunc());
+    }
+
     public virtual T RemoveElement(IReportElement element)
     {
         ArgumentNullException.ThrowIfNull(element);

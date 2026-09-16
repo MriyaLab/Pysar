@@ -36,6 +36,11 @@ ScaffoldingReadMe.txt
 # NuGet Symbol Packages
 *.snupkg
 
+# Local NuGet feed: defines the private GitHub package source and its credentials
+nuget.config
+NuGet.config
+NuGet.Config
+
 # Others
 ~$*
 *~

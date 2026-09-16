@@ -2,12 +2,12 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Pysar.Core.Platform;
 using Pysar.Viewer;
 using Pysar.Viewer.Geometry;
 using Pysar.Viewer.Zoom;
 using Windows.Foundation;
 using Windows.System;
+using Pysar.Viewer.Platform;
 
 namespace Pysar.Uno;
 

@@ -1,6 +1,4 @@
-using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace Pysar.Binding;
 
@@ -8,7 +6,7 @@ public abstract class BindableObject : IBindableObject, IBindingStore
 {
     private readonly Dictionary<BindableProperty, object?> _values = new();
     private readonly Dictionary<string, ValuePrecedence> _memberPrecedence = new(StringComparer.Ordinal);
-    protected readonly Dictionary<BindableProperty, BindingInfo> _pendingBindings = new();
+    private readonly Dictionary<BindableProperty, BindingInfo> _pendingBindings = new();
 
     /// <summary>
     ///     The precedence recorded for writes happening right now. <see cref="ValuePrecedence.Local"/> -

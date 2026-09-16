@@ -1,4 +1,5 @@
 using Pysar.Export;
+using Pysar.Viewer.Platform;
 using Xunit;
 
 namespace Pysar.Viewer.Tests;

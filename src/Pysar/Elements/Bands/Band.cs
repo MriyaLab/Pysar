@@ -1,10 +1,16 @@
 using Pysar.Binding;
 using Pysar.Core.Enums;
+using Pysar.Core.Structs;
 
 namespace Pysar.Elements;
 
 public abstract class Band : Frame
 {
+    public Band()
+    {
+        Height = SizeLength.Auto;
+    }
+
     public static BindableProperty PageBreakProperty { get; } =
         BindableProperty.Create(nameof(PageBreak), typeof(PageBreakMode), typeof(Band), PageBreakMode.None);
 
