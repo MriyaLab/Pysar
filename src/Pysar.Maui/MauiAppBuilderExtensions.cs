@@ -26,7 +26,10 @@ public static class MauiAppBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        var platformHandler = new DefaultReportPlatformHandler(new AppPackageFileSystem());
+        // The application package's own assets first, then those embedded by referenced report
+        // libraries - a packaged asset must win over one a library shipped.
+        var platformHandler = new DefaultReportPlatformHandler(
+            new FallbackFileSystem(new AppPackageFileSystem(), new EmbeddedAssetFileSystem()));
 
         // Rendering reads the handler from this ambient state rather than from DI, so it is installed
         // here - before any report can be built - and not when the renderer is first resolved.

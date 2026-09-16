@@ -37,6 +37,7 @@
     -->
     <ItemGroup>
         <None Include="buildTransitive\Pysar.targets" Pack="true" PackagePath="buildTransitive/" />
+        <None Include="buildTransitive\Pysar.Assets.targets" Pack="true" PackagePath="buildTransitive/" />
     </ItemGroup>
 
 </Project>

@@ -44,4 +44,9 @@
            Condition="'$(_PysarSkiaNativeVersion)' != '' AND '$(_PysarSkiaManagedVersion)' != '' AND '$(_PysarSkiaNativeVersion)' != '$(_PysarSkiaManagedVersion)'"
            Text="SkiaSharp native binary for WebAssembly is $(_PysarSkiaNativeVersion) but Pysar renders through managed SkiaSharp $(_PysarSkiaManagedVersion). Linking will fail with undefined sk_* symbols. Add to your browser-wasm head: &lt;PackageReference Include=&quot;SkiaSharp.NativeAssets.WebAssembly&quot; Version=&quot;$(_PysarSkiaManagedVersion)&quot; /&gt; - or set PysarSkipWebAssemblySkiaVersionCheck to true to build anyway." />
   </Target>
+
+  <!-- Auto-import reaches Pysar.targets alone, because NuGet imports the file named after the
+       package. The asset translation is a separate file for readability, so it is chained here. -->
+  <Import Project="$(MSBuildThisFileDirectory)Pysar.Assets.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)Pysar.Assets.targets')" />
 </Project>

@@ -25,14 +25,15 @@ Assets/Images/logo.svg
 Assets/Styles/report.rxaml
 ```
 
-Declare them as `EmbeddedResource`. `LogicalName` is the path the report asks for (`Fonts/...`), the
-same contract Maui, WPF and Avalonia use — do not put `Assets/` in that name:
+Declare them with `ReportAsset` and a `Link` back to the path the report asks for (`Fonts/...`), the
+same contract Maui, WPF and Avalonia use — do not put `Assets/` in that path. Pysar packages them as
+`EmbeddedResource`:
 
 ```xml
 <ItemGroup>
-  <EmbeddedResource Include="Assets\Fonts\**" LogicalName="Fonts/%(Filename)%(Extension)" />
-  <EmbeddedResource Include="Assets\Images\**" LogicalName="Images/%(Filename)%(Extension)" />
-  <EmbeddedResource Include="Assets\Styles\**" LogicalName="Styles/%(Filename)%(Extension)" />
+  <ReportAsset Include="Assets\Fonts\**" Link="Fonts\%(Filename)%(Extension)" />
+  <ReportAsset Include="Assets\Images\**" Link="Images\%(Filename)%(Extension)" />
+  <ReportAsset Include="Assets\Styles\**" Link="Styles\%(Filename)%(Extension)" />
 </ItemGroup>
 ```
 

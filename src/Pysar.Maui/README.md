@@ -10,12 +10,13 @@ appears when packing on a Windows host, and ships untested.
 
 ## Setup
 
-Fonts and images are declared as `MauiAsset` items and read straight from the application package —
-nothing is extracted to disk:
+Declare fonts and images with `ReportAsset`. Pysar packages them as `MauiAsset` items, read straight
+from the application package — nothing is extracted to disk:
 
 ```xml
-<MauiAsset Include="Fonts\**" LogicalName="Fonts/%(Filename)%(Extension)" />
-<MauiAsset Include="Images\**" LogicalName="Images/%(Filename)%(Extension)" />
+<ItemGroup>
+  <ReportAsset Include="Fonts\**;Images\**" />
+</ItemGroup>
 ```
 
 ```csharp
