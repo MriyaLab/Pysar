@@ -16,7 +16,7 @@ public class LayoutEngineTests
     public async Task Frame_FixedSize_YieldsFixedBounds()
     {
         var frame = new Frame { Size = new Size(SizeLength.Fixed(200), SizeLength.Fixed(100)) };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), Ctx, CancellationToken.None);
         Assert.Equal(new Rect(0, 0, 200, 100), node.Bounds);
     }
@@ -29,8 +29,8 @@ public class LayoutEngineTests
         frame.AddElement(child);
         var c = new MeasureConstraint(new Rect(0, 0, 500, 500));
 
-        var n1 = await LayoutEngine.MeasureAsync(frame, c, Ctx, CancellationToken.None);
-        var n2 = await LayoutEngine.MeasureAsync(frame, c, Ctx, CancellationToken.None);
+        var n1 = LayoutEngine.Measure(frame, c, Ctx, CancellationToken.None);
+        var n2 = LayoutEngine.Measure(frame, c, Ctx, CancellationToken.None);
 
         Assert.Equal(n1.Bounds, n2.Bounds);
         Assert.Equal(n1.Children[0].Bounds, n2.Children[0].Bounds);
@@ -45,7 +45,7 @@ public class LayoutEngineTests
         var tall = new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(800)) };
         var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill) };
         frame.AddElement(tall);
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), Ctx, CancellationToken.None);
         Assert.Equal(800, node.Bounds.Height);
     }
@@ -61,7 +61,7 @@ public class LayoutEngineTests
         };
         var frame = new Frame { Size = new Size(SizeLength.Fixed(400), SizeLength.Fixed(400)) };
         frame.AddElement(child);
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 400, 400)), Ctx, CancellationToken.None);
         Assert.Equal(new Rect(150, 300, 250, 400), node.Children[0].Bounds);
     }
@@ -70,7 +70,7 @@ public class LayoutEngineTests
     public async Task Box_AutoLeaf_YieldsZeroSize()
     {
         var frame = new Frame { Size = Size.Auto };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(10, 20, 500, 500)), Ctx, CancellationToken.None);
         Assert.Equal(0, node.Bounds.Width);
         Assert.Equal(0, node.Bounds.Height);
@@ -93,7 +93,7 @@ public class LayoutEngineTests
         };
 
         // Narrow width forces several wrap lines; short available height would previously clip.
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 120, 20)), Ctx, CancellationToken.None);
 
         Assert.True(node.Bounds.Height > 20,
@@ -123,7 +123,7 @@ public class LayoutEngineTests
 
         var pages = await PageRenderer.RenderAsync(design, scale: 1f, CancellationToken.None);
         // Spot-check: a full multi-line block is taller than one line; ellipsis-only clip was ~one line.
-        var layout = await ReportLayoutEngine.MeasureAsync(design, new MeasureContext(1f), CancellationToken.None);
+        var layout = ReportLayoutEngine.Measure(design, new MeasureContext(1f), CancellationToken.None);
         Assert.True(layout.Flow[0].Bounds.Height > 30);
         Assert.NotNull(pages);
         Assert.NotEqual(SKColors.Empty, pages[0].GetPixel(10, 10));
@@ -140,7 +140,7 @@ public class LayoutEngineTests
             Size = Size.Auto,
             MaxHeight = 20 // ~one line at 14*1.2
         };
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 120, 500)), Ctx, CancellationToken.None);
         Assert.True(node.Bounds.Height <= 20.01f, $"height {node.Bounds.Height}");
     }
@@ -155,7 +155,7 @@ public class LayoutEngineTests
             Size = Size.Auto,
             MinHeight = 50
         };
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 200, 500)), Ctx, CancellationToken.None);
         Assert.Equal(50, node.Bounds.Height);
     }
@@ -168,7 +168,7 @@ public class LayoutEngineTests
             Size = new Size(SizeLength.Fixed(200), SizeLength.Fixed(100)),
             MaxWidth = 80
         };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), Ctx, CancellationToken.None);
         Assert.Equal(80, node.Bounds.Width);
         Assert.Equal(100, node.Bounds.Height);
@@ -182,7 +182,7 @@ public class LayoutEngineTests
             Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(20)),
             MinHeight = 60
         };
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), Ctx, CancellationToken.None);
         Assert.Equal(50, node.Bounds.Width);
         Assert.Equal(60, node.Bounds.Height);
@@ -199,7 +199,7 @@ public class LayoutEngineTests
         };
         var parent = new Frame { Size = new Size(SizeLength.Fixed(400), SizeLength.Fixed(100)) };
         parent.AddElement(child);
-        var node = await LayoutEngine.MeasureAsync(parent,
+        var node = LayoutEngine.Measure(parent,
             new MeasureConstraint(new Rect(0, 0, 400, 100)), Ctx, CancellationToken.None);
         Assert.Equal(new Rect(350, 0, 400, 40), node.Children[0].Bounds);
     }
@@ -217,7 +217,7 @@ public class LayoutEngineTests
         var frame = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Auto) };
         frame.AddElement(child);
 
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, 300, 10000)), Ctx, CancellationToken.None);
 
         Assert.Equal(40, node.Bounds.Height);
@@ -236,7 +236,7 @@ public class LayoutEngineTests
         outer.AddElement(frame, 0, 0);
         outer.AddElement(Card(), 0, 1);
 
-        var node = await LayoutEngine.MeasureAsync(outer,
+        var node = LayoutEngine.Measure(outer,
             new MeasureConstraint(new Rect(0, 0, 600, 800)), Ctx, CancellationToken.None);
 
         Assert.Equal(node.Children[1].Bounds.Height, node.Children[0].Bounds.Height, 3);

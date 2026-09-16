@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Avalonia.Threading;
 using Pysar.Elements;
 using Pysar.Export;
@@ -38,49 +36,20 @@ public sealed class AvaloniaReportPrinter : IReportPrinter
         {
             // PDFKit runOperation must run on the AppKit UI thread.
             if (Dispatcher.UIThread.CheckAccess())
-            {
-                if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper))
-                    throw new InvalidOperationException("macOS print panel could not be shown for this PDF.");
-            }
+                ShowMacOrThrow(pdfBytes, jobName, paper);
             else
-            {
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    if (!MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper))
-                        throw new InvalidOperationException("macOS print panel could not be shown for this PDF.");
-                });
-            }
+                await Dispatcher.UIThread.InvokeAsync(() => ShowMacOrThrow(pdfBytes, jobName, paper));
 
             return;
         }
 
-        var path = Path.Combine(Path.GetTempPath(), $"pysar-print-{Guid.NewGuid():N}.pdf");
-        await File.WriteAllBytesAsync(path, pdfBytes, cancellationToken).ConfigureAwait(false);
-        OpenPrintUi(path);
+        cancellationToken.ThrowIfCancellationRequested();
+        DesktopPdfPrint.OpenInShell(pdfBytes);
     }
 
-    private static void OpenPrintUi(string pdfPath)
+    private static void ShowMacOrThrow(byte[] pdfBytes, string jobName, PrintPaper paper)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            Process.Start(new ProcessStartInfo(pdfPath)
-            {
-                UseShellExecute = true,
-                Verb = "print"
-            });
-            return;
-        }
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            Process.Start(new ProcessStartInfo("xdg-open")
-            {
-                ArgumentList = { pdfPath },
-                UseShellExecute = false
-            });
-            return;
-        }
-
-        throw new NotSupportedException($"Printing is not supported on {RuntimeInformation.OSDescription}.");
+        if (!DesktopPdfPrint.TryShowMacPrintPanel(pdfBytes, jobName, paper))
+            throw new InvalidOperationException("macOS print panel could not be shown for this PDF.");
     }
 }

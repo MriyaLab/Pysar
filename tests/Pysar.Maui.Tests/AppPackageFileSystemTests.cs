@@ -65,7 +65,7 @@ public class AppPackageFileSystemTests
     [Fact]
     public void ThePlatformHandler_ResolvesFontsThroughThePackage()
     {
-        var handler = new MauiReportPlatformHandler();
+        var handler = new DefaultReportPlatformHandler(new AppPackageFileSystem());
 
         Assert.IsType<AppPackageFileSystem>(handler.FileSystem);
 

@@ -7,23 +7,11 @@ namespace Pysar.Elements;
 
 public class Grid : ReportContainer<Grid>
 {
-    public static int GetRow(IReportElement element) => GridAttached.GetRow(element);
-    public static void SetRow(IReportElement element, int value) => GridAttached.SetRow(element, value);
-
-    public static int GetColumn(IReportElement element) => GridAttached.GetColumn(element);
-    public static void SetColumn(IReportElement element, int value) => GridAttached.SetColumn(element, value);
-
-    public static int GetRowSpan(IReportElement element) => GridAttached.GetRowSpan(element);
-    public static void SetRowSpan(IReportElement element, int value) => GridAttached.SetRowSpan(element, value);
-
-    public static int GetColumnSpan(IReportElement element) => GridAttached.GetColumnSpan(element);
-    public static void SetColumnSpan(IReportElement element, int value) => GridAttached.SetColumnSpan(element, value);
-
     public static BindableProperty ColumnDefinitionsProperty { get; } =
-        BindableProperty.Create(nameof(ColumnDefinitions), typeof(List<ColumnDefinition>), typeof(Grid), new List<ColumnDefinition>());
+        BindableProperty.Create(nameof(ColumnDefinitions), typeof(List<ColumnDefinition>), typeof(Grid), null);
 
     public static BindableProperty RowDefinitionsProperty { get; } =
-        BindableProperty.Create(nameof(RowDefinitions), typeof(List<RowDefinition>), typeof(Grid), new List<RowDefinition>());
+        BindableProperty.Create(nameof(RowDefinitions), typeof(List<RowDefinition>), typeof(Grid), null);
 
     public static BindableProperty ColumnSpacingProperty { get; } =
         BindableProperty.Create(nameof(ColumnSpacing), typeof(float), typeof(Grid), 0f);
@@ -41,14 +29,24 @@ public class Grid : ReportContainer<Grid>
 
     public List<ColumnDefinition> ColumnDefinitions
     {
-        get => (List<ColumnDefinition>)GetValue(ColumnDefinitionsProperty)!;
+        get => GetDefinitionList(ColumnDefinitionsProperty, static () => new List<ColumnDefinition>());
         set => SetValue(ColumnDefinitionsProperty, value);
     }
 
     public List<RowDefinition> RowDefinitions
     {
-        get => (List<RowDefinition>)GetValue(RowDefinitionsProperty)!;
+        get => GetDefinitionList(RowDefinitionsProperty, static () => new List<RowDefinition>());
         set => SetValue(RowDefinitionsProperty, value);
+    }
+
+    private List<T> GetDefinitionList<T>(BindableProperty property, Func<List<T>> create)
+    {
+        if (GetValueInternal(property) is List<T> list)
+            return list;
+
+        list = create();
+        SetValue(property, list);
+        return list;
     }
 
     public float ColumnSpacing

@@ -12,15 +12,15 @@ namespace Pysar.Skia.Layout;
 /// </summary>
 internal static class StackLayoutMeasurer
 {
-    public static Task<LayoutNode> MeasureAsync(StackPanel panel, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct) =>
+    public static LayoutNode Measure(StackPanel panel, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct) =>
         panel.Orientation switch
         {
-            StackOrientation.Vertical => MeasureVerticalAsync(panel, constraint, ctx, ct),
-            StackOrientation.Horizontal => MeasureHorizontalAsync(panel, constraint, ctx, ct),
+            StackOrientation.Vertical => MeasureVertical(panel, constraint, ctx, ct),
+            StackOrientation.Horizontal => MeasureHorizontal(panel, constraint, ctx, ct),
             _ => throw new InvalidOperationException($"Unsupported {nameof(StackOrientation)}: {panel.Orientation}")
         };
 
-    private static async Task<LayoutNode> MeasureVerticalAsync(StackPanel panel, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
+    private static LayoutNode MeasureVertical(StackPanel panel, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
     {
         // Panel margin sits outside the border-box (same model as MeasureContainer / Frame).
         var available = ApplyMargin(constraint.AvailableRect, panel.Margin);
@@ -57,7 +57,7 @@ internal static class StackLayoutMeasurer
             // Leave Fill as Fill so child margins expand/inset against the content width.
             var childRect = new Rect(probeContentLeft, y, probeContentLeft + probeContentWidth, available.Bottom);
             var constraintForChild = new MeasureConstraint(childRect, HeightOverride: FillAsAuto(isAutoHeight, child));
-            var node = await LayoutEngine.MeasureAsync(child, constraintForChild, ctx, ct);
+            var node = LayoutEngine.Measure(child, constraintForChild, ctx, ct);
             probeConstraints.Add(constraintForChild);
             children.Add(node);
             y = node.Bounds.Bottom + child.Margin.Bottom;
@@ -116,7 +116,7 @@ internal static class StackLayoutMeasurer
             // equal by value: the node phase 1 built for it is the node phase 4 would build.
             var node = constraintForChild == probeConstraints[i]
                 ? children[i]
-                : await LayoutEngine.MeasureAsync(child, constraintForChild, ctx, ct);
+                : LayoutEngine.Measure(child, constraintForChild, ctx, ct);
 
             repositionedChildren.Add(node);
             y2 = node.Bounds.Bottom + child.Margin.Bottom;
@@ -129,7 +129,7 @@ internal static class StackLayoutMeasurer
         return new LayoutNode(panel, new Rect(originLeft, originTop, originLeft + boxWidth, originTop + boxHeight), repositionedChildren, cutHints);
     }
 
-    private static async Task<LayoutNode> MeasureHorizontalAsync(StackPanel panel, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
+    private static LayoutNode MeasureHorizontal(StackPanel panel, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
     {
         var available = ApplyMargin(constraint.AvailableRect, panel.Margin);
         var effectiveWidth = LayoutEngine.EffectiveWidth(panel, constraint);
@@ -175,7 +175,7 @@ internal static class StackLayoutMeasurer
             }
 
             var probeRect = new Rect(probeContentLeft, probeContentTop, available.Right, probeContentTop + probeContentHeight);
-            var probe = await LayoutEngine.ProbeSizeAsync(child, new MeasureConstraint(probeRect), ctx, ct);
+            var probe = LayoutEngine.ProbeSize(child, new MeasureConstraint(probeRect), ctx, ct);
             widths[index] = probe.Width + child.Margin.Left + child.Margin.Right;
         }
 
@@ -197,7 +197,7 @@ internal static class StackLayoutMeasurer
             var child = visible[index];
             var slot = new Rect(x, probeContentTop, x + widths[index], probeContentTop + probeContentHeight);
             // No Fixed pin: Fill resolves against ApplyMargin(slot) so child margins work.
-            var node = await LayoutEngine.MeasureAsync(child, new MeasureConstraint(slot), ctx, ct);
+            var node = LayoutEngine.Measure(child, new MeasureConstraint(slot), ctx, ct);
             probeChildren.Add(node);
             x += widths[index];
             if (index < visible.Count - 1)
@@ -243,7 +243,7 @@ internal static class StackLayoutMeasurer
             ct.ThrowIfCancellationRequested();
             var child = visible[index];
             var slot = new Rect(x2, contentTop, x2 + widths[index], contentTop + contentHeight);
-            var node = await LayoutEngine.MeasureAsync(child, new MeasureConstraint(slot), ctx, ct);
+            var node = LayoutEngine.Measure(child, new MeasureConstraint(slot), ctx, ct);
             children.Add(node);
             x2 += widths[index];
             if (index < visible.Count - 1)

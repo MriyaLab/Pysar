@@ -524,6 +524,47 @@ public class BindingValidationTests
     }
 
     [Fact]
+    public void NestedXmlnsPrefix_OnChild_ResolvesDataType()
+    {
+        const string xaml = """
+            <Report x:Class="X.Y"
+                    xmlns="https://mriyalab.com/pysar"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+              <DetailBand>
+                <Repeater xmlns:vm="clr-namespace:App" x:DataType="vm:Item">
+                  <Text Content="{Binding ItemOnlyProp}"/>
+                </Repeater>
+              </DetailBand>
+            </Report>
+            """;
+
+        var result = GeneratorTestHarness.Run(Types, ("Report.rxaml", xaml));
+
+        Assert.False(HasDiagnostic(result, "PQX011"));
+        Assert.False(HasBindingError(result));
+    }
+
+    [Fact]
+    public void NestedXmlnsPrefix_OnChild_UnknownMember_ReportsPQX010()
+    {
+        const string xaml = """
+            <Report x:Class="X.Y"
+                    xmlns="https://mriyalab.com/pysar"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+              <DetailBand>
+                <Repeater xmlns:vm="clr-namespace:App" x:DataType="vm:Item">
+                  <Text Content="{Binding Nope}"/>
+                </Repeater>
+              </DetailBand>
+            </Report>
+            """;
+
+        var result = GeneratorTestHarness.Run(Types, ("Report.rxaml", xaml));
+
+        Assert.True(HasBindingError(result));
+    }
+
+    [Fact]
     public void SourceBinding_MisspelledProperty_ReportsPQX010()
     {
         var result = GeneratorTestHarness.Run(
@@ -571,5 +612,37 @@ public class BindingValidationTests
                 + "<Text Content=\"{Binding Title, Source={x:Reference root}}\"/></ReportView>"));
 
         Assert.False(HasBindingError(result));
+    }
+
+    [Fact]
+    public void SourceBinding_NamedElement_ValidatesAgainstThatElementsType()
+    {
+        var result = GeneratorTestHarness.Run(
+            @"namespace MyApp { public partial class Sales { } }",
+            ("Sales.rxaml",
+                "<Report x:Class=\"MyApp.Sales\" "
+                + "xmlns=\"https://mriyalab.com/pysar\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">"
+                + "<PageHeaderBand>"
+                + "<Text x:Name=\"title\" Content=\"Hello\"/>"
+                + "<Text Content=\"{Binding Content, Source={x:Reference title}}\"/>"
+                + "</PageHeaderBand></Report>"));
+
+        Assert.False(HasBindingError(result));
+    }
+
+    [Fact]
+    public void SourceBinding_NamedElement_MisspelledProperty_ReportsPQX010()
+    {
+        var result = GeneratorTestHarness.Run(
+            @"namespace MyApp { public partial class Sales { } }",
+            ("Sales.rxaml",
+                "<Report x:Class=\"MyApp.Sales\" "
+                + "xmlns=\"https://mriyalab.com/pysar\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">"
+                + "<PageHeaderBand>"
+                + "<Text x:Name=\"title\" Content=\"Hello\"/>"
+                + "<Text Content=\"{Binding Conten, Source={x:Reference title}}\"/>"
+                + "</PageHeaderBand></Report>"));
+
+        Assert.True(HasBindingError(result));
     }
 }

@@ -40,22 +40,6 @@ public abstract class ReportContainer<T> : ReportElement<T>, IReportContainer, I
         return (T)this;
     }
 
-    public T AddElements(IEnumerable<IReportElement> elements)
-    {
-        ArgumentNullException.ThrowIfNull(elements);
-
-        foreach (var element in elements) 
-            AddElement(element);
-
-        return (T)this;
-    }
-
-    public T AddElements(Func<IEnumerable<IReportElement>> elementsFunc)
-    {
-        ArgumentNullException.ThrowIfNull(elementsFunc);
-        return AddElements(elementsFunc());
-    }
-
     public T WithIsClippedToBounds(bool value)
     {
         IsClippedToBounds = value;

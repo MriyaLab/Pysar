@@ -13,7 +13,7 @@ namespace Pysar.Skia.Layout;
 /// </summary>
 internal static class GridLayoutMeasurer
 {
-    public static async Task<LayoutNode> MeasureAsync(Grid grid, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
+    public static LayoutNode Measure(Grid grid, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
     {
         var availableRect = constraint.AvailableRect;
         var effW = LayoutEngine.EffectiveWidth(grid, constraint);
@@ -38,8 +38,8 @@ internal static class GridLayoutMeasurer
         var sizingRect = new Rect(0, 0,
             isAutoWidth ? 10000 : contentWidth,
             isAutoHeight ? 10000 : contentHeight);
-        var columnWidths = await CalculateColumnWidthsAsync(grid, sizingRect, ctx, ct, isAutoWidth);
-        var rowHeights = await CalculateRowHeightsAsync(grid, sizingRect, ctx, ct, isAutoHeight, columnWidths);
+        var columnWidths = CalculateColumnWidths(grid, sizingRect, ctx, ct, isAutoWidth);
+        var rowHeights = CalculateRowHeights(grid, sizingRect, ctx, ct, isAutoHeight, columnWidths);
 
         var totalWidth = columnWidths.Sum() + grid.ColumnSpacing * Math.Max(0, columnWidths.Length - 1);
         var totalHeight = rowHeights.Sum() + grid.RowSpacing * Math.Max(0, rowHeights.Length - 1);
@@ -85,7 +85,7 @@ internal static class GridLayoutMeasurer
             // expand (negative margin) or inset (positive) the box; pinning Fixed(cellSize)
             // kept the pre-margin width and only shifted the origin.
             // At/alignment still resolve against the margin-adjusted cell rect.
-            children.Add(await LayoutEngine.MeasureAsync(child, new MeasureConstraint(cellBounds), ctx, ct));
+            children.Add(LayoutEngine.Measure(child, new MeasureConstraint(cellBounds), ctx, ct));
         }
 
         var cutHints = BuildRowCutHints(rowHeights, grid.RowSpacing, contentTop);
@@ -137,65 +137,20 @@ internal static class GridLayoutMeasurer
         return hints;
     }
 
-    private static async Task<float[]> CalculateColumnWidthsAsync(
+    private static float[] CalculateColumnWidths(
         Grid grid, Rect sizingRect, MeasureContext ctx, CancellationToken ct, bool isAutoSize)
     {
         var columns = EffectiveColumnDefinitions(grid);
-
-        var widths = new float[columns.Count];
-        var totalFixedWidth = 0f;
-        var totalStarWeight = 0f;
-
-        // Pass 1: Fixed values and Star weights (Star behaves like Auto in an Auto-sized grid).
-        for (int i = 0; i < columns.Count; i++)
-        {
-            var col = columns[i];
-            switch (col.Width.Type)
-            {
-                case GridLengthType.Fixed:
-                    widths[i] = col.Width.Value;
-                    totalFixedWidth += widths[i];
-                    break;
-                case GridLengthType.Star:
-                    if (isAutoSize)
-                    {
-                        widths[i] = await CalculateAutoColumnWidthAsync(grid, i, sizingRect, ctx, ct);
-                        totalFixedWidth += widths[i];
-                    }
-                    else
-                    {
-                        totalStarWeight += col.Width.Value;
-                    }
-                    break;
-                case GridLengthType.Auto:
-                    break; // Pass 2
-            }
-        }
-
-        // Pass 2: Auto columns size to their content.
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].Width.Type == GridLengthType.Auto)
-            {
-                widths[i] = await CalculateAutoColumnWidthAsync(grid, i, sizingRect, ctx, ct);
-                totalFixedWidth += widths[i];
-            }
-        }
-
-        // Pass 3: distribute remaining space to Star columns (non-Auto grid only).
-        if (totalStarWeight > 0 && !isAutoSize)
-        {
-            var availableWidth = sizingRect.Width - totalFixedWidth - grid.ColumnSpacing * (columns.Count - 1);
-            var starUnitWidth = availableWidth / totalStarWeight;
-            for (int i = 0; i < columns.Count; i++)
-                if (columns[i].Width.Type == GridLengthType.Star)
-                    widths[i] = columns[i].Width.Value * starUnitWidth;
-        }
-
-        return widths;
+        return CalculateTracks(
+            columns.Count,
+            i => columns[i].Width,
+            grid.ColumnSpacing,
+            sizingRect.Width,
+            isAutoSize,
+            i => CalculateAutoColumnWidth(grid, i, sizingRect, ctx, ct));
     }
 
-    private static async Task<float> CalculateAutoColumnWidthAsync(
+    private static float CalculateAutoColumnWidth(
         Grid grid, int columnIndex, Rect sizingRect, MeasureContext ctx, CancellationToken ct)
     {
         var maxWidth = 0f;
@@ -207,7 +162,7 @@ internal static class GridLayoutMeasurer
                 continue;
 
             // A Fill child reports its content width when measured as Auto.
-            var probe = await LayoutEngine.ProbeSizeAsync(child,
+            var probe = LayoutEngine.ProbeSize(child,
                 new MeasureConstraint(measureRect, WidthOverride: child.Size.Width.IsFill ? SizeLength.Auto : null),
                 ctx, ct);
             maxWidth = Math.Max(maxWidth, probe.Width);
@@ -226,62 +181,80 @@ internal static class GridLayoutMeasurer
             ? grid.ColumnDefinitions
             : [new ColumnDefinition(grid.Size.Width.IsAuto ? GridLength.Auto : GridLength.Star())];
 
-    private static async Task<float[]> CalculateRowHeightsAsync(
+    private static float[] CalculateRowHeights(
         Grid grid, Rect sizingRect, MeasureContext ctx, CancellationToken ct, bool isAutoSize, float[] columnWidths)
     {
         var rows = EffectiveRowDefinitions(grid);
+        return CalculateTracks(
+            rows.Count,
+            i => rows[i].Height,
+            grid.RowSpacing,
+            sizingRect.Height,
+            isAutoSize,
+            i => CalculateAutoRowHeight(grid, i, sizingRect, ctx, ct, columnWidths));
+    }
 
-        var heights = new float[rows.Count];
-        var totalFixedHeight = 0f;
+    private static float[] CalculateTracks(
+        int count,
+        Func<int, GridLength> lengthOf,
+        float spacing,
+        float available,
+        bool isAutoSize,
+        Func<int, float> measureAuto)
+    {
+        var sizes = new float[count];
+        var totalFixed = 0f;
         var totalStarWeight = 0f;
 
-        for (int i = 0; i < rows.Count; i++)
+        for (var i = 0; i < count; i++)
         {
-            var row = rows[i];
-            switch (row.Height.Type)
+            var length = lengthOf(i);
+            switch (length.Type)
             {
                 case GridLengthType.Fixed:
-                    heights[i] = row.Height.Value;
-                    totalFixedHeight += heights[i];
+                    sizes[i] = length.Value;
+                    totalFixed += sizes[i];
                     break;
                 case GridLengthType.Star:
                     if (isAutoSize)
                     {
-                        heights[i] = await CalculateAutoRowHeightAsync(grid, i, sizingRect, ctx, ct, columnWidths);
-                        totalFixedHeight += heights[i];
+                        sizes[i] = measureAuto(i);
+                        totalFixed += sizes[i];
                     }
                     else
                     {
-                        totalStarWeight += row.Height.Value;
+                        totalStarWeight += length.Value;
                     }
+
                     break;
-                case GridLengthType.Auto:
-                    break; // Pass 2
             }
         }
 
-        for (int i = 0; i < rows.Count; i++)
+        for (var i = 0; i < count; i++)
         {
-            if (rows[i].Height.Type == GridLengthType.Auto)
-            {
-                heights[i] = await CalculateAutoRowHeightAsync(grid, i, sizingRect, ctx, ct, columnWidths);
-                totalFixedHeight += heights[i];
-            }
+            if (lengthOf(i).Type != GridLengthType.Auto)
+                continue;
+
+            sizes[i] = measureAuto(i);
+            totalFixed += sizes[i];
         }
 
         if (totalStarWeight > 0 && !isAutoSize)
         {
-            var availableHeight = sizingRect.Height - totalFixedHeight - grid.RowSpacing * (rows.Count - 1);
-            var starUnitHeight = availableHeight / totalStarWeight;
-            for (int i = 0; i < rows.Count; i++)
-                if (rows[i].Height.Type == GridLengthType.Star)
-                    heights[i] = rows[i].Height.Value * starUnitHeight;
+            var leftover = available - totalFixed - spacing * Math.Max(0, count - 1);
+            var starUnit = leftover / totalStarWeight;
+            for (var i = 0; i < count; i++)
+            {
+                var length = lengthOf(i);
+                if (length.Type == GridLengthType.Star)
+                    sizes[i] = length.Value * starUnit;
+            }
         }
 
-        return heights;
+        return sizes;
     }
 
-    private static async Task<float> CalculateAutoRowHeightAsync(
+    private static float CalculateAutoRowHeight(
         Grid grid, int rowIndex, Rect sizingRect, MeasureContext ctx, CancellationToken ct, float[] columnWidths)
     {
         var maxHeight = 0f;
@@ -313,7 +286,7 @@ internal static class GridLayoutMeasurer
 
             // Fill height → Auto (report content height); Fill width → pin to the column width
             // so text wraps against the actual cell width.
-            var probe = await LayoutEngine.ProbeSizeAsync(child,
+            var probe = LayoutEngine.ProbeSize(child,
                 new MeasureConstraint(measureRect,
                     WidthOverride: child.Size.Width.IsFill ? SizeLength.Fixed(childWidth) : null,
                     HeightOverride: child.Size.Height.IsFill ? SizeLength.Auto : null),

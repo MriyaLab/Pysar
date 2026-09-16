@@ -27,9 +27,6 @@ public class Text : ReportElement<Text>
     public static BindableProperty TextTrimmingProperty { get; } =
         BindableProperty.Create(nameof(TextTrimming), typeof(TextTrimming), typeof(Text), TextTrimming.WordWrap);
 
-    public static BindableProperty AutoHeightProperty { get; } =
-        BindableProperty.Create(nameof(AutoHeight), typeof(bool), typeof(Text), false);
-
     public Text()
     {
         // Written at Default precedence: a type's own defaults must not read as author assignments,
@@ -103,12 +100,6 @@ public class Text : ReportElement<Text>
         set => SetValue(TextTrimmingProperty, value);
     }
 
-    public bool AutoHeight
-    {
-        get => (bool)GetValue(AutoHeightProperty)!;
-        set => SetValue(AutoHeightProperty, value);
-    }
-    
     public Text WithFont(Font font)
     {
         Font = font;
@@ -208,12 +199,6 @@ public class Text : ReportElement<Text>
     public Text WithTextTrimming(TextTrimming textTrimming)
     {
         TextTrimming = textTrimming;
-        return this;
-    }
-
-    public Text WithAutoHeight(bool autoHeight)
-    {
-        AutoHeight = autoHeight;
         return this;
     }
 }

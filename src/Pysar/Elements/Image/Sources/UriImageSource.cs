@@ -4,7 +4,11 @@ namespace Pysar.Elements;
 
 public class UriImageSource : ImageSource
 {
-    private static readonly HttpClient _httpClient = new();
+    private static readonly HttpClient _httpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(15),
+        MaxResponseContentBufferSize = 16 * 1024 * 1024
+    };
 
     public static BindableProperty UriProperty { get; } =
         BindableProperty.Create(nameof(Uri), typeof(Uri), typeof(UriImageSource), null);

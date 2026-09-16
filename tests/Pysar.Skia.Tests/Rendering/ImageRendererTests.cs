@@ -19,12 +19,13 @@ public class ImageRendererTests
         ReportPlatformHandler.Create(new FakePlatformHandler(("test.png", pngBytes)));
         var image = new Image { Source = new FileImageSource("test.png") };
         var sources = new ImageSource[] { image.Source };
+        using var cache = new ImageRenderCache();
         using var bitmap = new SKBitmap(50, 50);
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
-        var ctx = new RenderContext(canvas, 1f);
+        var ctx = new RenderContext(canvas, 1f) { Images = cache };
 
-        await ImageRenderer.PrefetchAsync(sources, CancellationToken.None);
+        await ImageRenderer.PrefetchAsync(sources, cache, CancellationToken.None);
         ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), ctx);
         ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), ctx);
         canvas.Flush();
@@ -38,8 +39,9 @@ public class ImageRendererTests
         var pngBytes = CreateOnePixelPng(SKColors.Blue);
         var source = new CountingImageSource(pngBytes);
         var sources = new ImageSource[] { source };
+        using var cache = new ImageRenderCache();
 
-        await ImageRenderer.PrefetchAsync(sources, CancellationToken.None);
+        await ImageRenderer.PrefetchAsync(sources, cache, CancellationToken.None);
 
         Assert.Equal(1, source.LoadCount);
 
@@ -47,7 +49,7 @@ public class ImageRendererTests
         using var bitmap = new SKBitmap(50, 50);
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
-        var ctx = new RenderContext(canvas, 1f);
+        var ctx = new RenderContext(canvas, 1f) { Images = cache };
         ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), ctx);
 
         Assert.Equal(1, source.LoadCount);
@@ -77,7 +79,8 @@ public class ImageRendererTests
         var good = new CountingImageSource(goodBytes);
         var bad = new ThrowingImageSource();
 
-        await ImageRenderer.PrefetchAsync([bad, good], CancellationToken.None);
+        using var cache = new ImageRenderCache();
+        await ImageRenderer.PrefetchAsync([bad, good], cache, CancellationToken.None);
 
         Assert.Equal(1, good.LoadCount);
 
@@ -85,7 +88,7 @@ public class ImageRendererTests
         using var bitmap = new SKBitmap(50, 50);
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
-        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f));
+        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f) { Images = cache });
 
         Assert.Equal(SKColors.Green, bitmap.GetPixel(25, 25));
     }
@@ -97,20 +100,45 @@ public class ImageRendererTests
         var source = new StreamImageSource(() => new MemoryStream(pngBytes));
         var image = new Image { Source = source };
 
-        await ImageRenderer.PrefetchAsync([source], CancellationToken.None);
+        using var cache = new ImageRenderCache();
+        await ImageRenderer.PrefetchAsync([source], cache, CancellationToken.None);
         using var bitmap = new SKBitmap(50, 50);
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
-        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f));
+        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f) { Images = cache });
 
         Assert.Equal(SKColors.Yellow, bitmap.GetPixel(25, 25));
+    }
+
+    [Fact]
+    public async Task PrefetchAsync_ThenDraw_RendersSvgThroughPicture()
+    {
+        var svg = """<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#FF0000"/></svg>"""u8.ToArray();
+        ReportPlatformHandler.Create(new FakePlatformHandler(("logo.svg", svg)));
+        using var cache = new ImageRenderCache();
+        var image = new Image { Source = new FileImageSource("logo.svg"), Aspect = Aspect.Fill };
+
+        await ImageRenderer.PrefetchAsync([image.Source], cache, CancellationToken.None);
+        using var bitmap = new SKBitmap(50, 50);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f) { Images = cache });
+
+        Assert.Equal(SKColors.Red, bitmap.GetPixel(25, 25));
     }
 
     [Fact]
     public async Task PrefetchAsync_NullSources_ThrowsArgumentNullException()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => ImageRenderer.PrefetchAsync(null!, CancellationToken.None));
+            () => ImageRenderer.PrefetchAsync(null!, new ImageRenderCache(), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PrefetchAsync_NullCache_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => ImageRenderer.PrefetchAsync([], null!, CancellationToken.None));
     }
 
     private static byte[] CreateOnePixelPng(SKColor color)

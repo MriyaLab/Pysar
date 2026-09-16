@@ -252,7 +252,7 @@ public class CornerRadiusRenderTests
     {
         var bitmap = new SKBitmap(size, size);
         using var canvas = new SKCanvas(bitmap);
-        var node = await LayoutEngine.MeasureAsync(frame,
+        var node = LayoutEngine.Measure(frame,
             new MeasureConstraint(new Rect(0, 0, size, size)), new MeasureContext(1f), CancellationToken.None);
 
         ElementDrawer.Draw(node, new RenderContext(canvas, 1f));

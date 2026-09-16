@@ -40,10 +40,11 @@ directory, which is what the relative paths above resolve against - the handler 
 worker applications, server-side rendering, and the design-time preview. Pass a directory to its
 constructor when the assets do not sit next to the binaries.
 
-Applications built on a UI framework install that framework's handler instead, because their assets
-come from the application package: the platform packages ship one each -
-`AvaloniaReportPlatformHandler`, `WpfReportPlatformHandler`, `MauiReportPlatformHandler`,
-`UnoReportPlatformHandler`, `WasmPlatformHandler` - and `UsePysar`/`AddPysar` register it for you.
+Applications built on a UI framework pass that framework's file system into
+`DefaultReportPlatformHandler` (`AvaloniaAssetFileSystem`, `WpfAssetFileSystem`,
+`AppPackageFileSystem`, `UnoAssetFileSystem`, or an in-memory store on WebAssembly).
+`UsePysar`/`AddPysar` register it for you. Uno keeps `UnoReportPlatformHandler` so preloading
+and rendering share one `UnoAssetFileSystem`.
 Uno registers the same way: `this.UsePysar(typeof(App).Assembly, ...)` called from `OnLaunched`, the
 one place every Uno head runs, for the same reason `Pysar.Wpf` extends `Application` rather than
 registering through a service collection - an Uno application has no service collection of its own
@@ -175,8 +176,8 @@ await printer.PrintAsync(builtReport);
 ```
 
 - MAUI: registered by `UsePysar` as `IReportPrinter` (`MauiReportPrinter`)
-- Avalonia: `new AvaloniaReportPrinter(renderer)` after `UsePysar` (or `PysarAvalonia.Renderer`)
-- WPF (Windows only): `new WpfReportPrinter(renderer)` after `UsePysar` (or `PysarWpf.Renderer`)
+- Avalonia: `new AvaloniaReportPrinter(ReportViewRenderer.Instance)` after `UsePysar`
+- WPF (Windows only): `new WpfReportPrinter(ReportViewRenderer.Instance)` after `UsePysar`
 - Uno (desktop only): `new UnoReportPrinter(PysarUno.Renderer)` after `UsePysar`. Android, iOS
   and WebAssembly throw `PlatformNotSupportedException` - produce the bytes through
   `PysarUno.ExportService` and share or download them from the application

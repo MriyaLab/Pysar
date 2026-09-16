@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Pysar.Elements;
 using Pysar.Export;
@@ -64,10 +62,7 @@ public sealed class UnoReportPrinter : IReportPrinter
             return;
         }
 
-        var path = Path.Combine(Path.GetTempPath(), $"pysar-print-{Guid.NewGuid():N}.pdf");
-        await File.WriteAllBytesAsync(path, pdfBytes, cancellationToken).ConfigureAwait(false);
-
-        OpenPrintUi(path);
+        DesktopPdfPrint.OpenInShell(pdfBytes);
     }
 
     /// <summary>
@@ -81,7 +76,7 @@ public sealed class UnoReportPrinter : IReportPrinter
         var paper = PrintPaper.From(report.PageFormat);
 
         if (dispatcher.HasThreadAccess)
-            return MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper);
+            return DesktopPdfPrint.TryShowMacPrintPanel(pdfBytes, jobName, paper);
 
         var shown = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!dispatcher.TryEnqueue(() =>
@@ -97,7 +92,7 @@ public sealed class UnoReportPrinter : IReportPrinter
 
                 try
                 {
-                    shown.TrySetResult(MacOsPdfPrint.TryShowPrintPanel(pdfBytes, jobName, paper));
+                    shown.TrySetResult(DesktopPdfPrint.TryShowMacPrintPanel(pdfBytes, jobName, paper));
                 }
                 catch (Exception ex)
                 {
@@ -109,29 +104,5 @@ public sealed class UnoReportPrinter : IReportPrinter
         }
 
         return await shown.Task.ConfigureAwait(false);
-    }
-
-    private static void OpenPrintUi(string pdfPath)
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true, Verb = "print" });
-            return;
-        }
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            Process.Start(new ProcessStartInfo("open") { ArgumentList = { pdfPath }, UseShellExecute = false });
-            return;
-        }
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            Process.Start(new ProcessStartInfo("xdg-open") { ArgumentList = { pdfPath }, UseShellExecute = false });
-            return;
-        }
-
-        throw new PlatformNotSupportedException(
-            $"Printing is not supported on {RuntimeInformation.OSDescription}.");
     }
 }

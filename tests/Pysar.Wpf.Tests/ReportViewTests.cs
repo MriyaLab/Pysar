@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using Pysar.Core.Structs;
 using Pysar.Elements;
+using Pysar.Skia;
 using Pysar.Viewer.Zoom;
 using Xunit;
 using Font = Pysar.Core.Structs.Font;
@@ -83,9 +84,8 @@ public class ReportViewTests(WpfSession session)
         => session.Run(() =>
         {
             // UsePysar ran once, in the session fixture - this is what a host reaches afterwards.
-            Assert.NotNull(PysarWpf.Renderer);
-            Assert.NotNull(PysarWpf.ExportService);
-            Assert.Same(PysarWpf.ExportService, PysarWpf.ExportService);
+            Assert.NotNull(ReportViewRenderer.Instance);
+            Assert.NotNull(SkiaReportExport.CreateExportService(ReportViewRenderer.Instance));
         });
 
     private static Report BuildReport()

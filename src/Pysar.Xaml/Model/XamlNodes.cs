@@ -35,13 +35,15 @@ internal sealed class XamlObjectNode
         IReadOnlyList<XamlMemberNode> members,
         IReadOnlyList<XamlObjectNode> children,
         string? textContent,
-        XamlSourceSpan span)
+        XamlSourceSpan span,
+        IReadOnlyList<XamlNamespaceDeclaration>? localNamespaces = null)
     {
         Type = type;
         Members = members;
         Children = children;
         TextContent = textContent;
         Span = span;
+        LocalNamespaces = localNamespaces ?? Array.Empty<XamlNamespaceDeclaration>();
     }
 
     public XamlTypeName Type { get; }
@@ -49,6 +51,7 @@ internal sealed class XamlObjectNode
     public IReadOnlyList<XamlObjectNode> Children { get; }
     public string? TextContent { get; }
     public XamlSourceSpan Span { get; }
+    public IReadOnlyList<XamlNamespaceDeclaration> LocalNamespaces { get; }
 }
 
 internal enum XamlMemberKind

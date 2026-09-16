@@ -73,10 +73,11 @@ internal static class BindingValidator
         var provider = new RoslynTypeMemberProvider(compilation);
         var resolver = new BindingPathResolver(provider);
         var sourceText = SourceText.From(xamlText);
+        var namedNodes = CollectNamedNodes(document.Root);
 
         ValidateNode(
             document.Root, inheritedType: null, namespaces, provider, resolver, filePath, sourceText,
-            context, rootClassType, rootElementType);
+            context, rootClassType, rootElementType, compilation, namedNodes);
     }
 
     private static void ValidateNode(
@@ -89,8 +90,12 @@ internal static class BindingValidator
         SourceText sourceText,
         SourceProductionContext context,
         object? rootClassType,
-        object? rootElementType)
+        object? rootElementType,
+        Compilation compilation,
+        IReadOnlyDictionary<string, XamlObjectNode> namedNodes)
     {
+        namespaces = MergeNamespaces(namespaces, node.LocalNamespaces);
+
         // A style is applied to elements in scopes its declaration knows nothing about, and the rest
         // of a resource dictionary is just as context-free, so nothing inside them can be validated.
         if (node.Type.LocalName is "Style" or "ResourceDictionary")
@@ -121,12 +126,9 @@ internal static class BindingValidator
             // x:Class type and is independent of the inherited DataType (which is usually null here).
             if (member.Value is XamlBindingNode { SourceName: not null } sourceBinding)
             {
-                // Resolves against the x:Class type or the root element type it derives from — see the
-                // comment in Validate for why neither alone is enough.
-                if (rootClassType is not null || rootElementType is not null)
-                    ValidateSourcePath(
-                        sourceBinding.Path, sourceBinding.Span, rootClassType, rootElementType,
-                        resolver, filePath, sourceText, context);
+                ValidateNamedSourceBinding(
+                    sourceBinding, namedNodes, compilation, rootClassType, rootElementType,
+                    resolver, filePath, sourceText, context);
                 continue;
             }
 
@@ -154,10 +156,72 @@ internal static class BindingValidator
         // property-element objects (e.g. DetailHeader/DetailFooter chrome) stay in the outer context.
         var (contentType, propertyType) = ChildContextTypes(node, nodeType, declared is not null, resolver);
         foreach (var child in node.Children)
-            ValidateNode(child, contentType, namespaces, provider, resolver, filePath, sourceText, context, rootClassType, rootElementType);
+            ValidateNode(child, contentType, namespaces, provider, resolver, filePath, sourceText, context, rootClassType, rootElementType, compilation, namedNodes);
         foreach (var member in node.Members)
             foreach (var contained in member.Objects)
-                ValidateNode(contained, propertyType, namespaces, provider, resolver, filePath, sourceText, context, rootClassType, rootElementType);
+                ValidateNode(contained, propertyType, namespaces, provider, resolver, filePath, sourceText, context, rootClassType, rootElementType, compilation, namedNodes);
+    }
+
+    private static void ValidateNamedSourceBinding(
+        XamlBindingNode sourceBinding,
+        IReadOnlyDictionary<string, XamlObjectNode> namedNodes,
+        Compilation compilation,
+        object? rootClassType,
+        object? rootElementType,
+        BindingPathResolver resolver,
+        string filePath,
+        SourceText sourceText,
+        SourceProductionContext context)
+    {
+        if (namedNodes.TryGetValue(sourceBinding.SourceName!, out var sourceNode)
+            && sourceNode.Type.LocalName is not ("Report" or "ReportView"))
+        {
+            var namedType = XamlCodeModel.ResolveTypeSymbol(
+                compilation, sourceNode.Type.NamespaceName, sourceNode.Type.LocalName);
+            if (namedType is not null)
+                ValidatePath(sourceBinding.Path, sourceBinding.Span, namedType, resolver, filePath, sourceText, context);
+            return;
+        }
+
+        // Resolves against the x:Class type or the root element type it derives from — see the
+        // comment in Validate for why neither alone is enough.
+        if (rootClassType is not null || rootElementType is not null)
+            ValidateSourcePath(
+                sourceBinding.Path, sourceBinding.Span, rootClassType, rootElementType,
+                resolver, filePath, sourceText, context);
+    }
+
+    private static Dictionary<string, XamlObjectNode> CollectNamedNodes(XamlObjectNode root)
+    {
+        var names = new Dictionary<string, XamlObjectNode>(StringComparer.Ordinal);
+        Walk(root);
+        return names;
+
+        void Walk(XamlObjectNode node)
+        {
+            var name = DirectiveName(node);
+            if (name is not null && !names.ContainsKey(name))
+                names[name] = node;
+
+            foreach (var child in node.Children)
+                Walk(child);
+            foreach (var member in node.Members)
+                foreach (var contained in member.Objects)
+                    Walk(contained);
+        }
+    }
+
+    private static string? DirectiveName(XamlObjectNode node)
+    {
+        foreach (var member in node.Members)
+        {
+            if (member.Kind == XamlMemberKind.Directive
+                && member.Name.LocalName == "Name"
+                && member.Value is XamlLiteralNode { Text: { Length: > 0 } text })
+                return text;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -344,6 +408,21 @@ internal static class BindingValidator
         foreach (var declaration in declarations)
             map[declaration.Prefix ?? string.Empty] = declaration.NamespaceName;
         return map;
+    }
+
+    private static IReadOnlyDictionary<string, string> MergeNamespaces(
+        IReadOnlyDictionary<string, string> inherited,
+        IReadOnlyList<XamlNamespaceDeclaration> local)
+    {
+        if (local.Count == 0)
+            return inherited;
+
+        var merged = new Dictionary<string, string>();
+        foreach (var pair in inherited)
+            merged[pair.Key] = pair.Value;
+        foreach (var declaration in local)
+            merged[declaration.Prefix ?? string.Empty] = declaration.NamespaceName;
+        return merged;
     }
 
     private static Location CreateLocation(string filePath, SourceText sourceText, XamlSourceSpan span)

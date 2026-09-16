@@ -5,7 +5,8 @@ namespace Pysar.Uno;
 
 /// <summary>
 ///     Public access to what <see cref="ApplicationExtensions.UsePysar"/> installed - the renderer,
-///     the export service and the platform handler - the role <c>PysarWpf</c> plays for WPF.
+///     the export service and the platform handler. Uno has no service collection, so this is how
+///     a host reaches them after <c>UsePysar</c>.
 /// </summary>
 public static class PysarUno
 {

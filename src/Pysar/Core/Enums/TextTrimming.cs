@@ -7,6 +7,5 @@ public enum TextTrimming
     TailTruncation,
     HeadTruncation,
     MiddleTruncation,
-    WordWrap,
-    CharacterWrap
+    WordWrap
 }

@@ -11,7 +11,7 @@ namespace Pysar.Skia.Layout;
 /// </summary>
 public static class LayoutEngine
 {
-    public static async Task<LayoutNode> MeasureAsync(
+    public static LayoutNode Measure(
         IReportElement element, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -23,10 +23,10 @@ public static class LayoutEngine
         {
             return element switch
             {
-                Grid grid => await GridLayoutMeasurer.MeasureAsync(grid, constraint, ctx, ct),
-                StackPanel panel => await StackLayoutMeasurer.MeasureAsync(panel, constraint, ctx, ct),
+                Grid grid => GridLayoutMeasurer.Measure(grid, constraint, ctx, ct),
+                StackPanel panel => StackLayoutMeasurer.Measure(panel, constraint, ctx, ct),
                 Text text => MeasureText(text, constraint, ctx),
-                IReportContainer container => await MeasureContainerAsync(container, constraint, ctx, ct),
+                IReportContainer container => MeasureContainer(container, constraint, ctx, ct),
                 _ => MeasureBox(element, constraint, ctx)
             };
         }
@@ -55,11 +55,11 @@ public static class LayoutEngine
     ///     identical question by each of those passes. Placement is deliberately not routed through
     ///     this - a placed node's bounds are the cell it landed in, which does differ every time.
     /// </remarks>
-    internal static async Task<(float Width, float Height)> ProbeSizeAsync(
+    internal static (float Width, float Height) ProbeSize(
         IReportElement element, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
     {
         // Before the cache is consulted, not only on a miss. Every probe used to reach
-        // MeasureAsync, whose first statement is this same check, and the grid's track loops lean on
+        // Measure, whose first statement is this same check, and the grid's track loops lean on
         // that rather than carrying one of their own - unlike the stack measurer, which checks in
         // every loop. Answering from the cache without it left a superseded report measuring to the
         // end, which on a browser head means holding the only thread there is.
@@ -68,7 +68,7 @@ public static class LayoutEngine
         if (ctx.TryGetProbeSize(element, constraint, out var cached))
             return cached;
 
-        var node = await MeasureAsync(element, constraint, ctx, ct);
+        var node = Measure(element, constraint, ctx, ct);
         var size = (node.Bounds.Width, node.Bounds.Height);
 
         ctx.StoreProbeSize(element, constraint, size);
@@ -149,7 +149,7 @@ public static class LayoutEngine
             LayoutNode.NoChildren, LayoutNode.NoCuts);
     }
 
-    private static async Task<LayoutNode> MeasureContainerAsync(
+    private static LayoutNode MeasureContainer(
         IReportContainer element, MeasureConstraint constraint, MeasureContext ctx, CancellationToken ct)
     {
         var effW = EffectiveWidth(element, constraint);
@@ -177,7 +177,7 @@ public static class LayoutEngine
             (isAutoH ? avail.Top : top) + iT,
             (isAutoW ? avail.Right : left + boxW) - iR,
             (isAutoH ? avail.Bottom : top + boxH) - iB);
-        var children = await MeasureChildrenAsync(element, probeRect, isAutoW, isAutoH, ctx, ct);
+        var children = MeasureChildren(element, probeRect, isAutoW, isAutoH, ctx, ct);
 
         // Phase 2: settle the box. An Auto axis shrink-wraps its content and therefore has no free
         // space for a child's alignment to consume, so it is sized from each child's own extent
@@ -208,7 +208,7 @@ public static class LayoutEngine
         // having moved the origin after the probe.
         var contentRect = new Rect(left + iL, top + iT, left + boxW - iR, top + boxH - iB);
         if (contentRect != probeRect)
-            children = await MeasureChildrenAsync(element, contentRect, isAutoW, isAutoH, ctx, ct);
+            children = MeasureChildren(element, contentRect, isAutoW, isAutoH, ctx, ct);
 
         var cutHints = children.Count > 0
             ? children.Select(n => n.Bounds.Bottom).Where(y => y > top && y < top + boxH).Distinct().OrderBy(y => y).ToArray()
@@ -217,7 +217,7 @@ public static class LayoutEngine
         return new LayoutNode(element, new Rect(left, top, left + boxW, top + boxH), children, cutHints);
     }
 
-    private static async Task<List<LayoutNode>> MeasureChildrenAsync(
+    private static List<LayoutNode> MeasureChildren(
         IReportContainer element, Rect contentRect, bool isAutoW, bool isAutoH, MeasureContext ctx, CancellationToken ct)
     {
         var children = new List<LayoutNode>();
@@ -230,7 +230,7 @@ public static class LayoutEngine
             // Fill as Auto here — same idea as star tracks collapsing to content in an Auto grid.
             SizeLength? widthOverride = isAutoW && child.Size.Width.IsFill ? SizeLength.Auto : null;
             SizeLength? heightOverride = isAutoH && child.Size.Height.IsFill ? SizeLength.Auto : null;
-            children.Add(await MeasureAsync(child,
+            children.Add(Measure(child,
                 new MeasureConstraint(contentRect, widthOverride, heightOverride), ctx, ct));
         }
         return children;

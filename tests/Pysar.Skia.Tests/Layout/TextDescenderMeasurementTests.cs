@@ -45,7 +45,7 @@ public class TextDescenderMeasurementTests
     {
         var text = NarrowLineHeightText(trimming);
 
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), Ctx, CancellationToken.None);
 
         Assert.Equal(FontExtent(text), node.Bounds.Height, 3);
@@ -59,7 +59,7 @@ public class TextDescenderMeasurementTests
         var text = NarrowLineHeightText(TextTrimming.WordWrap);
         text.Content = "gjpqy gjpqy gjpqy";
 
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 40, 500)), Ctx, CancellationToken.None);
 
         var lineHeight = text.Font.Size * text.LineHeight;
@@ -83,7 +83,7 @@ public class TextDescenderMeasurementTests
             Size = Size.Auto
         };
 
-        var node = await LayoutEngine.MeasureAsync(text,
+        var node = LayoutEngine.Measure(text,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), Ctx, CancellationToken.None);
 
         Assert.Equal(40f, node.Bounds.Height, 3);

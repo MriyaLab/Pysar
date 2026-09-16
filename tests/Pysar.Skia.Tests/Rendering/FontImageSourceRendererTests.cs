@@ -13,7 +13,8 @@ public class FontImageSourceRendererTests
     {
         var source = new CountingFontImageSource { Glyph = "A" };
 
-        await ImageRenderer.PrefetchAsync([source], CancellationToken.None);
+        using var cache = new ImageRenderCache();
+        await ImageRenderer.PrefetchAsync([source], cache, CancellationToken.None);
 
         Assert.Equal(0, source.LoadCount);
     }

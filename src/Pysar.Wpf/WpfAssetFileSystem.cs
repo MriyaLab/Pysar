@@ -137,7 +137,8 @@ public sealed class WpfAssetFileSystem(string assemblyName) : IFileSystem, ISync
         {
             return Assembly.Load(new AssemblyName(name));
         }
-        catch (Exception)
+        catch (Exception exception) when (exception is FileNotFoundException
+            or FileLoadException or BadImageFormatException)
         {
             return null;
         }

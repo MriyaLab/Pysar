@@ -40,11 +40,8 @@ public class GeneratorParityTests
     }
 
     [Fact]
-    public void RuntimeFallback_EmitsSourceBaseDirectory()
+    public void RuntimeFallback_DoesNotEmitMachineDirectory()
     {
-        // Built from a rooted path rather than written out as "/tmp/pysar": the generator emits the
-        // directory of Path.GetFullPath, which on Windows re-roots a POSIX-looking path onto whatever
-        // drive the tests happen to run from.
         var directory = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "pysar"));
 
         var source = GeneratorTestHarness.Run(
@@ -57,9 +54,7 @@ public class GeneratorParityTests
            ?? throw new Xunit.Sdk.XunitException("no generated source");
 
         Assert.Contains("ReportXaml.LoadInto(this,", source);
-
-        // The directory reaches the generated file as a C# string literal, so separators are escaped.
-        Assert.Contains($"\"{directory.Replace("\\", "\\\\")}\"", source);
+        Assert.DoesNotContain(directory.Replace("\\", "\\\\"), source);
     }
 
     [Fact]

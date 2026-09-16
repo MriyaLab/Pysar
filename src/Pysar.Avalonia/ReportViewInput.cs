@@ -23,15 +23,12 @@ namespace Pysar.Avalonia;
 ///     itself, and turning a pointer position into the viewport point the presenter anchors the zoom
 ///     around.
 ///
-///     A throwaway probe of Avalonia 11.3.12 on macOS, with a <see cref="PinchGestureRecognizer"/>
-///     attached to a hit-testable surface, found that a real trackpad pinch arrives as 1034
-///     <see cref="InputElement.PointerWheelChangedEvent"/> events and zero
-///     <see cref="InputElement.PinchEvent"/> ones - the platform never delivers a pinch gesture for a
-///     trackpad. The modifiers on those wheel events were reliable (Control 309, Meta 176, None
-///     549), which is what lets a modifier decide between scrolling and zooming below. The pinch
-///     recogniser is still wired up, for the touch platforms a later plan covers, but no desktop
-///     behaviour may depend on it - and nothing here claims it has been exercised on desktop, since
-///     there is no sample application yet to run it through.
+///     A throwaway probe of Avalonia 11.3.12 on macOS, with a pinch recogniser attached to a
+    ///     hit-testable surface, found that a real trackpad pinch arrives as 1034
+    ///     <see cref="InputElement.PointerWheelChangedEvent"/> events and zero pinch events - the
+    ///     platform never delivers a pinch gesture for a trackpad. Trackpad pinch therefore goes
+    ///     through <see cref="MacPinchMonitor"/> and <see cref="PinchSession"/>, not a second
+    ///     recogniser that would relayout every frame.
 /// </remarks>
 public partial class ReportView
 {
@@ -43,9 +40,6 @@ public partial class ReportView
     ///     for a menu or a binding but not for a zoom under the reader's pointer.
     /// </summary>
     private readonly ZoomPublisher _zoomPublisher;
-
-    /// <summary>Set between a pinch's first frame and its last, so the first frame can begin it.</summary>
-    private bool _pinchActive;
 
     /// <summary>
     ///     The running pinch. Its frames are shown through the canvas's own transform, which is the
@@ -166,9 +160,6 @@ public partial class ReportView
         _presenter.Gestures.BeginPinch();
         _presenter.Gestures.PinchByScale(commit.Factor);
 
-        // DEBUG: t_commit -> t_first_centre_tile -> t_viewport_full via SamplePinchCommitPerf.
-        BeginPinchCommitPerf();
-
         // Relayout and scroll first while the preview still covers the canvas: dropping the
         // transform before ScrollTo landed painted one frame of pages at the new zoom under the old
         // offset.
@@ -188,11 +179,6 @@ public partial class ReportView
         _scroll.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
 
         _scroll.PointerPressed += OnPointerPressed;
-
-        var pinch = new PinchGestureRecognizer();
-        _canvas.GestureRecognizers.Add(pinch);
-        _canvas.AddHandler(InputElement.PinchEvent, OnPinch);
-        _canvas.AddHandler(InputElement.PinchEndedEvent, OnPinchEnded);
     }
 
     /// <summary>
@@ -240,43 +226,6 @@ public partial class ReportView
         _presenter.SetZoom(ZoomMode, Zoom, new ViewPoint(point.X, point.Y));
         AfterPresenterUpdate(immediate: false);
     }
-
-    /// <summary>
-    ///     Routes a pinch frame to <see cref="GestureModel"/>. Wired up for the touch platforms a
-    ///     later plan covers; on desktop a trackpad pinch never reaches here - see the remarks on
-    ///     this file for the measurement that found that out.
-    /// </summary>
-    /// <remarks>
-    ///     A second, unrelated pinch state machine: Avalonia's own <see cref="PinchGestureRecognizer"/>,
-    ///     which relays every frame out rather than scaling what is already drawn the way
-    ///     <see cref="_pinch"/> does. It is kept beside the thing it was extracted to replace only
-    ///     because it is the one path left for the touch platforms; do not reach for
-    ///     <see cref="_pinchActive"/> or this handler on desktop.
-    /// </remarks>
-    private void OnPinch(object? sender, PinchEventArgs e)
-    {
-        var before = _presenter.EffectiveZoom;
-
-        if (!_pinchActive)
-        {
-            _presenter.Gestures.BeginPinch();
-            _pinchActive = true;
-        }
-
-        // The recogniser reports the origin against the canvas, which is the whole document; what
-        // the anchor needs is where that lands in the viewport.
-        var viewportPoint = new Point(
-            e.ScaleOrigin.X - _scroll.Offset.X,
-            e.ScaleOrigin.Y - _scroll.Offset.Y);
-
-        _presenter.Gestures.PinchByScale(e.Scale);
-
-        ApplyGestureZoom(before, viewportPoint);
-
-        e.Handled = true;
-    }
-
-    private void OnPinchEnded(object? sender, PinchEndedEventArgs e) => _pinchActive = false;
 
     /// <summary>
     ///     Publishes the zoom an input handler just applied, if it moved far enough from the one

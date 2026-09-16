@@ -10,8 +10,8 @@ public class GridLayoutMeasurerTests
 {
     private static readonly MeasureContext Ctx = new(scale: 1f);
 
-    private static Task<LayoutNode> Measure(Grid grid, Rect available) =>
-        LayoutEngine.MeasureAsync(grid, new MeasureConstraint(available), Ctx, CancellationToken.None);
+    private static LayoutNode Measure(Grid grid, Rect available) =>
+        LayoutEngine.Measure(grid, new MeasureConstraint(available), Ctx, CancellationToken.None);
 
     [Fact]
     public async Task GridWithPadding_InsetsContentOnAllSides()
@@ -22,7 +22,7 @@ public class GridLayoutMeasurerTests
         var child = new Frame { Size = new Size(SizeLength.Fill, SizeLength.Fill) };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(300, node.Bounds.Width);
         Assert.Equal(200, node.Bounds.Height);
@@ -44,7 +44,7 @@ public class GridLayoutMeasurerTests
         };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(new Rect(-50, 0, 450, 150), node.Children[0].Bounds);
     }
@@ -62,7 +62,7 @@ public class GridLayoutMeasurerTests
         };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(new Rect(10, 10, 390, 140), node.Children[0].Bounds);
     }
@@ -80,7 +80,7 @@ public class GridLayoutMeasurerTests
         grid.AddElement(cell0, 0, 0);
         grid.AddElement(cell1, 1, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(0, node.Children[0].Bounds.Top);
         Assert.Equal(60, node.Children[0].Bounds.Bottom);
@@ -99,7 +99,7 @@ public class GridLayoutMeasurerTests
         var child = new Frame { Size = new Size(SizeLength.Fixed(50), SizeLength.Fixed(50)) }.At(30, 40);
         grid.AddElement(child, 1, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(new Rect(30, 140, 80, 190), node.Children[0].Bounds);
     }
@@ -118,7 +118,7 @@ public class GridLayoutMeasurerTests
         };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(new Rect(150, 300, 250, 400), node.Children[0].Bounds);
     }
@@ -132,7 +132,7 @@ public class GridLayoutMeasurerTests
             new RowDefinition(GridLength.Fixed(60)),
             new RowDefinition(GridLength.Fixed(40)));
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(new[] { 60f, 100f }, node.CutHints);
     }
@@ -163,7 +163,7 @@ public class GridLayoutMeasurerTests
         grid.AddElement(c1, 0, 1);
         grid.AddElement(c2, 0, 2);
 
-        var node = await Measure(grid, new Rect(0, 0, 1000, 1000));
+        var node = Measure(grid, new Rect(0, 0, 1000, 1000));
 
         Assert.True(node.Bounds.Width > 0 && node.Bounds.Width < 500, $"grid width {node.Bounds.Width}");
         Assert.All(node.Children, n => Assert.True(n.Bounds.Width > 0 && n.Bounds.Height > 0));
@@ -179,7 +179,7 @@ public class GridLayoutMeasurerTests
         var child = new Frame { Size = Size.Fill };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(new Rect(0, 0, 200, 24), node.Children[0].Bounds);
         Assert.Empty(grid.RowDefinitions);
@@ -193,7 +193,7 @@ public class GridLayoutMeasurerTests
         var child = new Frame { Size = Size.Fill };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 300, 200));
+        var node = Measure(grid, new Rect(0, 0, 300, 200));
 
         Assert.Equal(200, node.Children[0].Bounds.Height);
         Assert.Empty(grid.RowDefinitions);
@@ -207,7 +207,7 @@ public class GridLayoutMeasurerTests
         var text = new Text { Content = "Hello", Font = new Font { Size = 10 } };
         grid.AddElement(text, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.True(node.Children[0].Bounds.Height > 0);
         Assert.Equal(node.Children[0].Bounds.Height, node.Bounds.Height);
@@ -222,7 +222,7 @@ public class GridLayoutMeasurerTests
         var child = new Frame { Size = Size.Fill };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(new Rect(0, 0, 180, 40), node.Children[0].Bounds);
         Assert.Empty(grid.ColumnDefinitions);
@@ -236,7 +236,7 @@ public class GridLayoutMeasurerTests
         var child = new Frame { Size = Size.Fill };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 300, 200));
+        var node = Measure(grid, new Rect(0, 0, 300, 200));
 
         Assert.Equal(300, node.Children[0].Bounds.Width);
         Assert.Empty(grid.ColumnDefinitions);
@@ -250,7 +250,7 @@ public class GridLayoutMeasurerTests
         var text = new Text { Content = "Hello", Font = new Font { Size = 10 } };
         grid.AddElement(text, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.True(node.Children[0].Bounds.Width > 0);
         Assert.Equal(node.Children[0].Bounds.Width, node.Bounds.Width);
@@ -267,7 +267,7 @@ public class GridLayoutMeasurerTests
         grid.AddElement(onRow0, 0, 0);
         grid.AddElement(onRow1, 1, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(24, node.Children[0].Bounds.Height);
         Assert.Equal(0, node.Children[1].Bounds.Height);
@@ -283,7 +283,7 @@ public class GridLayoutMeasurerTests
         };
         grid.WithRowDefinitions(new RowDefinition(GridLength.Fixed(100)));
         grid.WithColumnDefinitions(new ColumnDefinition(GridLength.Star()));
-        var node = await LayoutEngine.MeasureAsync(grid,
+        var node = LayoutEngine.Measure(grid,
             new MeasureConstraint(new Rect(0, 0, 500, 500)), new MeasureContext(1f), CancellationToken.None);
         Assert.Equal(40, node.Bounds.Height);
     }
@@ -306,7 +306,7 @@ public class GridLayoutMeasurerTests
         };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(40, node.Bounds.Height);
         Assert.Equal(15, node.Children[0].Bounds.Top);
@@ -329,7 +329,7 @@ public class GridLayoutMeasurerTests
         };
         grid.AddElement(child, 0, 0);
 
-        var node = await Measure(grid, new Rect(0, 0, 500, 500));
+        var node = Measure(grid, new Rect(0, 0, 500, 500));
 
         Assert.Equal(100, node.Bounds.Width);
         Assert.Equal(80, node.Children[0].Bounds.Left);

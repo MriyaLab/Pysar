@@ -13,7 +13,7 @@ public sealed class UnoReportPlatformHandler : IReportPlatformHandler
         ArgumentNullException.ThrowIfNull(assetAssembly);
 
         Assets = new UnoAssetFileSystem(assetAssembly);
-        FontCollection = new SkiaFontCollection(Assets);
+        FontCollection = new DefaultReportPlatformHandler(Assets).FontCollection;
     }
 
     /// <summary>The same object as <see cref="FileSystem"/>, typed so preloading is reachable.</summary>

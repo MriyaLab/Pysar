@@ -70,4 +70,19 @@ public class XamlParserTests
 
         Assert.Equal("Hello report", root.TextContent);
     }
+
+    [Fact]
+    public void Parse_RecordsXmlnsDeclaredOnAChild()
+    {
+        const string xaml = """
+                            <Report xmlns="https://mriyalab.com/pysar">
+                              <DetailBand xmlns:vm="clr-namespace:App" />
+                            </Report>
+                            """;
+
+        var detail = Assert.Single(new XamlParser().Parse(xaml).Root.Children);
+        var local = Assert.Single(detail.LocalNamespaces);
+        Assert.Equal("vm", local.Prefix);
+        Assert.Equal("clr-namespace:App", local.NamespaceName);
+    }
 }

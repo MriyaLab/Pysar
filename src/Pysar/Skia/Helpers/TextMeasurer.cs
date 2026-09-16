@@ -352,7 +352,7 @@ internal static class TextMeasurer
         {
             TextTrimming.None => MeasureTextNone(element, availableRect, scale),
             TextTrimming.Clip => MeasureTextClip(element, availableRect, scale),
-            TextTrimming.WordWrap or TextTrimming.CharacterWrap => MeasureTextWordWrap(element, availableRect, scale),
+            TextTrimming.WordWrap => MeasureTextWordWrap(element, availableRect, scale),
             TextTrimming.TailTruncation => MeasureTextTailTruncation(element, availableRect, scale),
             TextTrimming.HeadTruncation => MeasureTextHeadTruncation(element, availableRect, scale),
             TextTrimming.MiddleTruncation => MeasureTextMiddleTruncation(element, availableRect, scale),
@@ -374,7 +374,7 @@ internal static class TextMeasurer
 
     /// <summary>
     /// Gets the content height based on element size and available rect.
-    /// Returns 0 when height is unrestricted (Auto / <see cref="Text.AutoHeight"/>) so WordWrap
+    /// Returns 0 when height is unrestricted (Auto) so WordWrap
     /// grows to every line instead of height-clipping with an ellipsis.
     /// When <see cref="ReportElement.MaxSize"/> height is fixed, that cap (minus padding) limits wrap.
     /// </summary>
@@ -388,7 +388,7 @@ internal static class TextMeasurer
             return Math.Max(0f, cap);
         }
 
-        if (element.AutoHeight || element.Size.Height.IsAuto)
+        if (element.Size.Height.IsAuto)
             return 0f; // unlimited
 
         if (element.Size.Height.IsFixed)
@@ -448,19 +448,7 @@ internal static class TextMeasurer
             if (lines.Count > maxLines)
             {
                 lines = lines.Take(maxLines).ToList();
-                var lastLine = lines[^1];
-                var ellipsis = "...";
-                
-                for (int i = lastLine.Length; i >= 0; i--)
-                {
-                    var truncated = lastLine[..i] + ellipsis;
-                    if (MeasureText(truncated, font) <= maxWidth * scale)
-                    {
-                        lines[^1] = truncated;
-                        break;
-                    }
-                }
-                
+                EllipsizeLastLine(lines, font, maxWidth * scale);
                 textHeightPx = MeasureLinesHeight(font, lines.Count, lineHeight);
             }
         }
@@ -530,7 +518,7 @@ internal static class TextMeasurer
         {
             TextTrimming.None => [element.Content],
             TextTrimming.Clip => [element.Content],
-            TextTrimming.WordWrap or TextTrimming.CharacterWrap => GetLinesWordWrap(element, font, maxWidth, maxHeight, scale),
+            TextTrimming.WordWrap => GetLinesWordWrap(element, font, maxWidth, maxHeight, scale),
             TextTrimming.TailTruncation => ApplyTailTruncation(element.Content, font, maxWidth),
             TextTrimming.HeadTruncation => ApplyHeadTruncation(element.Content, font, maxWidth),
             TextTrimming.MiddleTruncation => ApplyMiddleTruncation(element.Content, font, maxWidth),
@@ -553,22 +541,26 @@ internal static class TextMeasurer
             if (lines.Count > maxLines)
             {
                 lines = lines.Take(maxLines).ToList();
-                var lastLine = lines[^1];
-                var ellipsis = "...";
-
-                for (int i = lastLine.Length; i >= 0; i--)
-                {
-                    var truncated = lastLine[..i] + ellipsis;
-                    if (MeasureText(truncated, font) <= maxWidth)
-                    {
-                        lines[^1] = truncated;
-                        break;
-                    }
-                }
+                EllipsizeLastLine(lines, font, maxWidth);
             }
         }
 
         return lines;
+    }
+
+    private static void EllipsizeLastLine(List<string> lines, SKFont font, float maxWidthPx)
+    {
+        var lastLine = lines[^1];
+        const string ellipsis = "...";
+        for (var i = lastLine.Length; i >= 0; i--)
+        {
+            var truncated = lastLine[..i] + ellipsis;
+            if (MeasureText(truncated, font) <= maxWidthPx)
+            {
+                lines[^1] = truncated;
+                return;
+            }
+        }
     }
 
     #endregion

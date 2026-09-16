@@ -15,4 +15,15 @@ public class LoadTests
         Assert.NotNull(design);
         Assert.IsType<Report>(design);
     }
+
+    [Fact]
+    public void Load_UnknownMarkupExtension_IncludesLineAndColumn()
+    {
+        var ex = Assert.Throws<XamlException>(
+            () => ReportXaml.Load($"<Report {Ns}><DetailBand><Text Content=\"{{Foo Bar}}\"/></DetailBand></Report>"));
+
+        Assert.True(ex.Line > 0);
+        Assert.True(ex.Column > 0);
+        Assert.StartsWith($"{ex.Line},{ex.Column}:", ex.Message);
+    }
 }

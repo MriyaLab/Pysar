@@ -30,6 +30,16 @@ public class GeneratorConstructionTests
     }
 
     [Fact]
+    public void TextContent_Newlines_AreCsharpEscaped()
+    {
+        var src = Gen($"<Report x:Class=\"MyApp.R\" {Head}><DetailBand><Text>a&#10;b</Text></DetailBand></Report>");
+
+        Assert.DoesNotContain("LoadInto(this,", src);
+        Assert.Contains("\\n", src);
+        Assert.DoesNotMatch("\"a\nb\"", src);
+    }
+
+    [Fact]
     public void Resource_Report_FallsBack_To_LoadInto()
     {
         var src = Gen($"<Report x:Class=\"MyApp.R\" {Head}>" +

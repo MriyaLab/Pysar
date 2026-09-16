@@ -45,7 +45,7 @@ internal sealed class TextDrawer : IElementDrawer
         var measuredHeight = ctx.ToMeasuredPixels(contentHeight);
 
         var wrapWidth = element.Size.Width.IsAuto ? measuredWidth + 1f : measuredWidth;
-        var wrapHeight = element.Size.Height.IsAuto || element.AutoHeight ? measuredHeight + 1f : measuredHeight;
+        var wrapHeight = element.Size.Height.IsAuto ? measuredHeight + 1f : measuredHeight;
 
         var lines = TextMeasurer.GetLinesForRendering(element, wrapWidth, wrapHeight, ctx.MeasureScale);
 

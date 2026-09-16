@@ -2,7 +2,7 @@
 
 Avalonia integration for [Pysar](https://github.com/MriyaLab/Pysar), a cross-platform report engine
 for .NET: `avares://` application asset access, font registration and a scrollable, zoomable
-`ReportView`. It installs an `AvaloniaReportPlatformHandler` for file and font access.
+`ReportView`. It installs a `DefaultReportPlatformHandler` over `AvaloniaAssetFileSystem` for file and font access.
 
 ## Setup
 
@@ -41,7 +41,7 @@ reached through the Objective-C runtime. It is a no-op everywhere else.
 Printing uses the same vector PDF pipeline as export:
 
 ```csharp
-var printer = new AvaloniaReportPrinter(PysarAvalonia.Renderer);
+var printer = new AvaloniaReportPrinter(ReportViewRenderer.Instance);
 await printer.PrintAsync(builtReport);
 ```
 

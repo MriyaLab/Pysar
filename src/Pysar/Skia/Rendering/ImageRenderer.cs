@@ -13,49 +13,38 @@ namespace Pysar.Skia.Rendering;
 /// <summary>
 ///     Draws an <see cref="Image"/> into its measured bounds. Bytes are loaded via
 ///     <see cref="PrefetchAsync"/> (or a sync file fallback); <see cref="Draw"/> only decodes the
-///     cache and places the bitmap per <see cref="Aspect"/>.
+///     cache and places the bitmap or SVG picture per <see cref="Aspect"/>.
 /// </summary>
 internal static class ImageRenderer
 {
-    private static readonly IImageCache Cache = new LocalImageCache();
-    private static readonly Dictionary<string, SKBitmap> Bitmaps = new();
-    private static readonly object BitmapGate = new();
-
-    internal static int DecodeCount { get; private set; }
-
-    internal static void ResetDecodeCountForTests()
-    {
-        lock (BitmapGate)
-        {
-            DecodeCount = 0;
-        }
-    }
-
     /// <summary>Loads image bytes into the cache. Safe to call from async render entry points.</summary>
-    public static async Task PrefetchAsync(IEnumerable<ImageSource> sources, CancellationToken ct)
+    public static async Task PrefetchAsync(
+        IEnumerable<ImageSource> sources, ImageRenderCache cache, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(sources);
+        ArgumentNullException.ThrowIfNull(cache);
         foreach (var source in sources)
         {
             ct.ThrowIfCancellationRequested();
             if (source is null) continue;
             if (source is FontImageSource) continue;
             var key = CreateCacheKey(source);
-            if (Cache.Get(key) is not null) continue;
+            if (cache.GetBytes(key) is not null) continue;
 
             try
             {
                 var bytes = await LoadBytesAsync(source, ct).ConfigureAwait(false);
                 if (bytes is not null)
-                    Cache.Set(key, bytes);
+                    cache.SetBytes(key, bytes);
             }
             catch (OperationCanceledException)
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                // Same as the old Draw path: one bad image must not abort the whole render.
+                // One bad image must not abort the whole render; the session records it.
+                cache.RecordFailure(key, exception);
             }
         }
     }
@@ -70,15 +59,30 @@ internal static class ImageRenderer
             return;
         }
 
-        var bitmap = LoadBitmap(image.Source);
+        if (IsSvg(image.Source))
+        {
+            DrawSvg(image, bounds, ctx);
+            return;
+        }
+
+        var bitmap = LoadBitmap(image.Source, ctx.Images);
         if (bitmap is null) return;
 
-        var innerRect = bounds.ToElementLayout(image.Padding).InnerRect;
-        var destinationBounds = innerRect.ToSkiaRect(ctx.Scale);
-        var (sourceRect, destinationRect) = CalculatePlacement(bitmap, destinationBounds, image.Aspect);
+        var ownsBitmap = ctx.Images is null;
+        try
+        {
+            var innerRect = bounds.ToElementLayout(image.Padding).InnerRect;
+            var destinationBounds = innerRect.ToSkiaRect(ctx.Scale);
+            var (sourceRect, destinationRect) = CalculatePlacement(bitmap.Width, bitmap.Height, destinationBounds, image.Aspect);
 
-        using var paint = new SKPaint { IsAntialias = true };
-        ctx.Canvas.DrawBitmap(bitmap, sourceRect, destinationRect, SKSamplingOptions.Default, paint);
+            using var paint = new SKPaint { IsAntialias = true };
+            ctx.Canvas.DrawBitmap(bitmap, sourceRect, destinationRect, SKSamplingOptions.Default, paint);
+        }
+        finally
+        {
+            if (ownsBitmap)
+                bitmap.Dispose();
+        }
     }
 
     private static void DrawGlyph(FontImageSource source, Image image, Rect bounds, RenderContext ctx)
@@ -126,9 +130,9 @@ internal static class ImageRenderer
                 ctx.Canvas.Restore();
             }
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            // Same as PrefetchAsync: one bad glyph must not abort the page.
+            ctx.Images?.RecordFailure($"font:{source.FontFamily}:{source.Glyph}", exception);
         }
     }
 
@@ -154,18 +158,83 @@ internal static class ImageRenderer
         return destination;
     }
 
-    private static (SKRect source, SKRect destination) CalculatePlacement(SKBitmap bitmap, SKRect destination, Aspect aspect)
+    private static void DrawSvg(Image image, Rect bounds, RenderContext ctx)
     {
-        var fullSource = new SKRect(0, 0, bitmap.Width, bitmap.Height);
+        var source = image.Source!;
+        var cache = ctx.Images;
+        var cacheKey = CreateCacheKey(source);
+        var picture = cache?.GetPicture(cacheKey);
+        SKSvg? owned = null;
+        if (picture is null)
+        {
+            var bytes = cache?.GetBytes(cacheKey) ?? LoadBytes(source);
+            if (bytes is null || bytes.Length == 0)
+                return;
+
+            cache?.SetBytes(cacheKey, bytes);
+            owned = ParseSvg(bytes);
+            picture = owned.Picture;
+            if (picture is not null && cache is not null)
+            {
+                picture = cache.AddSvg(cacheKey, owned);
+                owned = null;
+            }
+        }
+
+        try
+        {
+            if (picture is null || picture.CullRect.IsEmpty)
+                return;
+
+            var innerRect = bounds.ToElementLayout(image.Padding).InnerRect;
+            var destinationBounds = innerRect.ToSkiaRect(ctx.Scale);
+            var cull = picture.CullRect;
+            var (sourceRect, destinationRect) = CalculatePlacement(
+                cull.Width, cull.Height, destinationBounds, image.Aspect);
+
+            ctx.Canvas.Save();
+            try
+            {
+                ctx.Canvas.ClipRect(destinationRect);
+                ctx.Canvas.Translate(destinationRect.Left, destinationRect.Top);
+                ctx.Canvas.Scale(
+                    destinationRect.Width / sourceRect.Width,
+                    destinationRect.Height / sourceRect.Height);
+                ctx.Canvas.Translate(-sourceRect.Left, -sourceRect.Top);
+                ctx.Canvas.DrawPicture(picture);
+            }
+            finally
+            {
+                ctx.Canvas.Restore();
+            }
+        }
+        finally
+        {
+            owned?.Dispose();
+        }
+    }
+
+    private static SKSvg ParseSvg(byte[] bytes)
+    {
+        var svg = new SKSvg();
+        using var stream = new MemoryStream(bytes);
+        svg.Load(stream);
+        return svg;
+    }
+
+    private static (SKRect source, SKRect destination) CalculatePlacement(
+        float sourceWidth, float sourceHeight, SKRect destination, Aspect aspect)
+    {
+        var fullSource = new SKRect(0, 0, sourceWidth, sourceHeight);
         if (aspect == Aspect.Fill)
             return (fullSource, destination);
 
-        var sourceAspect = (float)bitmap.Width / bitmap.Height;
+        var sourceAspect = sourceWidth / sourceHeight;
         var destinationAspect = destination.Width / destination.Height;
 
         return aspect == Aspect.AspectFit
             ? (fullSource, AspectFit(destination, sourceAspect, destinationAspect))
-            : (AspectFillCrop(bitmap, sourceAspect, destinationAspect), destination);
+            : (AspectFillCrop(sourceWidth, sourceHeight, sourceAspect, destinationAspect), destination);
     }
 
     private static SKRect AspectFit(SKRect destination, float sourceAspect, float destinationAspect)
@@ -182,63 +251,44 @@ internal static class ImageRenderer
         return new SKRect(destination.Left + offsetX, destination.Top, destination.Left + offsetX + fittedWidth, destination.Bottom);
     }
 
-    private static SKRect AspectFillCrop(SKBitmap bitmap, float sourceAspect, float destinationAspect)
+    private static SKRect AspectFillCrop(
+        float sourceWidth, float sourceHeight, float sourceAspect, float destinationAspect)
     {
         if (sourceAspect > destinationAspect)
         {
-            var cropWidth = bitmap.Height * destinationAspect;
-            var offsetX = (bitmap.Width - cropWidth) / 2f;
-            return new SKRect(offsetX, 0, offsetX + cropWidth, bitmap.Height);
+            var cropWidth = sourceHeight * destinationAspect;
+            var offsetX = (sourceWidth - cropWidth) / 2f;
+            return new SKRect(offsetX, 0, offsetX + cropWidth, sourceHeight);
         }
 
-        var cropHeight = bitmap.Width / destinationAspect;
-        var offsetY = (bitmap.Height - cropHeight) / 2f;
-        return new SKRect(0, offsetY, bitmap.Width, offsetY + cropHeight);
+        var cropHeight = sourceWidth / destinationAspect;
+        var offsetY = (sourceHeight - cropHeight) / 2f;
+        return new SKRect(0, offsetY, sourceWidth, offsetY + cropHeight);
     }
 
     private static async Task<byte[]?> LoadBytesAsync(ImageSource source, CancellationToken ct)
     {
         var raw = await source.LoadAsync(ct).ConfigureAwait(false);
-        if (raw is null) return null;
-        return IsSvg(source) ? RasterizeSvgToPng(raw) : raw;
+        return raw;
     }
 
-    private static SKBitmap? LoadBitmap(ImageSource source)
+    private static SKBitmap? LoadBitmap(ImageSource source, ImageRenderCache? cache)
     {
         var cacheKey = CreateCacheKey(source);
+        if (cache?.GetBitmap(cacheKey) is { } existing)
+            return existing;
 
-        lock (BitmapGate)
-        {
-            if (Bitmaps.TryGetValue(cacheKey, out var existing))
-                return existing;
-        }
-
-        var cached = Cache.Get(cacheKey);
-        byte[]? bytes = cached;
+        var bytes = cache?.GetBytes(cacheKey) ?? LoadBytes(source);
         if (bytes is null)
-        {
-            bytes = LoadBytes(source);
-            if (bytes is null)
-                return null;
-            Cache.Set(cacheKey, bytes);
-        }
+            return null;
+
+        cache?.SetBytes(cacheKey, bytes);
 
         var bitmap = SKBitmap.Decode(bytes);
         if (bitmap is null)
             return null;
 
-        lock (BitmapGate)
-        {
-            if (Bitmaps.TryGetValue(cacheKey, out var raced))
-            {
-                bitmap.Dispose();
-                return raced;
-            }
-
-            DecodeCount++;
-            Bitmaps[cacheKey] = bitmap;
-            return bitmap;
-        }
+        return cache is null ? bitmap : cache.AddBitmap(cacheKey, bitmap);
     }
 
     private static byte[]? LoadBytes(ImageSource source)
@@ -248,38 +298,7 @@ internal static class ImageRenderer
             return null;
 
         var bytes = sync.ReadFile(file.FilePath);
-        if (bytes is null)
-            return null;
-
-        if (IsSvg(source))
-            return RasterizeSvgToPng(bytes);
-
         return bytes;
-    }
-
-    private static byte[]? RasterizeSvgToPng(byte[] svgBytes)
-    {
-        if (svgBytes is null || svgBytes.Length == 0) return null;
-
-        using var stream = new MemoryStream(svgBytes);
-        var svg = new SKSvg();
-        svg.Load(stream);
-        if (svg.Picture is null) return null;
-
-        var bounds = svg.Picture.CullRect;
-        var info = new SKImageInfo((int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height),
-            SKColorType.Rgba8888, SKAlphaType.Premul);
-        using var bitmap = new SKBitmap(info);
-        using (var canvas = new SKCanvas(bitmap))
-        {
-            canvas.Clear(SKColors.Transparent);
-            canvas.DrawPicture(svg.Picture);
-            canvas.Flush();
-        }
-
-        using var skImage = SKImage.FromBitmap(bitmap);
-        using var encoded = skImage.Encode(SKEncodedImageFormat.Png, 100);
-        return encoded.ToArray();
     }
 
     private static string CreateCacheKey(ImageSource source) => source switch
@@ -295,6 +314,7 @@ internal static class ImageRenderer
     {
         UriImageSource uri => uri.Uri?.OriginalString.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ?? false,
         FileImageSource file => file.FilePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase),
+        ResourceImageSource resource => resource.ResourceName.EndsWith(".svg", StringComparison.OrdinalIgnoreCase),
         _ => false
     };
 }

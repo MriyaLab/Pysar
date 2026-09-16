@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using Pysar.Core.Abstractions;
@@ -7,26 +8,8 @@ namespace Pysar.Binding;
 
 public class BindingEngine
 {
-    public object? GetValue(BindingExpression expression, object? dataContext)
-    {
-        if (dataContext == null || string.IsNullOrEmpty(expression.Path))
-            return null;
-
-        var value = GetPropertyValue(dataContext, expression.Path);
-
-        if (value == null) return null;
-
-        if (expression.Converter != null)
-        {
-            value = expression.Converter.Convert(value, typeof(string), expression.ConverterParameter);
-        }
-        else if (!string.IsNullOrEmpty(expression.StringFormat))
-        {
-            value = string.Format(expression.StringFormat, value);
-        }
-
-        return value;
-    }
+    private static readonly ConcurrentDictionary<(Type Type, string Name), PropertyInfo?> PublicProperties = new();
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> NestedStoreProperties = new();
 
     public object? GetValue(BindingInfo bindingInfo, object? dataContext)
         => GetValue(bindingInfo, dataContext, typeof(string));
@@ -36,7 +19,7 @@ public class BindingEngine
         if (dataContext == null || string.IsNullOrEmpty(bindingInfo.Path))
             return null;
 
-        var value = GetPropertyValue(dataContext, bindingInfo.Path);
+        var value = ResolvePath(dataContext, bindingInfo.Path);
 
         if (value == null) return null;
 
@@ -55,14 +38,16 @@ public class BindingEngine
         return value;
     }
 
-    private object? GetPropertyValue(object obj, string path)
+    internal static object? ResolvePath(object? source, string? path)
     {
-        var parts = path.Split('.');
-        var current = obj;
+        if (source is null || string.IsNullOrEmpty(path))
+            return null;
 
-        foreach (var part in parts)
+        var current = source;
+        foreach (var part in path.Split('.'))
         {
-            if (current == null) return null;
+            if (current is null)
+                return null;
 
             if (TryGetDictionaryValue(current, part, out var dictValue))
             {
@@ -70,7 +55,7 @@ public class BindingEngine
                 continue;
             }
 
-            var property = current.GetType().GetProperty(part, BindingFlags.Public | BindingFlags.Instance);
+            var property = PublicProperty(current.GetType(), part);
             current = property?.GetValue(current);
         }
 
@@ -119,15 +104,8 @@ public class BindingEngine
 
     private void ResolveNestedStores(object element, object? dataContext)
     {
-        foreach (var property in element.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var property in NestedStoresOn(element.GetType()))
         {
-            if (!property.CanRead || property.GetIndexParameters().Length > 0)
-                continue;
-
-            var propertyType = property.PropertyType;
-            if (propertyType.IsValueType || propertyType == typeof(string) || typeof(IReportObject).IsAssignableFrom(propertyType))
-                continue;
-
             var value = property.GetValue(element);
             if (value is IBindingStore)
                 ResolveBindings(value, dataContext);
@@ -146,7 +124,7 @@ public class BindingEngine
             if (source == null) continue;
 
             var targetPropertyName = property.Name;
-            var targetProperty = element.GetType().GetProperty(targetPropertyName, BindingFlags.Public | BindingFlags.Instance);
+            var targetProperty = PublicProperty(element.GetType(), targetPropertyName);
             if (targetProperty == null) continue;
 
             var targetType = targetProperty.PropertyType;
@@ -192,4 +170,20 @@ public class BindingEngine
 
         return value;
     }
+
+    private static PropertyInfo? PublicProperty(Type type, string name)
+        => PublicProperties.GetOrAdd(
+            (type, name),
+            static key => key.Type.GetProperty(key.Name, BindingFlags.Public | BindingFlags.Instance));
+
+    private static PropertyInfo[] NestedStoresOn(Type type)
+        => NestedStoreProperties.GetOrAdd(type, static t =>
+            t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(property =>
+                    property.CanRead
+                    && property.GetIndexParameters().Length == 0
+                    && !property.PropertyType.IsValueType
+                    && property.PropertyType != typeof(string)
+                    && !typeof(IReportObject).IsAssignableFrom(property.PropertyType))
+                .ToArray());
 }

@@ -117,9 +117,9 @@ public partial class ReportView
         handled = true;
     }
 
-    private static HorizontalScrollView? FindHorizontalScrollView(AView parent)
+    private static T? FindDescendant<T>(AView parent) where T : class
     {
-        if (parent is HorizontalScrollView found)
+        if (parent is T found)
             return found;
 
         if (parent is not ViewGroup group)
@@ -127,11 +127,14 @@ public partial class ReportView
 
         for (var i = 0; i < group.ChildCount; i++)
         {
-            if (group.GetChildAt(i) is { } child && FindHorizontalScrollView(child) is { } match)
+            if (group.GetChildAt(i) is { } child && FindDescendant<T>(child) is { } match)
                 return match;
         }
 
         return null;
     }
+
+    private static HorizontalScrollView? FindHorizontalScrollView(AView parent)
+        => FindDescendant<HorizontalScrollView>(parent);
 }
 #endif

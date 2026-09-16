@@ -43,7 +43,7 @@ public sealed class MeasureContext(float scale)
     private readonly Dictionary<ProbeKey, (float Width, float Height)> _probeSizes = [];
 
     /// <summary>
-    ///     How deep the engine currently is inside <see cref="LayoutEngine.MeasureAsync"/>, so the
+    ///     How deep the engine currently is inside <see cref="LayoutEngine.Measure"/>, so the
     ///     outermost call can be told from the recursion it starts.
     /// </summary>
     private int _depth;
@@ -91,7 +91,7 @@ public sealed class MeasureContext(float scale)
     /// </summary>
     /// <remarks>
     ///     The guard is what makes the one-measure lifetime hold however this is called. A probe
-    ///     issued outside any measure runs its own <see cref="LayoutEngine.MeasureAsync"/>, and that
+    ///     issued outside any measure runs its own <see cref="LayoutEngine.Measure"/>, and that
     ///     call takes the depth from zero to one and back, clearing the cache as it returns - so the
     ///     write that followed would land in a dictionary nothing will clear again, and the next
     ///     probe of that element would read a size belonging to an earlier layout. Refusing to store

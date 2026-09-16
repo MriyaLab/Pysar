@@ -70,12 +70,21 @@ internal sealed class XamlParser
             .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
             ?.Trim();
 
+        var localNamespaces = element.Attributes()
+            .Where(attribute => attribute.IsNamespaceDeclaration)
+            .Select(attribute => new XamlNamespaceDeclaration(
+                attribute.Name.LocalName == "xmlns" ? null : attribute.Name.LocalName,
+                attribute.Value,
+                GetSpan(attribute)))
+            .ToArray();
+
         return new XamlObjectNode(
             new XamlTypeName(element.Name.NamespaceName, element.Name.LocalName),
             members,
             children,
             text,
-            GetSpan(element));
+            GetSpan(element),
+            localNamespaces);
     }
 
     private static XamlMemberNode ParseAttribute(XAttribute attribute)

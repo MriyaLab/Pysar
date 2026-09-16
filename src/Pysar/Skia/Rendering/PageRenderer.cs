@@ -28,29 +28,31 @@ public static class PageRenderer
         ArgumentNullException.ThrowIfNull(design);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(scale);
 
-        var (layout, slices, resolver) = await PrepareAsync(design, scale, ct, measurers);
-
-        var page = design.PageFormat.GetPageSizePt();
-        var pageW = (int)(page.Width * scale);
-        var pageH = (int)(page.Height * scale);
-        var pages = new List<SKBitmap>(slices.Count);
-
-        // Strictly resolve → draw → next: the returned nodes alias live design elements (see PageBandResolver).
-        for (var i = 0; i < slices.Count; i++)
+        var (layout, slices, resolver, images) = await PrepareAsync(design, scale, ct, measurers);
+        using (images)
         {
-            ct.ThrowIfCancellationRequested();
-            var (header, footer) = await resolver.ResolveAsync(i + 1, slices.Count, ct);
+            var page = design.PageFormat.GetPageSizePt();
+            var pageW = (int)(page.Width * scale);
+            var pageH = (int)(page.Height * scale);
+            var pages = new List<SKBitmap>(slices.Count);
 
-            var bitmap = new SKBitmap(pageW, pageH);
-            using var canvas = new SKCanvas(bitmap);
-            PaintPageSurface(canvas, design);
-            DrawPage(canvas, layout, slices[i], scale, drawers, page.Width, header, footer);
-            PaintPageBorder(canvas, design, page.Width, page.Height, scale);
-            canvas.Flush();
-            pages.Add(bitmap);
+            // Strictly resolve → draw → next: the returned nodes alias live design elements (see PageBandResolver).
+            for (var i = 0; i < slices.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var (header, footer) = await resolver.ResolveAsync(i + 1, slices.Count, ct);
+
+                var bitmap = new SKBitmap(pageW, pageH);
+                using var canvas = new SKCanvas(bitmap);
+                PaintPageSurface(canvas, design);
+                DrawPage(canvas, layout, slices[i], scale, drawers, page.Width, header, footer, images: images);
+                PaintPageBorder(canvas, design, page.Width, page.Height, scale);
+                canvas.Flush();
+                pages.Add(bitmap);
+            }
+
+            return pages;
         }
-
-        return pages;
     }
 
     /// <summary>
@@ -66,25 +68,27 @@ public static class PageRenderer
         ArgumentNullException.ThrowIfNull(stream);
 
         // PDF coordinates are in points, so measure and draw at scale 1 (no supersampling needed).
-        var (layout, slices, resolver) = await PrepareAsync(design, scale: 1f, ct, measurers);
-
-        var page = design.PageFormat.GetPageSizePt();
-        using var document = CreatePdf(stream, metadata);
-
-        // Strictly resolve → draw → next: the returned nodes alias live design elements (see PageBandResolver).
-        for (var i = 0; i < slices.Count; i++)
+        var (layout, slices, resolver, images) = await PrepareAsync(design, scale: 1f, ct, measurers);
+        using (images)
         {
-            ct.ThrowIfCancellationRequested();
-            var (header, footer) = await resolver.ResolveAsync(i + 1, slices.Count, ct);
+            var page = design.PageFormat.GetPageSizePt();
+            using var document = CreatePdf(stream, metadata);
 
-            var canvas = document.BeginPage(page.Width, page.Height);
-            PaintPageSurface(canvas, design);
-            DrawPage(canvas, layout, slices[i], scale: 1f, drawers, page.Width, header, footer);
-            PaintPageBorder(canvas, design, page.Width, page.Height, scale: 1f);
-            document.EndPage();
+            // Strictly resolve → draw → next: the returned nodes alias live design elements (see PageBandResolver).
+            for (var i = 0; i < slices.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var (header, footer) = await resolver.ResolveAsync(i + 1, slices.Count, ct);
+
+                var canvas = document.BeginPage(page.Width, page.Height);
+                PaintPageSurface(canvas, design);
+                DrawPage(canvas, layout, slices[i], scale: 1f, drawers, page.Width, header, footer, images: images);
+                PaintPageBorder(canvas, design, page.Width, page.Height, scale: 1f);
+                document.EndPage();
+            }
+
+            document.Close();
         }
-
-        document.Close();
     }
 
     /// <summary>
@@ -100,18 +104,27 @@ public static class PageRenderer
     ///     — which is exactly why the header/footer heights that measurement reserves are never recomputed.
     ///     </para>
     /// </summary>
-    internal static async Task<(ReportLayout Layout, IReadOnlyList<PageSlice> Slices, PageBandResolver Resolver)>
+    internal static async Task<(ReportLayout Layout, IReadOnlyList<PageSlice> Slices, PageBandResolver Resolver, ImageRenderCache Images)>
         PrepareAsync(Report design, float scale, CancellationToken ct, MeasurerRegistry? measurers = null)
     {
         var measure = new MeasureContext(scale) { Measurers = measurers ?? new MeasurerRegistry() };
         PageBandResolver.Stamp(design, pageNumber: 1, pageCount: 1);
-        var layout = await ReportLayoutEngine.MeasureAsync(design, measure, ct);
+        var layout = ReportLayoutEngine.Measure(design, measure, ct);
         var slices = BandPaginator.Paginate(layout.Flow, layout.ContentWindowHeight, layout.RepeatDetailHeaderHeight);
 
-        var imageSources = CollectImageSources(design, layout);
-        await ImageRenderer.PrefetchAsync(imageSources, ct).ConfigureAwait(false);
+        var images = new ImageRenderCache();
+        try
+        {
+            var imageSources = CollectImageSources(design, layout);
+            await ImageRenderer.PrefetchAsync(imageSources, images, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            images.Dispose();
+            throw;
+        }
 
-        return (layout, slices, new PageBandResolver(design, layout, measure));
+        return (layout, slices, new PageBandResolver(design, layout, measure), images);
     }
 
     /// <summary>
@@ -171,9 +184,9 @@ public static class PageRenderer
     internal static void DrawPage(
         SKCanvas canvas, ReportLayout layout, PageSlice slice, float scale, DrawerRegistry? drawers,
         float pageWidth, LayoutNode? pageHeader, LayoutNode? pageFooter, float? measureScale = null,
-        SKRect? visibleRegionPt = null)
+        SKRect? visibleRegionPt = null, ImageRenderCache? images = null)
     {
-        var ctx = new RenderContext(canvas, scale, measureScale);
+        var ctx = new RenderContext(canvas, scale, measureScale) { Images = images };
         var contentLeft = layout.ContentZone.Left;
         var paddedVisible = InflateRegion(visibleRegionPt, RegionCullPadPt);
 

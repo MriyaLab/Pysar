@@ -97,7 +97,10 @@ public sealed class ReportViewSession(
             var session = await renderer.CreateSessionAsync(report, cancellation.Token);
 
             if (cancellation.IsCancellationRequested)
+            {
+                session.Dispose();
                 return;
+            }
 
             var tiles = new ReportViewTiles(session, scheduler, package, maxDegreeOfParallelism);
 
