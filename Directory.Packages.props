@@ -20,6 +20,12 @@
     <!-- MAUI -->
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.100" />
     <!-- Uno Platform.
+         6.6 rather than the newer 6.7: this version is the floor of the published Pysar.Uno
+         package, and an app built with Uno.Sdk 6.6.42 gets Uno.WinUI 6.6.184 handed to it by the
+         Sdk - a higher floor here is a hard resolution failure for that app, not a warning, and
+         Pysar.Uno compiles against no API newer than 6.6. Uno.Sdk 6.7.30 does exist as stable
+         (it pins Uno.WinUI 6.7.135), so this is a floor, not a ceiling: consumers on 6.7 resolve
+         their own Sdk's version and are unaffected.
          Uno's Skia hosts depend on SkiaSharp 3.119 while Pysar renders through 4.151.2, and one
          managed SkiaSharp is resolved for a whole application - so an Uno app running Pysar loads
          a SkiaSharp its own renderer was not compiled against. That is safe in practice: .NET rolls
@@ -27,8 +33,8 @@
          Verified by running the Uno sample, not assumed - an earlier attempt to avoid this by
          targeting an Uno 7.0 nightly was both unnecessary and unusable, since no Uno.Sdk ships that
          version. Avalonia 12 has the same arrangement and has always worked.
-         The HarfBuzzSharp family below is pinned to what Uno asks for; see its own comment. -->
-    <PackageVersion Include="Uno.WinUI" Version="6.7.103" />
+         The HarfBuzzSharp family below sits above what Uno asks for; see its own comment. -->
+    <PackageVersion Include="Uno.WinUI" Version="6.6.184" />
     <!-- Roslyn / Code Analysis -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
     <!-- Dependency Injection & Extensions -->
@@ -63,10 +69,11 @@
     <PackageVersion Include="SkiaSharp.NativeAssets.MacCatalyst" Version="4.151.2" />
     <PackageVersion Include="SkiaSharp.NativeAssets.WebAssembly" Version="4.151.2" />
     <PackageVersion Include="SkiaSharp.QrCode" Version="1.2.0" />
-    <!-- 14.2.1.1 rather than 14.2.0 because Uno.WinUI asks for it, and transitive pinning turns a
-         lower central version into a hard NU1109 downgrade error. Bumped as a family: the managed
-         wrapper and the native assets have to stay on one version for the same reason SkiaSharp's
-         do above. -->
+    <!-- 14.2.1.1 sits above every transitive ask in the graph - Svg.Skia wants 14.2.0, Uno 6.6's
+         Skia hosts want 8.3.1.1 - which is the direction transitive pinning allows; a central
+         version below an ask is a hard NU1109 downgrade error instead. Kept as a family: the
+         managed wrapper and the native assets have to stay on one version for the same reason
+         SkiaSharp's do above. -->
     <PackageVersion Include="HarfBuzzSharp" Version="14.2.1.1" />
     <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="14.2.1.1" />
     <PackageVersion Include="HarfBuzzSharp.NativeAssets.macOS" Version="14.2.1.1" />
