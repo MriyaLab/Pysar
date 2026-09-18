@@ -33,6 +33,38 @@ namespace Pysar.Avalonia;
 public partial class ReportView
 {
     /// <summary>
+    ///     How far a swipe has to travel before it is called straight or diagonal. Small enough that
+    ///     the freedom below it is invisible, large enough that the first jittery samples of a touch
+    ///     do not decide the axis.
+    /// </summary>
+    private const double AxisLockTravel = 8;
+
+    /// <summary>How far one axis must lead the other before the swipe is locked onto it.</summary>
+    private const double AxisLockRatio = 2;
+
+    /// <summary>The axis a touch scroll has been locked onto, if any.</summary>
+    private enum ScrollAxis
+    {
+        None,
+        Horizontal,
+        Vertical
+    }
+
+    /// <summary>The gesture the axis lock belongs to; a new id starts the decision over.</summary>
+    private int _scrollGestureId;
+
+    /// <summary>Whether <see cref="_scrollLock"/> has been settled for the running gesture.</summary>
+    private bool _scrollAxisDecided;
+
+    /// <summary>How far the running gesture has travelled on each axis, unsigned.</summary>
+    private Vector _scrollTravel;
+
+    private ScrollAxis _scrollLock;
+
+    /// <summary>The offset the locked-out axis is held at for the rest of the gesture.</summary>
+    private Vector _scrollLockOffset;
+
+    /// <summary>
     ///     Orders the two writes back to <see cref="ReportView.Zoom"/> and
     ///     <see cref="ReportView.ZoomMode"/> after an input handler has already told the presenter
     ///     what it did and where to anchor it, and flags that the property-changed handler in
@@ -178,7 +210,88 @@ public partial class ReportView
         // keeps the scroll from also happening.
         _scroll.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
 
+        // Touch only: a wheel or a trackpad arrives as PointerWheelChanged, so locking the axis here
+        // leaves every desktop input alone. Bubbling, not tunnelling: ScrollGestureEventArgs.Delta is
+        // read only outside Avalonia, so the off-axis movement is undone after the
+        // ScrollContentPresenter has applied it rather than stopped before.
+        // handledEventsToo: the ScrollContentPresenter marks the gesture handled once it has scrolled
+        // with it, and that is exactly the event this has to see.
+        _scroll.AddHandler(
+            InputElement.ScrollGestureEvent, OnScrollGesture, RoutingStrategies.Bubble, handledEventsToo: true);
+        _scroll.AddHandler(
+            InputElement.ScrollGestureEndedEvent, OnScrollGestureEnded, RoutingStrategies.Bubble,
+            handledEventsToo: true);
+
         _scroll.PointerPressed += OnPointerPressed;
+    }
+
+    /// <summary>
+    ///     Keeps a swipe on the axis it started on, the way a platform scroll view does. Avalonia's
+    ///     scroll gesture reports both axes at once, so a finger that is a few degrees off vertical
+    ///     slides the page sideways as it goes down - which reads as dragging the sheet around rather
+    ///     than scrolling it, the one thing that gave the mobile viewer away.
+    /// </summary>
+    /// <remarks>
+    ///     The inertia that follows the lift reports through this same event, so the lock has to
+    ///     outlast the finger: it is released on <see cref="Gestures.ScrollGestureEndedEvent"/>, not
+    ///     when the touch ends, or the fling would drift off-axis after a straight swipe.
+    ///
+    ///     A gesture that is genuinely diagonal is left alone. Zoomed past the frame the reader is
+    ///     panning a sheet rather than scrolling a list, and forcing that onto one axis would take
+    ///     away the diagonal pan every other document viewer has.
+    /// </remarks>
+    private void OnScrollGesture(object? sender, ScrollGestureEventArgs e)
+    {
+        if (e.Id != _scrollGestureId)
+        {
+            _scrollGestureId = e.Id;
+            _scrollAxisDecided = false;
+            _scrollTravel = default;
+        }
+
+        if (!_scrollAxisDecided)
+        {
+            _scrollTravel += new Vector(Math.Abs(e.Delta.X), Math.Abs(e.Delta.Y));
+
+            // Too early to tell a straight swipe from a diagonal one; a few pixels of freedom here
+            // is what the platforms allow too, and it is below what a reader can see.
+            if (_scrollTravel.X + _scrollTravel.Y < AxisLockTravel)
+                return;
+
+            _scrollAxisDecided = true;
+            _scrollLock = Dominant(_scrollTravel);
+
+            // Where the off axis is pinned for the rest of the gesture, read before this event's
+            // own drift is undone below.
+            _scrollLockOffset = _scroll.Offset;
+        }
+
+        if (_scrollLock == ScrollAxis.None)
+            return;
+
+        _scroll.Offset = _scrollLock == ScrollAxis.Vertical
+            ? new Vector(_scrollLockOffset.X, _scroll.Offset.Y)
+            : new Vector(_scroll.Offset.X, _scrollLockOffset.Y);
+    }
+
+    private void OnScrollGestureEnded(object? sender, ScrollGestureEndedEventArgs e)
+    {
+        _scrollGestureId = 0;
+        _scrollAxisDecided = false;
+        _scrollTravel = default;
+        _scrollLock = ScrollAxis.None;
+    }
+
+    /// <summary>
+    ///     The axis a swipe belongs to, or <see cref="ScrollAxis.None"/> when neither leads the other
+    ///     clearly enough to call it anything but diagonal.
+    /// </summary>
+    private static ScrollAxis Dominant(Vector travel)
+    {
+        if (travel.Y >= travel.X * AxisLockRatio)
+            return ScrollAxis.Vertical;
+
+        return travel.X >= travel.Y * AxisLockRatio ? ScrollAxis.Horizontal : ScrollAxis.None;
     }
 
     /// <summary>

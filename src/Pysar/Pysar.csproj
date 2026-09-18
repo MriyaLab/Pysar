@@ -31,6 +31,16 @@
     </ItemGroup>
 
     <!--
+      LogicalName is what makes this work: the trimmer looks for a resource named exactly
+      ILLink.Descriptors.xml, and the default name would be Pysar.ILLink.Descriptors.xml - which it
+      ignores, silently, leaving a package that publishes fine and fails at run time.
+      DescriptorIsEmbeddedTests is what makes that failure loud.
+    -->
+    <ItemGroup>
+        <EmbeddedResource Include="ILLink.Descriptors.xml" LogicalName="ILLink.Descriptors.xml" />
+    </ItemGroup>
+
+    <!--
       buildTransitive rather than build: the WebAssembly check this carries has to reach consumers
       that never name Pysar directly, because they referenced Pysar.Uno or Pysar.Blazor instead -
       and those are exactly the consumers who end up on a browser head.

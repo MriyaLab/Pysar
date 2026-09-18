@@ -43,6 +43,21 @@ public sealed class PackFixture : IDisposable
     }
 
     /// <summary>
+    ///     The raw bytes of an entry - for the assemblies, whose embedded resources are part of the
+    ///     shipped layout even though no entry name reveals them.
+    /// </summary>
+    public byte[] ReadBytesOf(string packageId, string entryName)
+    {
+        using var zip = ZipFile.OpenRead(FindNupkg(packageId));
+        var entry = zip.GetEntry(entryName)
+                    ?? throw new InvalidOperationException($"No {entryName} in the {packageId} package.");
+        using var stream = entry.Open();
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return buffer.ToArray();
+    }
+
+    /// <summary>
     ///     Resolves the .nupkg for exactly this package id. A plain "&lt;id&gt;.*.nupkg" glob would
     ///     also match a longer id sharing the prefix - Pysar.*.nupkg matches
     ///     Pysar.Xaml.0.1.0.nupkg - and both packages land in the same directory, so the

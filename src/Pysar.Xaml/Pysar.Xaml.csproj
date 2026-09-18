@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <None Include="build\Pysar.Xaml.props" Pack="true" PackagePath="build/" />
+    <None Include="build\Pysar.Xaml.targets" Pack="true" PackagePath="build/" />
   </ItemGroup>
 
   <!--

@@ -2,7 +2,8 @@ using Xunit;
 
 namespace Pysar.Architecture.Tests;
 
-public sealed class PackageLayoutTests : IClassFixture<PackFixture>
+[Collection(PackCollection.Name)]
+public sealed class PackageLayoutTests
 {
     private readonly PackFixture _pack;
 
@@ -54,6 +55,14 @@ public sealed class PackageLayoutTests : IClassFixture<PackFixture>
         // MSBuild auto-imports build/<PackageId>.props. Any other name is silently ignored,
         // and reports would stop reaching the generator with no diagnostic at all.
         Assert.Contains("build/Pysar.Xaml.props", _pack.EntriesOf("Pysar.Xaml"));
+    }
+
+    [Fact]
+    public void Xaml_ShipsTheAutoImportedTargets()
+    {
+        // Same naming rule as the props, and the same silence when it is broken: the trimmer roots
+        // would simply never be generated, and only a trimmed publish would show it.
+        Assert.Contains("build/Pysar.Xaml.targets", _pack.EntriesOf("Pysar.Xaml"));
     }
 
     [Fact]

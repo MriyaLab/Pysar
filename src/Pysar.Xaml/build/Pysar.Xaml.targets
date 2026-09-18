@@ -1,0 +1,59 @@
+<Project>
+  <!--
+    Roots the assembly that owns the reports, the way Pysar.dll roots itself.
+
+    Everything markup names is resolved by string out of this assembly and is invisible to the
+    trimmer: a converter reached only through {Binding Converter=...}, a custom element reached only
+    through clr-namespace, and the data models behind every binding path, which BindingEngine walks
+    with GetProperty(name). None of it has a compiled reference, so a trimmed publish drops it and
+    the report fails at InitializeComponent.
+
+    An embedded descriptor rather than TrimmerRootAssembly, because the two are not interchangeable
+    here. TrimmerRootAssembly is only read in the project that publishes, and reports usually do not
+    live there - in a single app head they do, but the moment they move into a shared library the
+    head would have to name that library by hand, which is the manual step this is meant to remove.
+    A descriptor embedded in the assembly that owns the reports travels with it and holds either way.
+
+    Opt out with PysarDisableTrimmerRoots=true, then root what the reports actually need by hand -
+    the whole assembly is preserved here, which is the safe reading of "markup may name anything in
+    it", not the smallest one.
+  -->
+
+  <PropertyGroup>
+    <_PysarTrimmerRootsFile>$(IntermediateOutputPath)Pysar.ILLink.Descriptors.xml</_PysarTrimmerRootsFile>
+  </PropertyGroup>
+
+  <!--
+    PrepareForBuild, not PrepareResourceNames: by the time the latter runs the compiler's resource
+    inputs are already settled, and an EmbeddedResource added there is accepted into the item list
+    and then quietly left out of the assembly - a build that succeeds and produces a dll with no
+    descriptor in it. TheDescriptorReachesTheAssembly is the test that holds this hook in place.
+  -->
+  <Target Name="PysarGenerateTrimmerRoots"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(PysarDisableTrimmerRoots)' != 'true' AND '@(Pysar)' != ''">
+
+    <!--
+      A project that already embeds its own ILLink.Descriptors.xml has said what it wants preserved.
+      Two resources under one logical name is a hard compile error, and silently winning that
+      argument would be worse than standing down.
+    -->
+    <ItemGroup>
+      <_PysarExistingDescriptor Include="@(EmbeddedResource)"
+                                Condition="'%(EmbeddedResource.LogicalName)' == 'ILLink.Descriptors.xml'" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_PysarTrimmerRootsFile)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true"
+                      Condition="'@(_PysarExistingDescriptor)' == ''"
+                      Lines="&lt;linker&gt;;  &lt;assembly fullname=&quot;$(AssemblyName)&quot; /&gt;;&lt;/linker&gt;" />
+
+    <ItemGroup Condition="'@(_PysarExistingDescriptor)' == ''">
+      <EmbeddedResource Include="$(_PysarTrimmerRootsFile)"
+                        LogicalName="ILLink.Descriptors.xml"
+                        Visible="false" />
+      <FileWrites Include="$(_PysarTrimmerRootsFile)" />
+    </ItemGroup>
+  </Target>
+</Project>
