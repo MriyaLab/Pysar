@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Embedded into Pysar.dll as ILLink.Descriptors.xml, which the trimmer reads out of every assembly
+  it processes - no consumer opt-in, and nothing for a head to remember.
+
+  Report markup names types and properties as strings, and nothing in the compiled code points at
+  them: XamlTypeResolver resolves an element through asm.GetType($"{clr}.{localName}"),
+  XamlMemberAssigner assigns through GetProperty(...).SetValue(...), and ValueConverter turns an
+  attribute into an enum through Enum.Parse. The trimmer sees none of it. Published trimmed and
+  without this file, Pysar.Elements.Text keeps its type and loses all eleven of its setters, and
+  the first report to set Content fails at InitializeComponent.
+
+  The preserved set is the element model and everything markup reaches through it: the namespaces
+  AssemblyInfo.cs declares through XmlnsDefinition, the base namespace those elements inherit from,
+  and the structs and enums their properties are typed as. Elements.Base is not optional and not
+  obvious - a namespace here matches exactly, not by prefix, and markup sets Width, Margin and
+  HorizontalAlignment far more often than anything declared on the leaf type. Leave it out and the
+  failure moves rather than disappears, from "type not found" to ArgumentException/
+  Arg_SetMethNotFnd out of PropertyInfo.SetValue.
+
+  Listing a namespace with no children preserves every type and member under it; the layers markup
+  cannot reach (Binding, Export, Skia) stay trimmable, and TrimmerRootsTests holds both halves.
+
+  This covers Pysar's own assembly only. A consumer's converters, custom elements and the data
+  models behind {Binding} are resolved the same reflective way out of the consumer's assembly -
+  Pysar.Xaml.targets roots that one.
+-->
+<linker>
+  <assembly fullname="Pysar">
+    <namespace fullname="Pysar.Elements" />
+    <namespace fullname="Pysar.Elements.Base" />
+    <namespace fullname="Pysar.Core.Structs" />
+    <namespace fullname="Pysar.Core.Enums" />
+  </assembly>
+</linker>

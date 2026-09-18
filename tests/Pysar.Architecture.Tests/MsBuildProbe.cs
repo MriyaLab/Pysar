@@ -33,6 +33,12 @@ internal sealed class MsBuildProbe : IDisposable
         File.WriteAllText(full, content);
     }
 
+    /// <summary>Reads a file the build produced, at a path relative to the probe project.</summary>
+    public string ReadFile(string relativePath) => File.ReadAllText(Path.Combine(_dir, relativePath));
+
+    /// <summary>The bytes of a file the build produced, at a path relative to the probe project.</summary>
+    public byte[] ReadBytes(string relativePath) => File.ReadAllBytes(Path.Combine(_dir, relativePath));
+
     /// <summary>The repository root, found by walking up to Pysar.sln.</summary>
     public static string RepositoryRoot() => RepoRoot.Path;
 
@@ -40,10 +46,18 @@ internal sealed class MsBuildProbe : IDisposable
     public string[] Identities(string itemType)
         => Entries(itemType).Select(e => Normalise(e.GetProperty("Identity").GetString()!)).ToArray();
 
-    /// <summary>Every evaluated item of <paramref name="itemType"/>, metadata included.</summary>
-    public JsonElement[] Entries(string itemType)
+    /// <summary>
+    ///     Every item of <paramref name="itemType"/>, metadata included. Evaluation alone by
+    ///     default; pass <paramref name="afterTarget"/> for the items a target contributes, which
+    ///     evaluation never sees.
+    /// </summary>
+    public JsonElement[] Entries(string itemType, string? afterTarget = null)
     {
-        var output = Run([$"-getItem:{itemType}"], out var exitCode);
+        string[] arguments = afterTarget is null
+            ? [$"-getItem:{itemType}"]
+            : [$"-getItem:{itemType}", $"-t:{afterTarget}"];
+
+        var output = Run(arguments, out var exitCode);
         Assert.True(exitCode == 0, $"msbuild failed:\n{output}");
 
         using var document = JsonDocument.Parse(Json(output));
