@@ -550,7 +550,12 @@ public sealed class ReportViewPresenter
         return Math.Round(value * density, MidpointRounding.AwayFromZero) / density;
     }
 
-    public float ViewportRenderScaleForPerf() => (float)Viewport().RenderScale(_host.Density);
+    /// <summary>
+    ///     The scale the viewport's cells are drawn at: the current zoom taken through the host's
+    ///     density. This is the scale a host compares a cell's own against to tell the generation it
+    ///     is laying out now from the bridge generation under it.
+    /// </summary>
+    public float ViewportRenderScale() => (float)Viewport().RenderScale(_host.Density);
 
     private PageViewport Viewport() => Viewport(_zoom.EffectiveZoom);
 

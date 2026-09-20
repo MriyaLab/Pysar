@@ -272,6 +272,41 @@ public class ReportViewTilesTests
         Assert.Empty(tiles.TilesFor(0, oldScale));
     }
 
+    /// <summary>
+    ///     A pinch commits many times before any one set of cells finishes drawing, so the scale
+    ///     changes again while the previous set is still in flight. Only the one generation the
+    ///     host stretches under the new layout is worth keeping: without a bound every superseded
+    ///     generation stayed, and a single gesture left a hundred cells from eight zoom levels
+    ///     stacked on the page, which reads as content from several zooms at once.
+    /// </summary>
+    [Fact]
+    public async Task SuccessiveScales_KeepOnlyOneBridgeGeneration()
+    {
+        using var tiles = new ReportViewTiles(await SessionAsync(), new TaskRunScheduler());
+
+        const float first = 0.8f;
+        const float second = 1.6f;
+        const float third = 3.2f;
+
+        var region = new RectPt(0, 0, 200, 200);
+
+        await DrawOneAsync(tiles, new TileRequest(new TileKey(0, 0, 0, first), region));
+
+        Assert.Single(tiles.TilesFor(0, first));
+
+        // The first scale becomes the bridge and is kept: this is the generation the host
+        // stretches while the new one is drawn.
+        tiles.RequestTiles([new TileRequest(new TileKey(0, 0, 0, second), region)]);
+
+        Assert.Single(tiles.TilesFor(0, first));
+
+        // A further commit makes the second scale the bridge, which leaves the first older than
+        // any host will draw. It must go rather than pile up for the length of the gesture.
+        tiles.RequestTiles([new TileRequest(new TileKey(0, 0, 0, third), region)]);
+
+        Assert.Empty(tiles.TilesFor(0, first));
+    }
+
     [Fact]
     public async Task WantedOrder_IsDrawOrder_FirstListedKeyCompletesFirst()
     {
