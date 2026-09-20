@@ -740,4 +740,50 @@ public class ReportViewPresenterTests
 
         Assert.DoesNotContain(host.Tiles.Keys, key => key.PageIndex == 0);
     }
+
+    /// <summary>
+    ///     What the presenter reports and what the pages on screen describe have to stay the same
+    ///     zoom, however many gesture frames are too small to be worth laying out.
+    /// </summary>
+    /// <remarks>
+    ///     The loop is what every host does with a wheel notch, the threshold check included. When
+    ///     the frames were written to the zoom model first and skipped by that check afterwards, the
+    ///     model walked away from the pages a fraction of a percent at a time and never came back:
+    ///     the extent, the tile plan and where a cell was placed all measured the new zoom against
+    ///     pages still standing at the old one, which the reader saw as the page's own content drawn
+    ///     twice, a little apart, with the gap between two pages painted over.
+    /// </remarks>
+    [Fact]
+    public void GestureFramesUnderTheThreshold_LeaveTheZoomWhereThePagesWerePlaced()
+    {
+        var (host, presenter) = Subject();
+
+        var anchor = new ViewPoint(host.ViewportWidth / 2, host.ViewportHeight / 2);
+
+        presenter.SetZoom(ReportZoomMode.Custom, 1, anchor);
+
+        // A browser head sees hundreds of these in one trackpad pinch, each about a percent or less.
+        for (var frame = 0; frame < 200; frame++)
+        {
+            var before = presenter.EffectiveZoom;
+
+            // Begun per event, the way a host with no gesture stream of its own does it.
+            presenter.Gestures.BeginPinch();
+            presenter.Gestures.PinchByStep(1.004);
+
+            if (Math.Abs(presenter.EffectiveZoom - before) >= before * ReportViewDefaults.ZoomStepThreshold)
+                presenter.SetZoom(ReportZoomMode.Custom, presenter.Zoom, anchor);
+        }
+
+        // The second page, whose top is the first page's height and the gap below it, so both the
+        // size of a page and the space between two of them have to have stayed put.
+        var placed = host.Pages[1];
+
+        // A relayout for whatever the model now holds. It can only move a page if the model and the
+        // pages had come apart.
+        presenter.ViewportChanged();
+
+        Assert.Equal(placed.Y, host.Pages[1].Y, 6);
+        Assert.Equal(placed.Height, host.Pages[1].Height, 6);
+    }
 }

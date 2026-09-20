@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -78,6 +79,33 @@ public partial class ReportView
     ///     only time what is on screen deliberately disagrees with what the presenter has been told.
     /// </summary>
     private readonly PinchSession _pinch;
+
+    /// <summary>
+    ///     How long a gap between two modified wheel events ends one zoom gesture and starts the
+    ///     next.
+    /// </summary>
+    /// <remarks>
+    ///     A trackpad pinch reaches a browser head as a stream of wheel events a frame or so apart -
+    ///     there is no platform pinch to read here, as the remarks on this type record - so anything
+    ///     comfortably longer than a frame separates two gestures without ever cutting one in half. A
+    ///     mouse wheel notch stands alone by this measure, which is what keeps it behaving as a notch
+    ///     rather than as a gesture.
+    /// </remarks>
+    private static readonly TimeSpan WheelGestureGap = TimeSpan.FromMilliseconds(150);
+
+    /// <summary>
+    ///     When the last modified wheel event arrived, or 0 before the first one. Timestamps rather
+    ///     than the event's own: a synthesised wheel event may carry no time at all, and a gesture
+    ///     that begins again on every event is exactly the fault this is here to avoid.
+    /// </summary>
+    private long _lastWheelTimestamp;
+
+    /// <summary>
+    ///     The point the running wheel gesture is anchored at, fixed for its whole stream for the
+    ///     reason <see cref="PinchSession.Anchor"/> gives: taking it per frame adds a little
+    ///     translation every time, and they accumulate into a visible drift.
+    /// </summary>
+    private Point _wheelAnchor;
 
     /// <summary>
     ///     The AppKit event monitor that delivers a trackpad pinch on macOS, since the remark above
@@ -298,6 +326,14 @@ public partial class ReportView
     ///     A wheel notch under Ctrl or Meta zooms around the pointer instead of scrolling; a plain
     ///     wheel notch is left for the <see cref="ScrollViewer"/> to handle as it always has.
     /// </summary>
+    /// <remarks>
+    ///     Consecutive events are one gesture, not a notch each. A mouse wheel is unaffected - its
+    ///     notches are far enough apart to each begin their own gesture, and one notch is a 50% step
+    ///     either way - but a trackpad pinch, which is what a browser head delivers here and nothing
+    ///     else, arrives as hundreds of events whose individual steps measure about 1%. Beginning a
+    ///     gesture on every one of those threw the accumulated total away each time, so a slow pinch
+    ///     never reached <see cref="ReportViewDefaults.ZoomStepThreshold"/> and never zoomed at all.
+    /// </remarks>
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         if ((e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta)) == 0)
@@ -305,13 +341,22 @@ public partial class ReportView
 
         var before = _presenter.EffectiveZoom;
 
-        // A wheel notch is a step from wherever the zoom already is, not from where a gesture
-        // started, so beginning and stepping together on every notch is the correct call rather than
-        // a shortcut - there is no multi-event gesture here for a start to belong to.
-        _presenter.Gestures.BeginPinch();
+        var now = Stopwatch.GetTimestamp();
+
+        if (_lastWheelTimestamp == 0 || Stopwatch.GetElapsedTime(_lastWheelTimestamp, now) > WheelGestureGap)
+        {
+            _wheelAnchor = e.GetPosition(_scroll);
+            _presenter.Gestures.BeginPinch();
+        }
+
+        _lastWheelTimestamp = now;
+
+        // Held back by the gesture model until the stream has moved far enough to be worth a
+        // relayout, so what it writes and what ApplyGestureZoom lays out are never two different
+        // zooms - see the remarks on GestureModel.
         _presenter.Gestures.PinchByStep(WheelZoom.StepFor(e.Delta.Y));
 
-        ApplyGestureZoom(before, e.GetPosition(_scroll));
+        ApplyGestureZoom(before, _wheelAnchor);
 
         // Marks the event handled during the tunnel phase, before the ScrollViewer's own bubble
         // handling ever sees it - see the routing note on AddInputHandlers.
