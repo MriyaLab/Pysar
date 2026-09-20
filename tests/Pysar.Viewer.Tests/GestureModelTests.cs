@@ -73,6 +73,53 @@ public class GestureModelTests
         Assert.Equal(1, zoom.EffectiveZoom, 3);
     }
 
+    /// <summary>
+    ///     A step too small to be worth a relayout must leave the model exactly where the host last
+    ///     laid it out. Writing it and letting the host skip the relayout afterwards is what left the
+    ///     drawing measuring a zoom nothing had been laid out for.
+    /// </summary>
+    [Fact]
+    public void APinchFrameUnderTheThreshold_DoesNotReachTheModel()
+    {
+        var (zoom, gestures) = Subject();
+
+        gestures.BeginPinch();
+
+        Assert.False(gestures.PinchByStep(1.004));
+        Assert.Equal(1, zoom.EffectiveZoom, 6);
+    }
+
+    [Fact]
+    public void APinchScaleUnderTheThreshold_DoesNotReachTheModel()
+    {
+        var (zoom, gestures) = Subject();
+
+        gestures.BeginPinch();
+
+        Assert.False(gestures.PinchByScale(1.004));
+        Assert.Equal(1, zoom.EffectiveZoom, 6);
+    }
+
+    /// <summary>
+    ///     Held back is not discarded: a slow pinch, whose every frame is under the threshold, still
+    ///     zooms on the frame its running total crosses it.
+    /// </summary>
+    [Fact]
+    public void PinchFramesUnderTheThreshold_AccumulateUntilTheyAreWorthApplying()
+    {
+        var (zoom, gestures) = Subject();
+
+        gestures.BeginPinch();
+
+        Assert.False(gestures.PinchByStep(1.004));
+        Assert.False(gestures.PinchByStep(1.004));
+
+        // Three frames of 0.4% is 1.2%, which clears the 1% threshold - and what lands is the whole
+        // accumulated total, not the one frame that happened to cross it.
+        Assert.True(gestures.PinchByStep(1.004));
+        Assert.Equal(Math.Pow(1.004, 3), zoom.EffectiveZoom, 6);
+    }
+
     [Fact]
     public void APinch_ForgetsWhereADoubleTapWouldHaveReturnedTo()
     {
