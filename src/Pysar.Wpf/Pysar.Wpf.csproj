@@ -36,4 +36,8 @@
     <ProjectReference Include="..\Pysar.Viewer\Pysar.Viewer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pysar.Wpf.Tests" />
+  </ItemGroup>
+
 </Project>
