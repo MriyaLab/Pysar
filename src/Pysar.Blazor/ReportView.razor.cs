@@ -148,14 +148,6 @@ public sealed partial class ReportView : IReportViewHost, IReportViewSurface, IA
     /// </summary>
     private bool _clearPreviewAfterRender;
 
-#if DEBUG
-    private long _perfCommitTimestamp;
-    private bool _perfFirstCentreLogged;
-    private bool _perfUsableLogged;
-    private bool _perfFullLogged;
-    private float _perfTargetScale;
-#endif
-
     private string CanvasId(TileKey key)
         => $"qr-{_instance}-{key.PageIndex}-{key.Column}-{key.Row}-{key.Scale:0.###}";
 
@@ -529,11 +521,6 @@ public sealed partial class ReportView : IReportViewHost, IReportViewSurface, IA
     private void OnTilesInvalidated()
     {
         RefreshVisuals();
-
-#if DEBUG
-        LogZoomPerfIfNeeded();
-#endif
-
         StateHasChanged();
     }
 
@@ -551,7 +538,7 @@ public sealed partial class ReportView : IReportViewHost, IReportViewSurface, IA
         }
 
         _presenter.PlaceTiles(_tiles.Keys.ToList());
-        _lastRenderScale = _presenter.ViewportRenderScaleForPerf();
+        _lastRenderScale = _presenter.ViewportRenderScale();
 
         // Blazor may recreate canvas nodes on re-render; PlaceTile skips paint when bytes are
         // unchanged, leaving blank cells under the cleared preview. Re-queue every placed tile.
@@ -608,82 +595,6 @@ public sealed partial class ReportView : IReportViewHost, IReportViewSurface, IA
         _ = PageCountChanged.InvokeAsync(_presenter.PageCount);
         _ = EffectiveZoomChanged.InvokeAsync(effectiveZoom);
     }
-
-#if DEBUG
-    private void BeginZoomPerf()
-    {
-        _perfCommitTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
-        _perfFirstCentreLogged = _perfUsableLogged = _perfFullLogged = false;
-        _perfTargetScale = _presenter.ViewportRenderScaleForPerf();
-        Console.WriteLine("[Pysar.Perf] t_commit=0");
-    }
-
-    private void LogZoomPerfIfNeeded()
-    {
-        if (_perfCommitTimestamp == 0)
-            return;
-
-        var target = _perfTargetScale;
-        var tol = Math.Abs(target) * 1e-4f;
-        double vw = ((IReportViewHost)this).ViewportWidth;
-        double vh = ((IReportViewHost)this).ViewportHeight;
-        double scrollX = ((IReportViewHost)this).ScrollX;
-        double scrollY = ((IReportViewHost)this).ScrollY;
-        var cx = scrollX + vw / 2;
-        var cy = scrollY + vh / 2;
-
-        static double Ms(long start) =>
-            (System.Diagnostics.Stopwatch.GetTimestamp() - start) * 1000.0
-            / System.Diagnostics.Stopwatch.Frequency;
-
-        static bool Contains(ViewRect r, double x, double y) =>
-            x >= r.X && y >= r.Y && x < r.X + r.Width && y < r.Y + r.Height;
-
-        bool SampleCovered(Func<TileKey, bool> scaleOk)
-        {
-            const int n = 3;
-            for (var iy = 0; iy < n; iy++)
-            for (var ix = 0; ix < n; ix++)
-            {
-                var x = scrollX + (ix + 0.5) * vw / n;
-                var y = scrollY + (iy + 0.5) * vh / n;
-                var hit = false;
-                foreach (var (key, placed) in _tiles)
-                {
-                    if (!scaleOk(key) || !Contains(placed.Bounds, x, y))
-                        continue;
-                    hit = true;
-                    break;
-                }
-
-                if (!hit)
-                    return false;
-            }
-
-            return true;
-        }
-
-        if (!_perfFirstCentreLogged
-            && _tiles.Any(p =>
-                Math.Abs(p.Key.Scale - target) <= tol && Contains(p.Value.Bounds, cx, cy)))
-        {
-            _perfFirstCentreLogged = true;
-            Console.WriteLine($"[Pysar.Perf] t_first_centre={Ms(_perfCommitTimestamp):F1}ms");
-        }
-
-        if (!_perfUsableLogged && SampleCovered(_ => true))
-        {
-            _perfUsableLogged = true;
-            Console.WriteLine($"[Pysar.Perf] t_viewport_usable={Ms(_perfCommitTimestamp):F1}ms");
-        }
-
-        if (!_perfFullLogged && SampleCovered(k => Math.Abs(k.Scale - target) <= tol))
-        {
-            _perfFullLogged = true;
-            Console.WriteLine($"[Pysar.Perf] t_viewport_full_dpi={Ms(_perfCommitTimestamp):F1}ms");
-        }
-    }
-#endif
 
     /// <summary>The point a zoom nobody gestured for is held around.</summary>
     private ViewPoint CenterAnchor() => new(_viewportWidth / 2, _viewportHeight / 2);
@@ -842,9 +753,7 @@ public sealed partial class ReportView : IReportViewHost, IReportViewSurface, IA
         _zoomPublisher.Publish(_presenter.ZoomMode, _presenter.Zoom);
 
         _presenter.SetZoom(_appliedZoomMode, _appliedZoom, viewportPoint, held);
-#if DEBUG
-        BeginZoomPerf();
-#endif
+
         // Place bridge tiles at the new geometry and re-paint them before clearPreviewTransform.
         AfterPresenterUpdate(immediate: true, repaintAll: true);
         StateHasChanged();

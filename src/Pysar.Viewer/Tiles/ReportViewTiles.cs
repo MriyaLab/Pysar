@@ -43,6 +43,25 @@ public sealed class ReportViewTiles(
     private readonly HashSet<TileKey> _inFlightKeys = [];
     private readonly object _gate = new();
 
+    /// <summary>The scales the current request is drawing at.</summary>
+    private List<float> _activeScales = [];
+
+    /// <summary>
+    ///     The scales the request before the current one drew at - the one generation of bridge
+    ///     cells worth keeping.
+    /// </summary>
+    /// <remarks>
+    ///     A pinch commits many times before any one set of cells finishes drawing, so the scale
+    ///     changes again while the previous set is still in flight. Without a bound, every
+    ///     superseded generation stayed in the cache - and, through
+    ///     <see cref="BridgeTilesFor"/>, on the page - because nothing but
+    ///     <see cref="DropBridgeIfCurrentComplete_NoLock"/> removes a cell of an inactive scale,
+    ///     and that only fires once a set is complete. One gesture piled a hundred cells from
+    ///     eight zoom levels on top of each other, which the reader sees as content from several
+    ///     zooms at once. One generation is all a host needs to stretch under the new layout.
+    /// </remarks>
+    private List<float> _bridgeScales = [];
+
     private readonly CancellationTokenSource _lifetime = new();
 
     private IReadOnlyList<TileRequest> _wanted = [];
@@ -350,19 +369,49 @@ public sealed class ReportViewTiles(
         if (requests.Count == 0)
         {
             _tiles.Clear();
+            _activeScales = [];
+            _bridgeScales = [];
+
             return;
         }
 
         var wanted = requests.Select(request => request.Key).ToHashSet();
-        var activeScales = requests.Select(request => request.Key.Scale).ToList();
+        var activeScales = requests.Select(request => request.Key.Scale).Distinct().ToList();
+
+        // A change of scale turns what we were drawing at into the bridge generation, and
+        // whatever was the bridge before that is now older than any host will draw.
+        if (!SameScales(activeScales, _activeScales))
+        {
+            _bridgeScales = _activeScales;
+            _activeScales = activeScales;
+        }
 
         foreach (var key in _tiles.Keys())
         {
-            if (!wanted.Contains(key) && IsActiveScale(key.Scale, activeScales))
+            if (wanted.Contains(key))
+                continue;
+
+            // Unwanted at a scale being drawn now, or left over from a generation older than
+            // the bridge - neither is on screen, and keeping the latter is what let a pinch
+            // accumulate every zoom level it passed through.
+            if (IsActiveScale(key.Scale, activeScales) || !IsActiveScale(key.Scale, _bridgeScales))
                 _tiles.Remove(key);
         }
 
         DropBridgeIfCurrentComplete_NoLock();
+    }
+
+    /// <summary>Whether two sets of scales describe the same request, to <see cref="ScaleEpsilon"/>.</summary>
+    private static bool SameScales(List<float> left, List<float> right)
+    {
+        if (left.Count != right.Count)
+            return false;
+
+        foreach (var scale in left)
+            if (!IsActiveScale(scale, right))
+                return false;
+
+        return true;
     }
 
     private static bool IsActiveScale(float scale, List<float> activeScales)
