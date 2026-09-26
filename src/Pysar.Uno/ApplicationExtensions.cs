@@ -61,6 +61,11 @@ public static class ApplicationExtensions
     {
         ArgumentNullException.ThrowIfNull(application);
 
+        // OpenGL ES on Android draws Image textures as opaque black, so every report page disappears.
+        // Software Skia paints them. Must be set before the window is created; OnLaunched, before
+        // new Window(), is early enough when the application follows that order.
+        global::Uno.UI.FeatureConfiguration.Rendering.UseOpenGLOnSkiaAndroid = false;
+
         UnoRegistration.Install(assetAssembly, configure, suppressBrowserZoom);
 
         return application;
