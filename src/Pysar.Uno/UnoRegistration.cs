@@ -126,24 +126,20 @@ internal static class UnoRegistration
     private static void InstallAmbientState(
         UnoReportPlatformHandler platformHandler, Action<PysarBuilder>? configure)
     {
-        // Rendering reads the handler from this ambient state rather than from DI, so it is
-        // installed here - before any report can be built - and not when a renderer is first used.
-        ReportPlatformHandler.Create(platformHandler);
-
-        var renderer = new SkiaReportRenderer();
+        var installation = PysarInstallation.Create(platformHandler);
 
         // The control measures reports with the same renderer, so custom drawers reach the viewer.
-        ReportViewRenderer.Instance = renderer;
+        // The renderer is not held on the handler - the control reaches it through
+        // ReportViewRenderer.Instance.
+        ReportViewRenderer.Instance = installation.Renderer;
 
         Current = platformHandler;
 
-        // The previous one was built over the renderer this call has just replaced - see the
-        // remarks on PysarUno.ExportService.
+        // The previous export service was built over the renderer this call has just replaced.
         PysarUno.ResetExportService();
 
         // Unlike Avalonia's AppBuilder there is nothing to defer to here: the asset file system
-        // reads manifest resources, which need no platform service to be up first, so a font can be
-        // registered in the same call.
-        configure?.Invoke(new PysarBuilder(renderer, platformHandler.FontCollection));
+        // reads manifest resources, which need no platform service to be up first.
+        installation.Configure(configure);
     }
 }

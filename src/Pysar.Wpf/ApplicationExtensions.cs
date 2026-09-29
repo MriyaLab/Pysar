@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Windows;
-using Pysar.Core;
 using Pysar.Skia;
 
 namespace Pysar.Wpf;
@@ -45,23 +44,17 @@ public static class ApplicationExtensions
             ?? throw new InvalidOperationException(
                 "Could not determine the entry assembly's name; pass assemblyName explicitly.");
 
-        // The application's own resources first, then the assets embedded by referenced report
-        // libraries - a packaged asset must win over one a library shipped.
         var platformHandler = new DefaultReportPlatformHandler(
             new FallbackFileSystem(new WpfAssetFileSystem(assemblyName), new EmbeddedAssetFileSystem()));
 
-        // Rendering reads the handler from this ambient state rather than from DI, so it is installed
-        // here - before any report can be built - and not when the renderer is first resolved.
-        ReportPlatformHandler.Create(platformHandler);
-
-        var renderer = new SkiaReportRenderer();
+        var installation = PysarInstallation.Create(platformHandler);
 
         // The control measures reports with the same renderer, so custom drawers reach the viewer.
-        ReportViewRenderer.Instance = renderer;
+        ReportViewRenderer.Instance = installation.Renderer;
 
         // Pack/manifest asset access does not need a deferred platform-service hook; configure runs
         // synchronously so fonts are registered before the first report is built.
-        configure?.Invoke(new PysarBuilder(renderer, platformHandler.FontCollection));
+        installation.Configure(configure);
 
         return application;
     }

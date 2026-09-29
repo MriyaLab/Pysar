@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Pysar.Core;
 using Pysar.Core.Abstractions;
 using Pysar.Export;
 using Pysar.Skia;
@@ -33,16 +32,14 @@ public static class MauiAppBuilderExtensions
 
         // Rendering reads the handler from this ambient state rather than from DI, so it is installed
         // here - before any report can be built - and not when the renderer is first resolved.
-        ReportPlatformHandler.Create(platformHandler);
-
-        var renderer = new SkiaReportRenderer();
-        configure?.Invoke(new PysarBuilder(renderer, platformHandler.FontCollection));
+        var installation = PysarInstallation.Create(platformHandler);
+        installation.Configure(configure);
 
         // The control measures reports with the same renderer, so custom drawers reach the viewer.
-        ReportViewRenderer.Instance = renderer;
+        ReportViewRenderer.Instance = installation.Renderer;
 
-        builder.Services.AddSingleton<IReportPlatformHandler>(platformHandler);
-        builder.Services.AddSingleton(renderer);
+        builder.Services.AddSingleton<IReportPlatformHandler>(installation.PlatformHandler);
+        builder.Services.AddSingleton(installation.Renderer);
         builder.Services.AddSkiaReportExporters();
         builder.Services.AddReportExportService();
         builder.Services.AddSingleton<IReportSharer, MauiReportSharer>();
