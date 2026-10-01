@@ -22,4 +22,17 @@ internal sealed class PdfReportExporter : IReportExporter
 
         return _renderer.RenderToPdfAsync(report, destination, ct);
     }
+
+    public Task ExportAsync(Report report, Stream destination, ExportOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(destination);
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (options is not PdfExportOptions pdfOptions)
+            throw new ArgumentException(
+                $"Format '{Format}' does not accept {options.GetType().Name}.", nameof(options));
+
+        return _renderer.RenderToPdfAsync(report, destination, pdfOptions, ct);
+    }
 }

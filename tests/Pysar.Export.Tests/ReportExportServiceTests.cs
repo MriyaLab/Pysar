@@ -1,3 +1,4 @@
+using Pysar.Elements;
 using Xunit;
 
 namespace Pysar.Export.Tests;
@@ -71,5 +72,69 @@ public class ReportExportServiceTests
         var result = await service.ExportAsync(TestReports.Minimal(), ExportFormat.Pdf);
 
         Assert.Equal(pdfBytes, result);
+    }
+
+    [Fact]
+    public async Task ExportAsync_Options_ForwardsThemToTheExporter()
+    {
+        var exporter = new RecordingExporter(ExportFormat.Pdf);
+        var service = new ReportExportService([exporter]);
+        var options = new PdfExportOptions { PdfA = true };
+
+        using var destination = new MemoryStream();
+        await service.ExportAsync(TestReports.Minimal(), ExportFormat.Pdf, destination, options);
+
+        Assert.Same(options, exporter.ReceivedOptions);
+    }
+
+    [Fact]
+    public async Task ExportAsync_Bytes_ForwardsOptions()
+    {
+        var exporter = new RecordingExporter(ExportFormat.Pdf);
+        IReportExportService service = new ReportExportService([exporter]);
+        var options = new PdfExportOptions { PdfA = true };
+
+        await service.ExportAsync(TestReports.Minimal(), ExportFormat.Pdf, options);
+
+        Assert.Same(options, exporter.ReceivedOptions);
+    }
+
+    [Fact]
+    public async Task ExportAsync_Options_UnregisteredFormat_ThrowsNotSupported()
+    {
+        var service = new ReportExportService(Array.Empty<IReportExporter>());
+        using var destination = new MemoryStream();
+
+        await Assert.ThrowsAsync<NotSupportedException>(
+            () => service.ExportAsync(
+                TestReports.Minimal(), ExportFormat.Pdf, destination, new PdfExportOptions()));
+    }
+
+    [Fact]
+    public async Task ExportAsync_NullOptions_Throws()
+    {
+        var service = new ReportExportService([new FakeExporter(ExportFormat.Pdf, [1])]);
+        using var destination = new MemoryStream();
+
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => service.ExportAsync(TestReports.Minimal(), ExportFormat.Pdf, destination, null!));
+    }
+
+    private sealed class RecordingExporter : IReportExporter
+    {
+        public RecordingExporter(ExportFormat format) => Format = format;
+
+        public ExportFormat Format { get; }
+
+        public ExportOptions? ReceivedOptions { get; private set; }
+
+        public Task ExportAsync(Report report, Stream destination, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task ExportAsync(Report report, Stream destination, ExportOptions options, CancellationToken ct = default)
+        {
+            ReceivedOptions = options;
+            return Task.CompletedTask;
+        }
     }
 }

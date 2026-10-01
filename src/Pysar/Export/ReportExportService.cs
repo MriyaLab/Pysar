@@ -35,6 +35,19 @@ internal sealed class ReportExportService : IReportExportService
         return exporter.ExportAsync(report, destination, ct);
     }
 
+    public Task ExportAsync(
+        Report report, ExportFormat format, Stream destination, ExportOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(destination);
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (!_exporters.TryGetValue(format, out var exporter))
+            throw new NotSupportedException(DescribeMissingFormat(format));
+
+        return exporter.ExportAsync(report, destination, options, ct);
+    }
+
     /// <summary>
     ///     Names what is registered rather than which registration API to call: the format's own
     ///     package owns that, and it is not necessarily one this assembly can name.

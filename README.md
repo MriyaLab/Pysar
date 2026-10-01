@@ -192,6 +192,19 @@ call sites:
 byte[] pdfBytes = await exportService.ExportAsync(report, ExportFormat.Pdf);
 ```
 
+PDF/A-2b is an option of that PDF, not another format. Skia writes the archival document setup
+(XMP `pdfaid` identification, a document UUID, an sRGB output intent). It does not validate the
+file, and the UUID makes those bytes non-reproducible:
+
+```csharp
+using Pysar.Export;
+
+await new SkiaReportRenderer().RenderToPdfAsync(report, stream, new PdfExportOptions { PdfA = true });
+
+await exportService.ExportAsync(
+    report, ExportFormat.Pdf, stream, new PdfExportOptions { PdfA = true });
+```
+
 ## Showing a report
 
 Every platform package offers the same `ReportView`: a built report as scrollable, zoomable pages,

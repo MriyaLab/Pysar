@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Pysar.Core.Enums;
 using Pysar.Core.Structs;
 using Pysar.Elements;
+using Pysar.Export;
 using Pysar.Skia;
 using Xunit;
 
@@ -109,5 +110,102 @@ public class PdfExportTests
         Assert.Equal(width, numbers[2], 0);
         Assert.Equal(height, numbers[3], 0);
         Assert.Equal(width > height, numbers[2] > numbers[3]);
+    }
+
+    [Fact]
+    public async Task RenderToPdf_PdfA_WritesPdfA2bPartIdentification()
+    {
+        var design = ReportBuilder.Create("Doc")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 })
+            .WithDetail(b => b.AddText("Hello", t => t.WithSize(SizeLength.Fill, SizeLength.Fixed(20))))
+            .Build();
+
+        using var ms = new MemoryStream();
+        await new SkiaReportRenderer().RenderToPdfAsync(design, ms, new PdfExportOptions { PdfA = true });
+
+        Assert.Contains("pdfaid:part>2", Latin1(ms.ToArray()));
+    }
+
+    [Fact]
+    public async Task RenderToPdf_PdfA_WritesPdfA2bConformance()
+    {
+        var design = ReportBuilder.Create("Doc")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 })
+            .WithDetail(b => b.AddText("Hello", t => t.WithSize(SizeLength.Fill, SizeLength.Fixed(20))))
+            .Build();
+
+        using var ms = new MemoryStream();
+        await new SkiaReportRenderer().RenderToPdfAsync(design, ms, new PdfExportOptions { PdfA = true });
+
+        Assert.Contains("pdfaid:conformance>B", Latin1(ms.ToArray()));
+    }
+
+    [Fact]
+    public async Task RenderToPdf_WithoutPdfA_OmitsPdfAIdentification()
+    {
+        var design = ReportBuilder.Create("Doc")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 })
+            .WithDetail(b => b.AddText("Hello", t => t.WithSize(SizeLength.Fill, SizeLength.Fixed(20))))
+            .Build();
+
+        using var ms = new MemoryStream();
+        await new SkiaReportRenderer().RenderToPdfAsync(design, ms);
+
+        Assert.DoesNotContain("pdfaid:", Latin1(ms.ToArray()));
+    }
+
+    [Fact]
+    public async Task RenderToPdf_PdfAFalse_OmitsPdfAIdentification()
+    {
+        var design = ReportBuilder.Create("Doc")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 })
+            .WithDetail(b => b.AddText("Hello", t => t.WithSize(SizeLength.Fill, SizeLength.Fixed(20))))
+            .Build();
+
+        using var ms = new MemoryStream();
+        await new SkiaReportRenderer().RenderToPdfAsync(design, ms, new PdfExportOptions { PdfA = false });
+
+        Assert.DoesNotContain("pdfaid:", Latin1(ms.ToArray()));
+    }
+
+    [Fact]
+    public async Task RenderToPdfBytes_PdfA_WritesPdfA2bPartIdentification()
+    {
+        var design = ReportBuilder.Create("Doc")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 })
+            .WithDetail(b => b.AddText("Hello", t => t.WithSize(SizeLength.Fill, SizeLength.Fixed(20))))
+            .Build();
+
+        var bytes = await new SkiaReportRenderer().RenderToPdfBytesAsync(
+            design, new PdfExportOptions { PdfA = true });
+
+        Assert.Contains("pdfaid:part>2", Latin1(bytes));
+    }
+
+    [Fact]
+    public async Task SavePdf_PdfA_WritesPdfA2bPartIdentification()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"pysar-pdfa-{Guid.NewGuid():N}.pdf");
+        var design = ReportBuilder.Create("Doc")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 })
+            .WithDetail(b => b.AddText("Hello", t => t.WithSize(SizeLength.Fill, SizeLength.Fixed(20))))
+            .Build();
+
+        await new SkiaReportRenderer().SavePdfAsync(design, path, new PdfExportOptions { PdfA = true });
+
+        Assert.Contains("pdfaid:part>2", Latin1(File.ReadAllBytes(path)));
+    }
+
+    [Fact]
+    public async Task RenderToPdf_NullOptions_Throws()
+    {
+        var design = ReportBuilder.Create("Doc")
+            .WithPageFormat(new PageFormat { Margin = new Thickness(10), Size = PageSize.A4 })
+            .WithDetail(b => b.AddText("Hello", t => t.WithSize(SizeLength.Fill, SizeLength.Fixed(20))))
+            .Build();
+
+        using var ms = new MemoryStream();
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => new SkiaReportRenderer().RenderToPdfAsync(design, ms, null!));
     }
 }

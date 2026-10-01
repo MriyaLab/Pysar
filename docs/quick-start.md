@@ -208,7 +208,15 @@ var renderer = new SkiaReportRenderer();
 await renderer.SavePdfAsync(report, "products.pdf");
 ```
 
-`SavePdfAsync` writes vector text and shapes directly to PDF. For bitmap pages:
+`SavePdfAsync` writes vector text and shapes directly to PDF. PDF/A-2b is an option of that PDF, not another format. Skia writes the archival document setup and does not validate the file:
+
+```csharp
+using Pysar.Export;
+
+await renderer.SavePdfAsync(report, "products.pdf", new PdfExportOptions { PdfA = true });
+```
+
+For bitmap pages:
 
 ```csharp
 var pages = await renderer.RenderPageAsync(report, scale: 2f);
