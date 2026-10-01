@@ -1,5 +1,6 @@
 using Pysar.Core.Abstractions;
 using Pysar.Elements;
+using Pysar.Export;
 using Pysar.Skia.Layout;
 using Pysar.Skia.Rendering;
 using SkiaSharp;
@@ -61,31 +62,58 @@ public sealed class SkiaReportRenderer
     }
 
     /// <summary>Renders the report as a vector PDF onto <paramref name="stream"/> (crisp at any zoom).</summary>
-    public async Task RenderToPdfAsync(Report reportDesign, Stream stream, CancellationToken ct = default)
+    public Task RenderToPdfAsync(Report reportDesign, Stream stream, CancellationToken ct = default)
+        => RenderToPdfAsync(reportDesign, stream, new PdfExportOptions(), ct);
+
+    /// <summary>
+    ///     Renders the report as a vector PDF onto <paramref name="stream"/>.
+    ///     <see cref="PdfExportOptions.PdfA"/> asks Skia for PDF/A-2b document setup, not a validation.
+    /// </summary>
+    public Task RenderToPdfAsync(
+        Report reportDesign, Stream stream, PdfExportOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(reportDesign);
         ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(options);
 
-        await PageRenderer.RenderToPdfAsync(
-            reportDesign, stream, ct, _drawers, reportDesign.Metadata, _measurers);
+        return PageRenderer.RenderToPdfAsync(
+            reportDesign, stream, ct, _drawers, reportDesign.Metadata, _measurers, options.PdfA);
     }
 
     /// <summary>Renders the report as a vector PDF to <paramref name="filePath"/>.</summary>
-    public async Task SavePdfAsync(Report reportDesign, string filePath, CancellationToken ct = default)
+    public Task SavePdfAsync(Report reportDesign, string filePath, CancellationToken ct = default)
+        => SavePdfAsync(reportDesign, filePath, new PdfExportOptions(), ct);
+
+    /// <summary>
+    ///     Renders the report as a vector PDF to <paramref name="filePath"/>.
+    ///     <see cref="PdfExportOptions.PdfA"/> asks Skia for PDF/A-2b document setup, not a validation.
+    /// </summary>
+    public async Task SavePdfAsync(
+        Report reportDesign, string filePath, PdfExportOptions options, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
+        ArgumentNullException.ThrowIfNull(options);
 
         await using var stream = File.Create(filePath);
-        await RenderToPdfAsync(reportDesign, stream, ct);
+        await RenderToPdfAsync(reportDesign, stream, options, ct);
     }
 
     /// <summary>Renders the report as a vector PDF and returns the bytes.</summary>
-    public async Task<byte[]> RenderToPdfBytesAsync(Report reportDesign, CancellationToken ct = default)
+    public Task<byte[]> RenderToPdfBytesAsync(Report reportDesign, CancellationToken ct = default)
+        => RenderToPdfBytesAsync(reportDesign, new PdfExportOptions(), ct);
+
+    /// <summary>
+    ///     Renders the report as a vector PDF and returns the bytes.
+    ///     <see cref="PdfExportOptions.PdfA"/> asks Skia for PDF/A-2b document setup, not a validation.
+    /// </summary>
+    public async Task<byte[]> RenderToPdfBytesAsync(
+        Report reportDesign, PdfExportOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(reportDesign);
+        ArgumentNullException.ThrowIfNull(options);
 
         using var stream = new MemoryStream();
-        await RenderToPdfAsync(reportDesign, stream, ct);
+        await RenderToPdfAsync(reportDesign, stream, options, ct);
         return stream.ToArray();
     }
 }

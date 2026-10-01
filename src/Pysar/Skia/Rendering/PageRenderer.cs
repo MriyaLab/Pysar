@@ -62,7 +62,8 @@ public static class PageRenderer
     /// </summary>
     public static async Task RenderToPdfAsync(
         Report design, Stream stream, CancellationToken ct,
-        DrawerRegistry? drawers = null, Metadata? metadata = null, MeasurerRegistry? measurers = null)
+        DrawerRegistry? drawers = null, Metadata? metadata = null, MeasurerRegistry? measurers = null,
+        bool pdfA = false)
     {
         ArgumentNullException.ThrowIfNull(design);
         ArgumentNullException.ThrowIfNull(stream);
@@ -72,7 +73,7 @@ public static class PageRenderer
         using (images)
         {
             var page = design.PageFormat.GetPageSizePt();
-            using var document = CreatePdf(stream, metadata);
+            using var document = CreatePdf(stream, metadata, pdfA);
 
             // Strictly resolve → draw → next: the returned nodes alias live design elements (see PageBandResolver).
             for (var i = 0; i < slices.Count; i++)
@@ -363,16 +364,18 @@ public static class PageRenderer
         return node with { Bounds = new Rect(newLeft, b.Top, newRight, b.Bottom), Children = children };
     }
 
-    private static SKDocument CreatePdf(Stream stream, Metadata? metadata)
+    private static SKDocument CreatePdf(Stream stream, Metadata? metadata, bool pdfA)
     {
-        if (metadata is null)
+        // PdfA still needs the metadata object: the no-metadata factory has no flag to set.
+        if (metadata is null && !pdfA)
             return SKDocument.CreatePdf(stream);
 
         return SKDocument.CreatePdf(stream, new SKDocumentPdfMetadata
         {
-            Title = metadata.Title,
-            Author = metadata.Author,
-            Creation = metadata.CreatedAt
+            Title = metadata?.Title,
+            Author = metadata?.Author,
+            Creation = metadata?.CreatedAt,
+            PdfA = pdfA
         });
     }
 

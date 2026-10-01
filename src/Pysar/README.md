@@ -43,6 +43,7 @@ Everything is measured in points (1/72"). A4 portrait is 595.5 × 842 pt.
 only be built once, so build right before you export:
 
 ```csharp
+using Pysar.Export;
 using Pysar.Skia;
 
 report.Build();
@@ -55,6 +56,10 @@ await new SkiaReportRenderer().RenderToPdfAsync(report, httpContext.Response.Bod
 
 // or as an in-memory byte array, e.g. to attach to an email
 byte[] pdfBytes = await new SkiaReportRenderer().RenderToPdfBytesAsync(report);
+
+// PDF/A-2b document setup. Skia does not validate the file.
+await new SkiaReportRenderer().RenderToPdfAsync(
+    report, httpContext.Response.Body, new PdfExportOptions { PdfA = true });
 ```
 
 ## Requirements
