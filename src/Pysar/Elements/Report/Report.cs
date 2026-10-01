@@ -132,6 +132,7 @@ public class Report : ReportObject, IResourceHost
     ///     <see cref="DetailBand.DataSource"/> is available to expansion), expand repeaters/detail rows, then
     ///     resolve the per-row bindings on the generated rows. Suitable for a design built externally (e.g. from XAML).
     ///     A report instance can be built only once because the pipeline mutates its element tree.
+    ///     Rendering the built instance more than once is supported when the calls are sequential, not concurrent.
     /// </summary>
     /// <exception cref="InvalidOperationException">The build pipeline has already been started for this report.</exception>
     public Report Build()

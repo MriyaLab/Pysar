@@ -87,6 +87,10 @@ transitively with a platform package.
 triggers. A `Report` instance can therefore be built **once**. Create or load a new instance for each
 document — building the same one twice throws.
 
+Rendering that built instance more than once is supported, but only sequentially (PDF and then page
+bitmaps, or a retry of the same export). Do not render one instance concurrently. `PageNumber` and
+`PageCount` are scratch written during the pass, and `OnPageChanged` runs again on every render.
+
 ## Documentation
 
 - [Repository and full README](https://github.com/MriyaLab/Pysar)

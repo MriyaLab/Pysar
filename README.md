@@ -414,6 +414,10 @@ A Visual Studio plugin is not available yet — it is coming soon.
 triggers. A `Report` instance can therefore be built **once**. Create or load a new instance for each
 document — building the same one twice throws.
 
+Rendering that built instance more than once is supported, but only sequentially (PDF and then page
+bitmaps, or a retry of the same export). Do not render one instance concurrently. `PageNumber` and
+`PageCount` are scratch written during the pass, and `OnPageChanged` runs again on every render.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
