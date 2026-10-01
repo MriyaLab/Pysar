@@ -21,6 +21,8 @@
         <InternalsVisibleTo Include="Pysar.Elements.Tests" />
         <InternalsVisibleTo Include="Pysar.Export.Tests" />
         <InternalsVisibleTo Include="Pysar.Skia.Tests" />
+        <InternalsVisibleTo Include="Pysar.Avalonia" />
+        <InternalsVisibleTo Include="Pysar.Avalonia.Tests" />
     </ItemGroup>
 
     <ItemGroup>

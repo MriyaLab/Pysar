@@ -50,6 +50,14 @@ internal sealed class FontCache
                 return typeface;
             }
 
+            if (_fonts is SkiaFontCollection collection
+                && collection.TryResolveFallback(font.Family, font.Style, out var fromHost))
+            {
+                _resolved[key] = fromHost;
+                _fromSystem.Add(key);
+                return fromHost;
+            }
+
             var fallback = SKTypeface.FromFamilyName(font.Family, TextMeasurer.ConvertFontStyle(font.Style))
                            ?? SKTypeface.Default;
 

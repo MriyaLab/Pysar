@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Pysar.Core.Abstractions;
 using Pysar.Core.Enums;
 using SkiaSharp;
@@ -17,6 +18,7 @@ namespace Pysar.Skia;
 public sealed class SkiaFontCollection : Dictionary<string, object>, IFontCollection
 {
     private readonly IFileSystem _fileSystem;
+    private Func<string, FontStyle, SKTypeface?>? _resolveFallback;
 
     public SkiaFontCollection(IFileSystem fileSystem)
     {
@@ -39,6 +41,19 @@ public sealed class SkiaFontCollection : Dictionary<string, object>, IFontCollec
         Add(key, LoadTypeface(filename));
 
         return this;
+    }
+
+    /// <summary>
+    ///     Called by a host after the platform font manager exists. A hit is a system answer:
+    ///     <c>FontCache</c> drops it when <c>AddFont</c> grows this collection.
+    /// </summary>
+    internal void SetTypefaceFallback(Func<string, FontStyle, SKTypeface?>? resolve)
+        => _resolveFallback = resolve;
+
+    internal bool TryResolveFallback(string family, FontStyle style, [NotNullWhen(true)] out SKTypeface? typeface)
+    {
+        typeface = _resolveFallback?.Invoke(family, style);
+        return typeface is not null;
     }
 
     private SKTypeface LoadTypeface(string filename)

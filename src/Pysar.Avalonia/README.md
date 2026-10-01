@@ -7,15 +7,26 @@ for .NET: `avares://` application asset access, font registration and a scrollab
 ## Setup
 
 Assets are declared with `ReportAsset`; Pysar packages them as `AvaloniaResource` items read through
-`avares://`:
+`avares://`. Register from the application builder:
 
 ```csharp
 AppBuilder.Configure<App>()
     .UsePlatformDetect()
-    .UsePysar(pysar => pysar
-        .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
-        .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
+    .UsePysar();
 ```
+
+The family string in the report has to be the Avalonia `FontFamily` string — `fonts:Inter#Inter`
+after `WithInterFont` or `AddFontCollection` with the key `fonts:Inter`, or
+`avares://MyApp/Fonts#Ubuntu` for an Avalonia resource folder — not a file path. A bare name
+(`Ubuntu`, `Inter`) is a system-font lookup; if `TryGetGlyphTypeface` substitutes the default
+face (Helvetica), Pysar treats that as a miss. `AddFont` still wins, and a library `ReportAsset`
+still needs one `AddFont`: the file is not copied into the head, and `FontManager` does not see
+it. A XAML `FontFamily` resource is not a registration. Styles stay `Normal`, `Bold`, `Italic`
+and `BoldItalic`. SemiBold, Light, stretch and per-character fallbacks are not shared, and Bold
+against a Regular-only file is not a real bold — the bytes that come back may be the regular
+face, because Avalonia's simulations are not kept on the `SKTypeface`. This bridge is Avalonia
+only. Console, the design-time preview, MAUI, WPF and Uno do not have `FontManager` and keep
+`AddFont`.
 
 ## Showing a report
 

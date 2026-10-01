@@ -91,9 +91,17 @@ directory-based constructors. An `IFileSystem` you pass in yourself is used exac
 no `ReportAsset` from any library. Chain it yourself if you want both:
 `new DefaultReportPlatformHandler(new FallbackFileSystem(mine, new EmbeddedAssetFileSystem()))`.
 
-`ReportAsset` covers what *reports* read, through `IFileSystem`. An asset the host framework itself
-also renders does not go through that: an Avalonia `FontFamily` pointing at
-`avares://MyApp/Fonts#...`, a MAUI `ConfigureFonts` registration, or a WPF pack URI in XAML is
+`ReportAsset` covers what *reports* read, through `IFileSystem`. On Avalonia, `UsePysar` also
+resolves a face `FontManager` already knows, so the report family string must be the Avalonia
+`FontFamily` string (`fonts:Inter#Inter` after `WithInterFont` or `AddFontCollection` with the key
+`fonts:Inter`, or `avares://MyApp/Fonts#Ubuntu` for an Avalonia resource folder), not a file path.
+A bare name only matches a system font; if `TryGetGlyphTypeface` substitutes the default face
+(Helvetica), Pysar treats that as a miss. `AddFont` still wins, and a library `ReportAsset` still
+needs one `AddFont`: the file is not copied into the head, and `FontManager` does not see it. A
+XAML `FontFamily` resource is not a registration. Styles are `Normal`, `Bold`, `Italic` and
+`BoldItalic`. SemiBold, Light, stretch and per-character fallbacks are not shared. Bold against a
+Regular-only file is not a real bold. This bridge is Avalonia only. Other hosts and the design-time
+preview keep `AddFont`. A MAUI `ConfigureFonts` registration, or a WPF pack URI in XAML is
 resolved by that framework's own loader, which knows nothing about Pysar. Such a file has to be
 reachable as a resource of the head itself - declare it as `ReportAsset` in that project, where it
 becomes the framework's own item type, rather than relying on a copy embedded in a library.
