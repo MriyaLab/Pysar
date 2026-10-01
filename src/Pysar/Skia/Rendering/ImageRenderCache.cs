@@ -88,11 +88,23 @@ internal sealed class ImageRenderCache : IDisposable
         }
     }
 
+    internal bool HasFailure(string cacheKey)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        lock (_gate)
+            return _failures.Exists(failure => failure.CacheKey == cacheKey);
+    }
+
     internal void RecordFailure(string cacheKey, Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
         lock (_gate)
+        {
+            if (_failures.Exists(failure => failure.CacheKey == cacheKey))
+                return;
+
             _failures.Add(new ImageLoadFailure(cacheKey, exception));
+        }
     }
 
     public void Dispose()
