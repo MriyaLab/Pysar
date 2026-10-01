@@ -10,6 +10,11 @@ namespace Pysar.Skia;
 ///     Renders a <see cref="Report"/> to page bitmaps using the two-phase band pipeline
 ///     (measure → paginate → draw). Custom element types are supported by registering an
 ///     <see cref="IElementDrawer"/> via <see cref="WithDrawer{T}"/>.
+///     <para>
+///     A built report may be passed to these methods more than once, sequentially. Concurrent renders
+///     of the same instance are not supported: page bands alias live elements, and
+///     <see cref="Report.PageNumber"/> / <see cref="Report.PageCount"/> are scratch for the pass.
+///     </para>
 /// </summary>
 public sealed class SkiaReportRenderer
 {

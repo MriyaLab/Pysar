@@ -349,6 +349,20 @@ var second = templateFactory().Build();
 ```
 
 Do not call `Build()` twice on the same `Report`. Do not build one report instance concurrently.
+Each document needs its own instance: a factory, as above, or a fresh load of the design.
+
+A built report may be rendered more than once, sequentially — PDF and then page bitmaps, or a retry
+of the same export:
+
+```csharp
+var report = templateFactory().Build();
+await renderer.RenderToPdfAsync(report, pdfStream);
+var pages = await renderer.RenderPageAsync(report);
+```
+
+Do not render one report instance concurrently. `PageNumber` and `PageCount` are scratch written
+during the pass, and `OnPageChanged` runs again on every render. After the call returns they are not
+a stable result.
 
 ## Design-time preview
 
