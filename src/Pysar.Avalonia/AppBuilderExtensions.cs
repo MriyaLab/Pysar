@@ -9,20 +9,38 @@ namespace Pysar.Avalonia;
 ///     Avalonia resources, and <see cref="ReportView"/> renders through a shared
 ///     <see cref="SkiaReportRenderer"/>.
 /// </summary>
-/// <example>
-///     <code>
-///     AppBuilder.Configure&lt;App&gt;()
-///         .UsePlatformDetect()
-///         .UsePysar(pysar => pysar
-///             .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
-///             .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
-///     </code>
-/// </example>
 public static class AppBuilderExtensions
 {
     /// <summary>
     ///     Registers Pysar with the application.
     /// </summary>
+    /// <example>
+    ///     <code>
+    ///     AppBuilder.Configure&lt;App&gt;()
+    ///         .UsePlatformDetect()
+    ///         .UsePysar();
+    ///     </code>
+    /// </example>
+    /// <remarks>
+    ///     The family string in the report has to be the Avalonia <c>FontFamily</c> string
+    ///     (<c>fonts:Inter#Inter</c> after <c>WithInterFont</c> or <c>AddFontCollection</c> with the
+    ///     key <c>fonts:Inter</c>, or <c>avares://MyApp/Fonts#Ubuntu</c> for an Avalonia resource
+    ///     folder), not a file path. A bare name (<c>Ubuntu</c>, <c>Inter</c>) is a system-font
+    ///     lookup; if <c>TryGetGlyphTypeface</c> substitutes the default face (Helvetica), Pysar
+    ///     treats that as a miss.
+    ///
+    ///     <c>AddFont</c> still wins, and a library <c>ReportAsset</c> still needs one
+    ///     <c>AddFont</c>: the file is not copied into the head, and <c>FontManager</c> does not see
+    ///     it. A XAML <c>FontFamily</c> resource is not a registration.
+    ///
+    ///     Styles stay <c>Normal</c>, <c>Bold</c>, <c>Italic</c> and <c>BoldItalic</c>. SemiBold,
+    ///     Light, stretch and per-character fallbacks are not shared, and Bold against a
+    ///     Regular-only file is not a real bold - the bytes that come back may be the regular face,
+    ///     because Avalonia's simulations are not kept on the <c>SKTypeface</c>.
+    ///
+    ///     This bridge is Avalonia only. Console, the design-time preview, MAUI, WPF and Uno do not
+    ///     have <c>FontManager</c> and keep <c>AddFont</c>.
+    /// </remarks>
     /// <param name="assemblyName">
     ///     The assembly report assets are packaged under, used to resolve <c>avares://</c> URIs.
     ///     Defaults to the entry assembly's name, which is correct for the common case of a single
@@ -56,7 +74,15 @@ public static class AppBuilderExtensions
         // scheduled, not yet registered, while this method is still running as part of the
         // AppBuilder's fluent chain. Deferring to AfterPlatformServicesSetup runs it once that
         // service (and the rest of the platform) is actually in the locator.
-        builder.AfterPlatformServicesSetup(_ => installation.Configure(configure));
+        builder.AfterPlatformServicesSetup(_ =>
+        {
+            // Installed before configure so a later AddFont still wins: FontCache drops a host
+            // face when the collection grows. Lookup itself waits until the first glyph.
+            if (platformHandler.FontCollection is SkiaFontCollection fonts)
+                fonts.SetTypefaceFallback(AvaloniaTypefaceFallback.TryResolve);
+
+            installation.Configure(configure);
+        });
 
         return builder;
     }
