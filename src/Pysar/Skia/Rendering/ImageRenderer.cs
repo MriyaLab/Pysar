@@ -59,7 +59,7 @@ internal static class ImageRenderer
             return;
         }
 
-        if (IsSvg(image.Source))
+        if (HasSvgExtension(image.Source) || LooksLikeSvg(image.Source, ctx.Images))
         {
             DrawSvg(image, bounds, ctx);
             return;
@@ -167,14 +167,39 @@ internal static class ImageRenderer
         SKSvg? owned = null;
         if (picture is null)
         {
+            if (cache?.HasFailure(cacheKey) == true)
+                return;
+
             var bytes = cache?.GetBytes(cacheKey) ?? LoadBytes(source);
             if (bytes is null || bytes.Length == 0)
                 return;
 
             cache?.SetBytes(cacheKey, bytes);
-            owned = ParseSvg(bytes);
+            try
+            {
+                owned = ParseSvg(bytes);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                if (bytes.Length > 0)
+                    cache?.RecordFailure(cacheKey, new InvalidDataException("SVG bytes could not be parsed.", exception));
+
+                return;
+            }
+
             picture = owned.Picture;
-            if (picture is not null && cache is not null)
+            if (picture is null)
+            {
+                cache?.RecordFailure(cacheKey, new InvalidDataException("SVG bytes could not be parsed."));
+                owned.Dispose();
+                return;
+            }
+
+            if (cache is not null)
             {
                 picture = cache.AddSvg(cacheKey, owned);
                 owned = null;
@@ -217,9 +242,17 @@ internal static class ImageRenderer
     private static SKSvg ParseSvg(byte[] bytes)
     {
         var svg = new SKSvg();
-        using var stream = new MemoryStream(bytes);
-        svg.Load(stream);
-        return svg;
+        try
+        {
+            using var stream = new MemoryStream(bytes);
+            svg.Load(stream);
+            return svg;
+        }
+        catch
+        {
+            svg.Dispose();
+            throw;
+        }
     }
 
     private static (SKRect source, SKRect destination) CalculatePlacement(
@@ -278,15 +311,32 @@ internal static class ImageRenderer
         if (cache?.GetBitmap(cacheKey) is { } existing)
             return existing;
 
+        if (cache?.HasFailure(cacheKey) == true)
+            return null;
+
         var bytes = cache?.GetBytes(cacheKey) ?? LoadBytes(source);
         if (bytes is null)
             return null;
 
         cache?.SetBytes(cacheKey, bytes);
 
-        var bitmap = SKBitmap.Decode(bytes);
+        SKBitmap? bitmap;
+        try
+        {
+            bitmap = SKBitmap.Decode(bytes);
+        }
+        catch (ArgumentNullException)
+        {
+            bitmap = null;
+        }
+
         if (bitmap is null)
+        {
+            if (bytes.Length > 0)
+                cache?.RecordFailure(cacheKey, new InvalidDataException("Image bytes could not be decoded."));
+
             return null;
+        }
 
         return cache is null ? bitmap : cache.AddBitmap(cacheKey, bitmap);
     }
@@ -310,7 +360,66 @@ internal static class ImageRenderer
         _ => $"other:{source.GetType().Name}:{source.GetHashCode()}"
     };
 
-    private static bool IsSvg(ImageSource source) => source switch
+    private const int SvgSniffLength = 512;
+
+    private static bool LooksLikeSvg(ImageSource source, ImageRenderCache? cache)
+    {
+        var bytes = cache?.GetBytes(CreateCacheKey(source)) ?? LoadBytes(source);
+        return LooksLikeSvg(bytes);
+    }
+
+    private static bool LooksLikeSvg(byte[]? bytes)
+    {
+        if (bytes is null || bytes.Length == 0)
+            return false;
+
+        var window = bytes.AsSpan(0, Math.Min(bytes.Length, SvgSniffLength));
+        var index = 0;
+        if (window.Length >= 3 && window[0] == 0xEF && window[1] == 0xBB && window[2] == 0xBF)
+            index = 3;
+
+        index = SkipXmlWhitespace(window, index);
+        if (StartsWith(window, index, "<?xml"u8))
+        {
+            var declarationEnd = IndexOf(window, index, "?>"u8);
+            if (declarationEnd < 0)
+                return false;
+
+            index = SkipXmlWhitespace(window, declarationEnd + 2);
+        }
+
+        return StartsWith(window, index, "<svg"u8);
+    }
+
+    private static int SkipXmlWhitespace(ReadOnlySpan<byte> bytes, int index)
+    {
+        while (index < bytes.Length && bytes[index] is 0x20 or 0x09 or 0x0D or 0x0A)
+            index++;
+
+        return index;
+    }
+
+    private static bool StartsWith(ReadOnlySpan<byte> bytes, int index, ReadOnlySpan<byte> pattern)
+    {
+        if (index < 0 || index + pattern.Length > bytes.Length)
+            return false;
+
+        return bytes.Slice(index, pattern.Length).SequenceEqual(pattern);
+    }
+
+    private static int IndexOf(ReadOnlySpan<byte> bytes, int start, ReadOnlySpan<byte> pattern)
+    {
+        var lastStart = bytes.Length - pattern.Length;
+        for (var index = start; index <= lastStart; index++)
+        {
+            if (bytes.Slice(index, pattern.Length).SequenceEqual(pattern))
+                return index;
+        }
+
+        return -1;
+    }
+
+    private static bool HasSvgExtension(ImageSource source) => source switch
     {
         UriImageSource uri => uri.Uri?.OriginalString.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ?? false,
         FileImageSource file => file.FilePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase),

@@ -128,6 +128,90 @@ public class ImageRendererTests
     }
 
     [Fact]
+    public async Task PrefetchAsync_ThenDraw_RendersSvgFromStreamImageSource()
+    {
+        var svg = """<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#FF0000"/></svg>"""u8.ToArray();
+        var source = new StreamImageSource(() => new MemoryStream(svg));
+        var image = new Image { Source = source, Aspect = Aspect.Fill };
+
+        using var cache = new ImageRenderCache();
+        await ImageRenderer.PrefetchAsync([source], cache, CancellationToken.None);
+        using var bitmap = new SKBitmap(50, 50);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f) { Images = cache });
+
+        Assert.Equal(SKColors.Red, bitmap.GetPixel(25, 25));
+    }
+
+    [Fact]
+    public async Task PrefetchAsync_ThenDraw_RendersSvgWhenFileNameHasNoSvgSuffix()
+    {
+        var svg = "<?xml version=\"1.0\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"><rect width=\"10\" height=\"10\" fill=\"#FF0000\"/></svg>"u8.ToArray();
+        var bytes = new byte[svg.Length + 3];
+        bytes[0] = 0xEF;
+        bytes[1] = 0xBB;
+        bytes[2] = 0xBF;
+        svg.CopyTo(bytes, 3);
+        ReportPlatformHandler.Create(new FakePlatformHandler(("chart.bin", bytes)));
+        using var cache = new ImageRenderCache();
+        var image = new Image { Source = new FileImageSource("chart.bin"), Aspect = Aspect.Fill };
+
+        await ImageRenderer.PrefetchAsync([image.Source], cache, CancellationToken.None);
+        using var bitmap = new SKBitmap(50, 50);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f) { Images = cache });
+
+        Assert.Equal(SKColors.Red, bitmap.GetPixel(25, 25));
+    }
+
+    [Fact]
+    public async Task PrefetchAsync_ThenDraw_UndecodableBytes_RecordsInvalidDataException()
+    {
+        var source = new StreamImageSource(() => new MemoryStream([1, 2, 3, 4]));
+        var image = new Image { Source = source };
+
+        using var cache = new ImageRenderCache();
+        await ImageRenderer.PrefetchAsync([source], cache, CancellationToken.None);
+        using var bitmap = new SKBitmap(50, 50);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        var cleared = bitmap.GetPixel(25, 25);
+        ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), new RenderContext(canvas, 1f) { Images = cache });
+
+        Assert.Equal(cleared, bitmap.GetPixel(25, 25));
+        var failure = Assert.Single(cache.Failures);
+        Assert.IsType<InvalidDataException>(failure.Exception);
+    }
+
+    [Fact]
+    public async Task PrefetchAsync_ThenDraw_MalformedSvg_RecordsInvalidDataExceptionAndDoesNotThrow()
+    {
+        var source = new StreamImageSource(() => new MemoryStream("<svg><rect>"u8.ToArray()));
+        var image = new Image { Source = source };
+
+        using var cache = new ImageRenderCache();
+        await ImageRenderer.PrefetchAsync([source], cache, CancellationToken.None);
+        using var bitmap = new SKBitmap(50, 50);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        var cleared = bitmap.GetPixel(25, 25);
+        var ctx = new RenderContext(canvas, 1f) { Images = cache };
+
+        var exception = Record.Exception(() =>
+        {
+            ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), ctx);
+            ImageRenderer.Draw(image, new Rect(0, 0, 50, 50), ctx);
+        });
+
+        Assert.Null(exception);
+        Assert.Equal(cleared, bitmap.GetPixel(25, 25));
+        var failure = Assert.Single(cache.Failures);
+        Assert.IsType<InvalidDataException>(failure.Exception);
+    }
+
+    [Fact]
     public async Task PrefetchAsync_NullSources_ThrowsArgumentNullException()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
