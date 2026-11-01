@@ -101,10 +101,14 @@ needs one `AddFont`: the file is not copied into the head, and `FontManager` doe
 XAML `FontFamily` resource is not a registration. Styles are `Normal`, `Bold`, `Italic` and
 `BoldItalic`. SemiBold, Light, stretch and per-character fallbacks are not shared. Bold against a
 Regular-only file is not a real bold. This bridge is Avalonia only. Other hosts and the design-time
-preview keep `AddFont`. A MAUI `ConfigureFonts` registration, or a WPF pack URI in XAML is
-resolved by that framework's own loader, which knows nothing about Pysar. Such a file has to be
-reachable as a resource of the head itself - declare it as `ReportAsset` in that project, where it
-becomes the framework's own item type, rather than relying on a copy embedded in a library.
+preview keep `AddFont`. A MAUI `ConfigureFonts` alias is resolved by `UsePysar` for `FontStyle.Normal`: the report's
+`FontFamily` is that alias (`OpenSansRegular`), not a file path. Bold and Italic are separate
+`AddFont` calls with their own aliases — one file is not a family. `AddFont` still wins when both
+name the same family. `MauiImage` is not a report image: resizetizer output is not the original
+bytes. Declare images as `ReportAsset`. A WPF pack URI in XAML is resolved by that framework's own
+loader, which knows nothing about Pysar. Such a file has to be reachable as a resource of the head
+itself - declare it as `ReportAsset` in that project, where it becomes the framework's own item
+type, rather than relying on a copy embedded in a library.
 
 One consequence is worth knowing: an asset declared in a plain `net10.0` library and used from
 a MAUI application lives inside that library's assembly, not in `Resources/Raw`. A library that

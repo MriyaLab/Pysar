@@ -19,6 +19,7 @@
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
     <!-- MAUI -->
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.100" />
+    <PackageVersion Include="Microsoft.Maui.Core" Version="10.0.100" />
     <!-- Uno Platform.
          6.6 rather than the newer 6.7: this version is the floor of the published Pysar.Uno
          package, and an app built with Uno.Sdk 6.6.42 gets Uno.WinUI 6.6.184 handed to it by the

@@ -1,0 +1,11 @@
+<Project>
+  <!-- Run after all package imports so ReportAsset and explicit resources take precedence,
+       regardless of the order NuGet imports the packages' targets. -->
+  <Target Name="_PysarEmbedUnoFonts" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <_PysarUnoFont Include="@(UnoFont)" LogicalName="Fonts/%(Filename)%(Extension)" />
+      <_PysarUnoFont Remove="@(EmbeddedResource)" MatchOnMetadata="LogicalName" />
+      <EmbeddedResource Include="@(_PysarUnoFont)" />
+    </ItemGroup>
+  </Target>
+</Project>

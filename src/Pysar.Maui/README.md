@@ -22,10 +22,13 @@ from the application package — nothing is extracted to disk:
 ```csharp
 builder
     .UseMauiApp<App>()
-    .UsePysar(pysar => pysar
-        .AddFont("Fonts/Ubuntu-Regular.ttf", "Ubuntu")
-        .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
+    .ConfigureFonts(fonts => fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"))
+    .UsePysar();
 ```
+
+A report then uses `FontFamily="OpenSansRegular"` at `FontStyle.Normal`. Bold is a second
+`ConfigureFonts` registration and its own alias. `AddFont` still wins when both name the same
+family. Images stay `ReportAsset` — `MauiImage` is resized and is not the file the report reads.
 
 `SkiaReportRenderer`, `IReportExportService`, `IReportSharer` and `IReportPrinter` are then
 injectable: the export service writes a report to a stream or a byte array in a requested

@@ -15,6 +15,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Maui.Core" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
   </ItemGroup>
@@ -31,6 +32,10 @@
   <ItemGroup>
     <Compile Include="..\..\src\Pysar.Maui\AppPackageFileSystem.cs"
              Link="Linked\AppPackageFileSystem.cs" />
+    <Compile Include="..\..\src\Pysar.Maui\MauiFontCatalog.cs"
+             Link="Linked\MauiFontCatalog.cs" />
+    <Compile Include="..\..\src\Pysar.Maui\MauiFontBridge.cs"
+             Link="Linked\MauiFontBridge.cs" />
   </ItemGroup>
 
   <!-- The package content the linked file system reads, laid out the way a report asks for it. -->
@@ -38,6 +43,8 @@
     <Content Include="..\Assets\Fonts\Ubuntu-Regular.ttf"
              Link="Fonts\Ubuntu-Regular.ttf"
              CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="..\Assets\Fonts\Ubuntu-Regular.ttf"
+                      LogicalName="Pysar.Maui.Tests.Fonts.Ubuntu-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

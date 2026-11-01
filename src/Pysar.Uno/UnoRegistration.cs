@@ -46,7 +46,7 @@ internal static class UnoRegistration
 
         var platformHandler = new UnoReportPlatformHandler(assetAssembly);
         UiDispatcher = TryGetCurrentDispatcher();
-        InstallAmbientState(platformHandler, configure);
+        InstallAmbientState(platformHandler, assetAssembly, configure);
 
         if (suppressBrowserZoom)
         {
@@ -90,7 +90,7 @@ internal static class UnoRegistration
         // of the preloaded paths, and AddFont reads it synchronously.
         await platformHandler.Assets.PreloadAsync(preloadPaths).ConfigureAwait(true);
 
-        InstallAmbientState(platformHandler, configure);
+        InstallAmbientState(platformHandler, assetAssembly, configure);
 
         if (suppressBrowserZoom)
             await BrowserWheelZoom.EnsureInstalledAsync().ConfigureAwait(true);
@@ -124,9 +124,14 @@ internal static class UnoRegistration
     }
 
     private static void InstallAmbientState(
-        UnoReportPlatformHandler platformHandler, Action<PysarBuilder>? configure)
+        UnoReportPlatformHandler platformHandler, Assembly assetAssembly, Action<PysarBuilder>? configure)
     {
         var installation = PysarInstallation.Create(platformHandler);
+
+        // UnoFont faces resolve by the family name inside the file. AddFont in configure still wins:
+        // the collection is consulted before this fallback.
+        if (platformHandler.FontCollection is SkiaFontCollection fonts)
+            fonts.SetTypefaceFallback((family, style) => UnoFontCatalog.TryResolve(assetAssembly, family, style));
 
         // The control measures reports with the same renderer, so custom drawers reach the viewer.
         // The renderer is not held on the handler - the control reaches it through

@@ -236,6 +236,9 @@ builder
         .AddFont("Fonts/Ubuntu-Bold.ttf", "Ubuntu", FontStyle.Bold));
 ```
 
+A font already registered with `ConfigureFonts` is also available, by that alias, at
+`FontStyle.Normal`. Bold is a separate registration. `MauiImage` is not a report image.
+
 `SkiaReportRenderer`, `IReportExportService`, `IReportSharer` and `IReportPrinter` are then
 injectable: the export service writes a report to a stream or a byte array in a requested
 `ExportFormat`, the sharer offers those bytes to the platform share sheet, and the printer opens the

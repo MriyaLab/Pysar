@@ -57,6 +57,10 @@ Every read after that is a dictionary lookup, so the synchronous callers are sat
 
 ## Setup
 
+A `UnoFont` item is also embedded as `Fonts/%(Filename)%(Extension)`. `UsePysar` then resolves
+the family name inside the file (`Cookie`, not the XAML key `CookieRegular`) at that face's own
+style. `AddFont` still wins when both name the same family.
+
 ```csharp
 protected override void OnLaunched(LaunchActivatedEventArgs args)
 {

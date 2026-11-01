@@ -23,6 +23,10 @@
         <InternalsVisibleTo Include="Pysar.Skia.Tests" />
         <InternalsVisibleTo Include="Pysar.Avalonia" />
         <InternalsVisibleTo Include="Pysar.Avalonia.Tests" />
+        <InternalsVisibleTo Include="Pysar.Maui" />
+        <InternalsVisibleTo Include="Pysar.Maui.Tests" />
+        <InternalsVisibleTo Include="Pysar.Uno" />
+        <InternalsVisibleTo Include="Pysar.Uno.Tests" />
     </ItemGroup>
 
     <ItemGroup>

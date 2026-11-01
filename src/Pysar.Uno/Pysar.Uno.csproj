@@ -34,6 +34,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Include="buildTransitive\Pysar.Uno.targets" Pack="true" PackagePath="buildTransitive/" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Pysar.Viewer\Pysar.Viewer.csproj" />
         <ProjectReference Include="..\Pysar\Pysar.csproj" />
     </ItemGroup>

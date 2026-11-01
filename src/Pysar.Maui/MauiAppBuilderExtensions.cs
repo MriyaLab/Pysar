@@ -11,6 +11,8 @@ public static class MauiAppBuilderExtensions
     ///     Registers Pysar with the application: reports resolve their assets from the application
     ///     package, and <see cref="SkiaReportRenderer"/>, <see cref="IReportExportService"/>,
     ///     <see cref="IReportSharer"/>, and <see cref="IReportPrinter"/> become injectable.
+    ///     A font registered with <c>ConfigureFonts</c> is available to a report by that alias at
+    ///     <c>FontStyle.Normal</c>. <c>AddFont</c> still wins when both name the same family.
     /// </summary>
     /// <example>
     ///     <code>
@@ -27,13 +29,20 @@ public static class MauiAppBuilderExtensions
 
         // The application package's own assets first, then those embedded by referenced report
         // libraries - a packaged asset must win over one a library shipped.
-        var platformHandler = new DefaultReportPlatformHandler(
-            new FallbackFileSystem(new AppPackageFileSystem(), new EmbeddedAssetFileSystem()));
+        var package = new FallbackFileSystem(new AppPackageFileSystem(), new EmbeddedAssetFileSystem());
+        var platformHandler = new DefaultReportPlatformHandler(package);
 
         // Rendering reads the handler from this ambient state rather than from DI, so it is installed
         // here - before any report can be built - and not when the renderer is first resolved.
         var installation = PysarInstallation.Create(platformHandler);
         installation.Configure(configure);
+
+        // ConfigureFonts aliases resolve on a miss. AddFont above still wins: the collection is
+        // consulted before this fallback.
+        MauiFontBridge.Install(
+            builder.Services,
+            (SkiaFontCollection)installation.PlatformHandler.FontCollection,
+            package);
 
         // The control measures reports with the same renderer, so custom drawers reach the viewer.
         ReportViewRenderer.Instance = installation.Renderer;
